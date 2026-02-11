@@ -79,6 +79,22 @@ main {
   padding: 24px;
 }
 
+.landing-hero {
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 180px);
+}
+
+.landing-login-form {
+  width: min(560px, 100%);
+}
+
+.landing-notice {
+  width: min(560px, 100%);
+  background: transparent;
+}
+
 .form-grid {
   display: grid;
   gap: 12px;

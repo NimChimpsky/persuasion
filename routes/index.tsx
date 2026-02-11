@@ -32,61 +32,65 @@ export const handler = define.handlers<LandingData>({
 
 export default define.page<typeof handler>(
   function LandingPage({ data, state }) {
-    state.title = "Story Realms | Sign in";
+    state.title = "Persusasion | Sign in";
 
     return (
       <main class="hero page-shell">
-        <div class="container stack" style="max-width: 760px;">
-          <section class="card form-card stack">
-            <h1>Persusasion</h1>
-            <p class="muted">
-              A narrative game experience of secrets and lies ... and crypto
-              prizes
-            </p>
-            {data.sent
-              ? (
-                <p class="notice good">
-                  Login link sent. Check your inbox and click the sign-in link.
-                </p>
-              )
-              : null}
-            {data.error ? <p class="notice bad">{data.error}</p> : null}
-            <form method="POST" action="/auth/request-link" class="form-grid">
-              <label>
-                Email address
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  autocomplete="email"
-                  placeholder="you@example.com"
-                />
-              </label>
-              <div class="action-row">
-                <button class="btn ghost" type="submit">
-                  Send sign-in link
-                </button>
-              </div>
-            </form>
-            {data.previewLink
-              ? (
-                <p class="notice">
-                  Dev preview link:
-                  <br />
-                  <a href={data.previewLink}>{data.previewLink}</a>
-                </p>
-              )
-              : null}
-            {data.localDevLink
-              ? (
-                <p class="notice">
-                  Local developer login:
-                  <br />
-                  <a href={data.localDevLink}>{data.localDevLink}</a>
-                </p>
-              )
-              : null}
-          </section>
+        <div class="container landing-hero stack" style="max-width: 760px;">
+          <h1>Persusasion</h1>
+          <p class="muted">
+            A narrative game experience of secrets and lies ... and crypto
+            prizes
+          </p>
+          {data.sent
+            ? (
+              <p class="notice landing-notice good">
+                Login link sent. Check your inbox and click the sign-in link.
+              </p>
+            )
+            : null}
+          {data.error
+            ? <p class="notice landing-notice bad">{data.error}</p>
+            : null}
+          <form
+            method="POST"
+            action="/auth/request-link"
+            class="form-grid landing-login-form"
+          >
+            <label>
+              Email address
+              <input
+                type="email"
+                name="email"
+                required
+                autocomplete="email"
+                placeholder="you@example.com"
+              />
+            </label>
+            <div class="action-row center">
+              <button class="btn ghost" type="submit">
+                Send sign-in link
+              </button>
+            </div>
+          </form>
+          {data.previewLink
+            ? (
+              <p class="notice landing-notice">
+                Dev preview link:
+                <br />
+                <a href={data.previewLink}>{data.previewLink}</a>
+              </p>
+            )
+            : null}
+          {data.localDevLink
+            ? (
+              <p class="notice landing-notice">
+                Local developer login:
+                <br />
+                <a href={data.localDevLink}>{data.localDevLink}</a>
+              </p>
+            )
+            : null}
         </div>
       </main>
     );

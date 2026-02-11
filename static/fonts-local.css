@@ -1,80 +1,70 @@
 /* Local Moranga font family + heading usage */
 @font-face {
   font-family: "Moranga";
-  src: url("https://xllm.ergosphere.deno.net/font/fonnts.com-moranga-light.otf?__frsh_c=f988ac643f4ff8d527bdf9f7d1ce621da85f473a")
-    format("opentype");
+  src: url("/font/fonnts.com-moranga-light.otf") format("opentype");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Moranga";
-  src: url("https://xllm.ergosphere.deno.net/font/fonnts.com-moranga-regular.otf?__frsh_c=f988ac643f4ff8d527bdf9f7d1ce621da85f473a")
-    format("opentype");
+  src: url("/font/fonnts.com-moranga-regular.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Moranga";
-  src: url("https://xllm.ergosphere.deno.net/font/fonnts.com-moranga-medium.otf?__frsh_c=f988ac643f4ff8d527bdf9f7d1ce621da85f473a")
-    format("opentype");
+  src: url("/font/fonnts.com-moranga-medium.otf") format("opentype");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Moranga";
-  src: url("https://xllm.ergosphere.deno.net/font/fonnts.com-moranga-bold.otf?__frsh_c=f988ac643f4ff8d527bdf9f7d1ce621da85f473a")
-    format("opentype");
+  src: url("/font/fonnts.com-moranga-bold.otf") format("opentype");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Moranga";
-  src: url("https://xllm.ergosphere.deno.net/font/fonnts.com-moranga-black.otf?__frsh_c=f988ac643f4ff8d527bdf9f7d1ce621da85f473a")
-    format("opentype");
+  src: url("/font/fonnts.com-moranga-black.otf") format("opentype");
   font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Moranga";
-  src: url("https://xllm.ergosphere.deno.net/font/fonnts.com-moranga-lightit.otf?__frsh_c=f988ac643f4ff8d527bdf9f7d1ce621da85f473a")
-    format("opentype");
+  src: url("/font/fonnts.com-moranga-lightit.otf") format("opentype");
   font-weight: 300;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: "Moranga";
-  src: url("https://xllm.ergosphere.deno.net/font/fonnts.com-moranga-regularit.otf?__frsh_c=f988ac643f4ff8d527bdf9f7d1ce621da85f473a")
-    format("opentype");
+  src: url("/font/fonnts.com-moranga-regularit.otf") format("opentype");
   font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: "Moranga";
-  src: url("https://xllm.ergosphere.deno.net/font/fonnts.com-moranga-mediumit.otf?__frsh_c=f988ac643f4ff8d527bdf9f7d1ce621da85f473a")
-    format("opentype");
+  src: url("/font/fonnts.com-moranga-mediumit.otf") format("opentype");
   font-weight: 500;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: "Moranga";
-  src: url("https://xllm.ergosphere.deno.net/font/fonnts.com-moranga-boldit.otf?__frsh_c=f988ac643f4ff8d527bdf9f7d1ce621da85f473a")
-    format("opentype");
+  src: url("/font/fonnts.com-moranga-boldit.otf") format("opentype");
   font-weight: 700;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: "Moranga";
-  src: url("https://xllm.ergosphere.deno.net/font/fonnts.com-moranga-blackit.otf?__frsh_c=f988ac643f4ff8d527bdf9f7d1ce621da85f473a")
-    format("opentype");
+  src: url("/font/fonnts.com-moranga-blackit.otf") format("opentype");
   font-weight: 900;
   font-style: italic;
   font-display: swap;
@@ -85,7 +75,10 @@
 }
 
 /* Use Moranga for prominent headings to achieve the styled look */
-h1, h2, h3, .display {
+h1,
+h2,
+h3,
+.display {
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -95,12 +88,14 @@ h1, h2, h3, .display {
   font-family: var(--font-display);
   font-weight: 800;
 }
+
 /* Buttons use Moranga for a branded feel */
 .btn {
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: 0.003em;
 }
+
 .btn.primary {
   font-weight: 500;
 }
