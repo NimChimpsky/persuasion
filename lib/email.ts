@@ -20,7 +20,8 @@ export async function sendMagicLinkEmail(
       to: [email],
       subject: "Your sign-in link",
       html:
-        `<p>Use this link to sign in:</p><p><a href=\"${link}\">${link}</a></p><p>This link expires in 20 minutes.</p>`,
+        `<p>Use this link to sign in:</p><p><a href=\"${link}\">${link}</a></p><p>This link expires in 1 hour.</p>`,
+      text: `Use this link to sign in: ${link}\n\nThis link expires in 1 hour.`,
     }),
   });
 

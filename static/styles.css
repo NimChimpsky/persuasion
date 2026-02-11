@@ -91,13 +91,6 @@ main {
   margin-top: 28px;
 }
 
-.landing-divider {
-  width: min(280px, 100%);
-  border: 0;
-  border-top: 1px solid rgba(15, 23, 42, 0.16);
-  margin-top: 10px;
-}
-
 .landing-login-form input,
 .landing-login-form .landing-cta-btn {
   min-height: 46px;
@@ -118,6 +111,11 @@ main {
 .landing-notice {
   width: min(560px, 100%);
   background: transparent;
+}
+
+.landing-form-message {
+  margin-top: 4px;
+  width: 100%;
 }
 
 .form-grid {

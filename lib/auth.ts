@@ -36,7 +36,7 @@ export async function createMagicToken(email: string): Promise<string> {
       email,
       createdAt: new Date().toISOString(),
     } as MagicTokenRecord,
-    { expireIn: 1000 * 60 * 20 },
+    { expireIn: 1000 * 60 * 60 },
   );
 
   return token;

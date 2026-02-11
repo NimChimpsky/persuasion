@@ -1,4 +1,5 @@
 import { page } from "fresh";
+import LandingLoginForm from "../islands/LandingLoginForm.tsx";
 import { canUseLocalDevAuth } from "../lib/dev_auth.ts";
 import { env } from "../lib/env.ts";
 import { define } from "../utils.ts";
@@ -52,54 +53,7 @@ export default define.page<typeof handler>(
           {data.error
             ? <p class="notice landing-notice bad">{data.error}</p>
             : null}
-          <hr class="landing-divider" aria-hidden="true" />
-          <form
-            method="POST"
-            action="/auth/request-link"
-            class="form-grid landing-login-form"
-          >
-            <input
-              type="email"
-              name="email"
-              required
-              autocomplete="email"
-              placeholder="you@example.com"
-              aria-label="Email address"
-            />
-            <div class="action-row center">
-              <button class="btn ghost landing-cta-btn" type="submit">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
-                  <path d="M3 7l9 6 9-6" />
-                </svg>
-                Send sign-in link
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
-                  <path d="M3 7l9 6 9-6" />
-                </svg>
-              </button>
-            </div>
-          </form>
+          <LandingLoginForm action="/auth/request-link" />
           {data.previewLink
             ? (
               <p class="notice landing-notice">
