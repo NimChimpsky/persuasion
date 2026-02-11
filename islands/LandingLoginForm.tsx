@@ -64,9 +64,7 @@ export default function LandingLoginForm(props: LandingLoginFormProps) {
       }
 
       setStatus("success");
-      setMessage(
-        payload.message || "we sent a link to your inbox - it is valid for 1hr",
-      );
+      setMessage(payload.message || "we sent a link to your inbox");
       setPreviewLink(payload.previewLink ?? "");
       setEmail("");
     } catch (error) {

@@ -30,14 +30,10 @@ export async function createMagicToken(email: string): Promise<string> {
   const kv = await getKv();
   const token = randomToken();
 
-  await kv.set(
-    ["magic_tokens", token],
-    {
-      email,
-      createdAt: new Date().toISOString(),
-    } as MagicTokenRecord,
-    { expireIn: 1000 * 60 * 60 },
-  );
+  await kv.set(["magic_tokens", token], {
+    email,
+    createdAt: new Date().toISOString(),
+  } as MagicTokenRecord);
 
   return token;
 }
@@ -58,10 +54,15 @@ export async function createSession(email: string): Promise<string> {
   const kv = await getKv();
   const sessionId = randomToken();
 
-  await kv.set(["sessions", sessionId], {
+  const record = {
     email,
     createdAt: new Date().toISOString(),
-  } as SessionRecord);
+  } as SessionRecord;
+
+  await kv.set(["sessions", sessionId], record);
+  await kv.set(["sessions_by_user", email, sessionId], {
+    createdAt: record.createdAt,
+  });
 
   return sessionId;
 }
@@ -82,7 +83,31 @@ export async function destroySession(req: Request): Promise<void> {
   if (!sessionId) return;
 
   const kv = await getKv();
+  const sessionEntry = await kv.get<SessionRecord>(["sessions", sessionId]);
   await kv.delete(["sessions", sessionId]);
+  if (sessionEntry.value) {
+    await kv.delete(["sessions_by_user", sessionEntry.value.email, sessionId]);
+  }
+}
+
+export async function destroyAllSessionsForEmail(email: string): Promise<void> {
+  const kv = await getKv();
+  const prefix: Deno.KvKey = ["sessions_by_user", email];
+  const sessionIds: string[] = [];
+
+  for await (const entry of kv.list<{ createdAt: string }>({ prefix })) {
+    const maybeSessionId = entry.key[2];
+    if (typeof maybeSessionId === "string") {
+      sessionIds.push(maybeSessionId);
+    }
+  }
+
+  await Promise.all(
+    sessionIds.map(async (sessionId) => {
+      await kv.delete(["sessions", sessionId]);
+      await kv.delete(["sessions_by_user", email, sessionId]);
+    }),
+  );
 }
 
 export function setSessionCookie(

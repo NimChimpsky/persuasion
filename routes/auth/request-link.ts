@@ -83,7 +83,7 @@ export const handler = define.handlers({
       if (expectsJson) {
         return json({
           ok: true,
-          message: "we sent a link to your inbox - it is valid for 1hr",
+          message: "we sent a link to your inbox",
           previewLink,
         });
       }

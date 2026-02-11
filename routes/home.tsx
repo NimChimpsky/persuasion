@@ -55,6 +55,15 @@ export default define.page<typeof handler>(function HomePage({ data, state }) {
           isAdmin={state.isAdmin}
         />
 
+        <section class="card" style="padding: 14px;">
+          <div class="action-row">
+            <a class="btn ghost" href="/auth/logout">Log out (this device)</a>
+            <a class="btn ghost" href="/auth/logout-all">
+              Log out all sessions
+            </a>
+          </div>
+        </section>
+
         <section class="stack">
           <h2 class="display">Active Games</h2>
           {data.games.length === 0
