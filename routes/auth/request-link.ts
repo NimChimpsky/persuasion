@@ -22,58 +22,82 @@ function json(data: unknown, status = 200): Response {
 export const handler = define.handlers({
   async POST(ctx) {
     const expectsJson = isJsonRequest(ctx.req);
+    try {
+      let emailRaw = "";
+      if (
+        (ctx.req.headers.get("content-type") ?? "").includes(
+          "application/json",
+        )
+      ) {
+        const payload = await ctx.req.json() as { email?: string };
+        emailRaw = String(payload.email ?? "");
+      } else {
+        const form = await ctx.req.formData();
+        emailRaw = String(form.get("email") ?? "");
+      }
 
-    let emailRaw = "";
-    if (
-      (ctx.req.headers.get("content-type") ?? "").includes("application/json")
-    ) {
-      const payload = await ctx.req.json() as { email?: string };
-      emailRaw = String(payload.email ?? "");
-    } else {
-      const form = await ctx.req.formData();
-      emailRaw = String(form.get("email") ?? "");
-    }
+      const email = normalizeEmail(emailRaw);
 
-    const email = normalizeEmail(emailRaw);
-
-    if (!BASIC_EMAIL_REGEX.test(email)) {
-      if (expectsJson) {
-        return json(
-          { ok: false, error: "Please enter a valid email address." },
-          400,
+      if (!BASIC_EMAIL_REGEX.test(email)) {
+        if (expectsJson) {
+          return json(
+            { ok: false, error: "Please enter a valid email address." },
+            400,
+          );
+        }
+        return Response.redirect(
+          new URL("/?error=Please+enter+a+valid+email", ctx.req.url),
+          303,
         );
       }
-      return Response.redirect(
-        new URL("/?error=Please+enter+a+valid+email", ctx.req.url),
-        303,
-      );
-    }
 
-    const token = await createMagicToken(email);
-    const verifyUrl = new URL("/auth/verify", ctx.req.url);
-    verifyUrl.searchParams.set("token", token);
+      const token = await createMagicToken(email);
+      const verifyUrl = new URL("/auth/verify", ctx.req.url);
+      verifyUrl.searchParams.set("token", token);
 
-    try {
       const result = await sendMagicLinkEmail(email, verifyUrl.toString());
+      const previewLink = !result.delivered && env.magicLinkPreview
+        ? verifyUrl.toString()
+        : "";
+
+      if (!result.delivered && !env.magicLinkPreview) {
+        if (expectsJson) {
+          return json(
+            {
+              ok: false,
+              error:
+                "Email delivery is not configured. Set RESEND_API_KEY and EMAIL_FROM.",
+            },
+            500,
+          );
+        }
+        return Response.redirect(
+          new URL(
+            "/?error=Email+delivery+is+not+configured.+Set+RESEND_API_KEY+and+EMAIL_FROM",
+            ctx.req.url,
+          ),
+          303,
+        );
+      }
+
       if (expectsJson) {
         return json({
           ok: true,
           message: "we sent a link to your inbox - it is valid for 1hr",
-          previewLink: !result.delivered && env.magicLinkPreview
-            ? verifyUrl.toString()
-            : "",
+          previewLink,
         });
       }
 
       const redirectUrl = new URL("/", ctx.req.url);
       redirectUrl.searchParams.set("sent", "1");
 
-      if (!result.delivered && env.magicLinkPreview) {
-        redirectUrl.searchParams.set("preview", verifyUrl.toString());
+      if (previewLink) {
+        redirectUrl.searchParams.set("preview", previewLink);
       }
 
       return Response.redirect(redirectUrl, 303);
-    } catch {
+    } catch (error) {
+      console.error("request-link error:", error);
       if (expectsJson) {
         return json(
           { ok: false, error: "Unable to send email right now." },

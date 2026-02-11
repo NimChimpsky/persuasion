@@ -72,3 +72,4 @@ LLM_MODEL=gpt-4.1-mini
   system) across landing/admin/home/game pages.
 - Dev bypass login is only enabled on localhost (`localhost`, `127.0.0.1`,
   `::1`) and only when `LOCAL_DEV_AUTH_SECRET` is set.
+- Deno KV is mandatory for this app; there is no non-persistent fallback.

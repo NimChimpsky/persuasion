@@ -51,7 +51,13 @@ export default function LandingLoginForm(props: LandingLoginFormProps) {
         }),
       });
 
-      const payload = await response.json() as RequestLinkResponse;
+      const rawBody = await response.text();
+      let payload: RequestLinkResponse = {};
+      try {
+        payload = JSON.parse(rawBody) as RequestLinkResponse;
+      } catch {
+        payload = {};
+      }
 
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || "Unable to send email right now.");
