@@ -36,6 +36,7 @@ EMAIL_FROM=gamesmaster@persuasion.technology
 
 # Optional: if true and email delivery is not configured, login page shows dev preview link.
 MAGIC_LINK_PREVIEW=true
+MAGIC_LINK_SECRET=2Qv9hJr6Kx1mNp4Tz8bCd3Fw7Ls5Ye0Au2Hi9Mn6Rx4VqPk1
 
 # Optional: localhost-only dev bypass login secret.
 # If RESEND_API_KEY is missing, local mode is enabled automatically on localhost
@@ -57,7 +58,8 @@ LLM_MODEL=gpt-4.1-mini
 - `games_by_slug/<slug>`: full game story config
 - `games_index/<slug>`: list/home metadata
 - `user_progress/<email>/<slug>`: transcript text + updated timestamp
-- `magic_tokens/<token>`: short-lived magic login token
+- `magic_tokens/<nonce>`: one-time magic login nonce (token carries HMAC
+  signature)
 - `sessions/<sessionId>`: login session record
 
 ## Notes
