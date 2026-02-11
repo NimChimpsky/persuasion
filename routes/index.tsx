@@ -38,10 +38,10 @@ export default define.page<typeof handler>(
       <main class="hero page-shell">
         <div class="container stack" style="max-width: 760px;">
           <section class="card form-card stack">
-            <h1>Sign in to enter story worlds</h1>
+            <h1>Persusasion</h1>
             <p class="muted">
-              Enter your email and we will send a magic login link. Once
-              clicked, you stay signed in.
+              A narrative game experience of secrets and lies ... and crypto
+              prizes
             </p>
             {data.sent
               ? (
@@ -63,7 +63,7 @@ export default define.page<typeof handler>(
                 />
               </label>
               <div class="action-row">
-                <button class="btn primary" type="submit">
+                <button class="btn ghost" type="submit">
                   Send sign-in link
                 </button>
               </div>
