@@ -14,7 +14,7 @@ app.use(staticFiles());
 app.use(define.middleware(async (ctx) => {
   const email = await getSessionEmail(ctx.req);
 
-  ctx.state.title = "Story Realms";
+  ctx.state.title = "Persuasion";
   ctx.state.userEmail = email;
   ctx.state.isAdmin = email ? isAdminEmail(email) : false;
 

@@ -47,7 +47,7 @@ export default define.page<typeof handler>(function GamePage({ data, state }) {
   const userEmail = state.userEmail;
   if (!userEmail) return null;
 
-  state.title = `Story Realms | ${data.title}`;
+  state.title = `Persuasion | ${data.title}`;
 
   return (
     <main class="page-shell">

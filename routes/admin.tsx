@@ -139,7 +139,7 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
   const userEmail = state.userEmail;
   if (!userEmail) return null;
 
-  state.title = "Story Realms | Admin";
+  state.title = "Persuasion | Admin";
 
   return (
     <main class="page-shell">

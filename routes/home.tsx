@@ -44,13 +44,13 @@ export default define.page<typeof handler>(function HomePage({ data, state }) {
     return null;
   }
 
-  state.title = "Story Realms | Home";
+  state.title = "Persuasion | Home";
 
   return (
     <main class="page-shell">
       <div class="container stack">
         <SiteHeader
-          title="Story Realms"
+          title="Persuasion"
           userEmail={userEmail}
           isAdmin={state.isAdmin}
         />
