@@ -32,12 +32,12 @@ export const handler = define.handlers<LandingData>({
 
 export default define.page<typeof handler>(
   function LandingPage({ data, state }) {
-    state.title = "Persusasion | Sign in";
+    state.title = "PERSUASION | Sign in";
 
     return (
       <main class="hero page-shell">
         <div class="container landing-hero stack" style="max-width: 760px;">
-          <h1>Persusasion</h1>
+          <h1>PERSUASION</h1>
           <p class="muted">
             A narrative game experience of secrets and lies ... and crypto
             prizes
@@ -57,18 +57,30 @@ export default define.page<typeof handler>(
             action="/auth/request-link"
             class="form-grid landing-login-form"
           >
-            <label>
-              Email address
-              <input
-                type="email"
-                name="email"
-                required
-                autocomplete="email"
-                placeholder="you@example.com"
-              />
-            </label>
+            <input
+              type="email"
+              name="email"
+              required
+              autocomplete="email"
+              placeholder="you@example.com"
+              aria-label="Email address"
+            />
             <div class="action-row center">
-              <button class="btn ghost" type="submit">
+              <button class="btn ghost landing-cta-btn" type="submit">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="5" width="18" height="14" rx="2" ry="2" />
+                  <path d="M3 7l9 6 9-6" />
+                </svg>
                 Send sign-in link
               </button>
             </div>

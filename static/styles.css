@@ -90,6 +90,12 @@ main {
   width: min(560px, 100%);
 }
 
+.landing-cta-btn {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
 .landing-notice {
   width: min(560px, 100%);
   background: transparent;
