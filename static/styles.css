@@ -91,10 +91,28 @@ main {
   margin-top: 28px;
 }
 
+.landing-divider {
+  width: min(280px, 100%);
+  border: 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.16);
+  margin-top: 10px;
+}
+
+.landing-login-form input,
+.landing-login-form .landing-cta-btn {
+  min-height: 46px;
+}
+
+.landing-login-form .action-row {
+  width: 100%;
+}
+
 .landing-cta-btn {
   font-family: var(--font-sans);
   font-weight: 600;
   letter-spacing: 0;
+  width: 100%;
+  justify-content: center;
 }
 
 .landing-notice {

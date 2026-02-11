@@ -39,8 +39,8 @@ export default define.page<typeof handler>(
         <div class="container landing-hero stack" style="max-width: 760px;">
           <h1>PERSUASION</h1>
           <p class="muted">
-            A narrative game experience of secrets and lies ... and crypto
-            prizes
+            An interactive character driven experience of secrets and lies ...
+            and crypto prizes
           </p>
           {data.sent
             ? (
@@ -52,6 +52,7 @@ export default define.page<typeof handler>(
           {data.error
             ? <p class="notice landing-notice bad">{data.error}</p>
             : null}
+          <hr class="landing-divider" aria-hidden="true" />
           <form
             method="POST"
             action="/auth/request-link"
