@@ -30,16 +30,16 @@ deno task dev
 # Required for admin access. CSV list.
 ADMIN_EMAILS=admin@example.com,another-admin@example.com
 
-# Optional email sending (Resend). If missing, magic links are logged to server output.
+# Optional email sending (Resend). If missing, localhost uses local dev mode.
 RESEND_API_KEY=
-EMAIL_FROM=Story Realms <no-reply@example.com>
+EMAIL_FROM=gamesmaster@persuasion.technology
 
 # Optional: if true and email delivery is not configured, login page shows dev preview link.
 MAGIC_LINK_PREVIEW=true
 
-# Optional: localhost-only dev bypass login.
-# When set, landing page shows a local "special dev link":
-# /auth/dev-login?secret=...&email=...
+# Optional: localhost-only dev bypass login secret.
+# If RESEND_API_KEY is missing, local mode is enabled automatically on localhost
+# and this secret is not required.
 LOCAL_DEV_AUTH_SECRET=replace-with-long-random-secret
 LOCAL_DEV_AUTH_EMAIL=dev@local.test
 
@@ -71,5 +71,6 @@ LLM_MODEL=gpt-4.1-mini
 - The UI styling imports the same `xllm` visual language (background/font/button
   system) across landing/admin/home/game pages.
 - Dev bypass login is only enabled on localhost (`localhost`, `127.0.0.1`,
-  `::1`) and only when `LOCAL_DEV_AUTH_SECRET` is set.
+  `::1`).
+- Missing `RESEND_API_KEY` automatically enables local dev mode on localhost.
 - Deno KV is mandatory for this app; there is no non-persistent fallback.

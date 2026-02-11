@@ -13,7 +13,7 @@ export const env = {
   llmApiKey: Deno.env.get("LLM_API_KEY") ?? "",
   llmModel: Deno.env.get("LLM_MODEL") ?? "gpt-4.1-mini",
   resendApiKey: Deno.env.get("RESEND_API_KEY") ?? "",
-  emailFrom: Deno.env.get("EMAIL_FROM") ?? "",
+  emailFrom: Deno.env.get("EMAIL_FROM") ?? "gamesmaster@persuasion.technology",
   magicLinkPreview: (Deno.env.get("MAGIC_LINK_PREVIEW") ?? "true") === "true",
   localDevAuthSecret: Deno.env.get("LOCAL_DEV_AUTH_SECRET") ?? "",
   localDevAuthEmail: Deno.env.get("LOCAL_DEV_AUTH_EMAIL") ?? "dev@local.test",

@@ -6,6 +6,15 @@ export function isLocalhostRequest(url: URL): boolean {
   return LOCAL_HOSTNAMES.has(url.hostname);
 }
 
+export function isLocalDevMode(): boolean {
+  return !env.resendApiKey;
+}
+
 export function canUseLocalDevAuth(url: URL): boolean {
-  return Boolean(env.localDevAuthSecret) && isLocalhostRequest(url);
+  return isLocalhostRequest(url) &&
+    (isLocalDevMode() || Boolean(env.localDevAuthSecret));
+}
+
+export function shouldRequireLocalDevSecret(): boolean {
+  return !isLocalDevMode();
 }
