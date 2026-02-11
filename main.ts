@@ -7,7 +7,7 @@ import { define, type State } from "./utils.ts";
 export const app = new App<State>();
 
 // Fail fast: this app requires persistent Deno KV.
-await getKv("main.startup");
+await getKv();
 
 app.use(staticFiles());
 

@@ -27,7 +27,7 @@ function randomToken(): string {
 }
 
 export async function createMagicToken(email: string): Promise<string> {
-  const kv = await getKv("auth.createMagicToken");
+  const kv = await getKv();
   const token = randomToken();
 
   await kv.set(
@@ -43,17 +43,19 @@ export async function createMagicToken(email: string): Promise<string> {
 }
 
 export async function consumeMagicToken(token: string): Promise<string | null> {
-  const kv = await getKv("auth.consumeMagicToken");
+  const kv = await getKv();
   const key = ["magic_tokens", token] as const;
   const entry = await kv.get<MagicTokenRecord>(key);
   if (!entry.value) return null;
 
-  await kv.delete(key);
+  const result = await kv.atomic().check(entry).delete(key).commit();
+  if (!result.ok) return null;
+
   return entry.value.email;
 }
 
 export async function createSession(email: string): Promise<string> {
-  const kv = await getKv("auth.createSession");
+  const kv = await getKv();
   const sessionId = randomToken();
 
   await kv.set(["sessions", sessionId], {
@@ -69,7 +71,7 @@ export async function getSessionEmail(req: Request): Promise<string | null> {
   const sessionId = cookies[SESSION_COOKIE];
   if (!sessionId) return null;
 
-  const kv = await getKv("auth.getSessionEmail");
+  const kv = await getKv();
   const entry = await kv.get<SessionRecord>(["sessions", sessionId]);
   return entry.value?.email ?? null;
 }
@@ -79,7 +81,7 @@ export async function destroySession(req: Request): Promise<void> {
   const sessionId = cookies[SESSION_COOKIE];
   if (!sessionId) return;
 
-  const kv = await getKv("auth.destroySession");
+  const kv = await getKv();
   await kv.delete(["sessions", sessionId]);
 }
 

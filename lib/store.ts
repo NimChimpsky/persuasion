@@ -6,13 +6,13 @@ import type {
 } from "../shared/types.ts";
 
 export async function getGameBySlug(slug: string): Promise<GameStory | null> {
-  const kv = await getKv("store.getGameBySlug");
+  const kv = await getKv();
   const entry = await kv.get<GameStory>(["games_by_slug", slug]);
   return entry.value;
 }
 
 export async function listGames(): Promise<GameIndexEntry[]> {
-  const kv = await getKv("store.listGames");
+  const kv = await getKv();
   const games: GameIndexEntry[] = [];
 
   for await (
@@ -27,12 +27,7 @@ export async function listGames(): Promise<GameIndexEntry[]> {
 }
 
 export async function createGame(story: GameStory): Promise<void> {
-  const kv = await getKv("store.createGame");
-  const existing = await kv.get<GameStory>(["games_by_slug", story.slug]);
-  if (existing.value) {
-    throw new Error("game_slug_exists");
-  }
-
+  const kv = await getKv();
   const index: GameIndexEntry = {
     slug: story.slug,
     title: story.title,
@@ -41,15 +36,22 @@ export async function createGame(story: GameStory): Promise<void> {
     updatedAt: story.updatedAt,
   };
 
-  await kv.set(["games_by_slug", story.slug], story);
-  await kv.set(["games_index", story.slug], index);
+  const result = await kv.atomic()
+    .check({ key: ["games_by_slug", story.slug], versionstamp: null })
+    .set(["games_by_slug", story.slug], story)
+    .set(["games_index", story.slug], index)
+    .commit();
+
+  if (!result.ok) {
+    throw new Error("game_slug_exists");
+  }
 }
 
 export async function getUserProgress(
   email: string,
   slug: string,
 ): Promise<UserProgress | null> {
-  const kv = await getKv("store.getUserProgress");
+  const kv = await getKv();
   const entry = await kv.get<UserProgress>(["user_progress", email, slug]);
   return entry.value;
 }
@@ -59,7 +61,7 @@ export async function saveUserProgress(
   slug: string,
   progress: UserProgress,
 ): Promise<void> {
-  const kv = await getKv("store.saveUserProgress");
+  const kv = await getKv();
   await kv.set(["user_progress", email, slug], progress);
 }
 
@@ -67,7 +69,7 @@ export async function getUserProgressMap(
   email: string,
   slugs: string[],
 ): Promise<Map<string, UserProgress>> {
-  const kv = await getKv("store.getUserProgressMap");
+  const kv = await getKv();
   const results = await Promise.all(
     slugs.map((slug) => kv.get<UserProgress>(["user_progress", email, slug])),
   );
