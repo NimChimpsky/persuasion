@@ -1,0 +1,256 @@
+/* Light theme overrides inspired by the provided screenshot */
+:root {
+  --bg-1: #f7f8fb;
+  --bg-2: #ffffff;
+  --border: #e6e8ef;
+  --muted: #667085;
+  --text: #0f172a;
+  --accent: #68e5ff;
+  --accent-2: #68e5ff;
+}
+
+html, body {
+  font-family: var(--font-sans);
+  color: var(--text);
+  background:
+    radial-gradient(
+      circle at 1px 1px,
+      rgba(2, 6, 23, 0.05) 1px,
+      transparent 1.6px
+    ) 0 0/12px 12px,
+    linear-gradient(180deg, #fafbff 0%, var(--bg-1) 60%, #f7f9fc 100%);
+}
+
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.06),
+    0 1px 3px rgba(16, 24, 40, 0.04);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    transform 120ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 200ms ease;
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.06),
+    0 1px 3px rgba(16, 24, 40, 0.04);
+}
+.btn:hover {
+  transform: translateY(-1px);
+  border-color: #cfd3db; /* slightly stronger than --border */
+  background-color: #fafafa;
+  box-shadow: 0 6px 16px rgba(16, 24, 40, 0.08);
+}
+.btn:active {
+  transform: translateY(0);
+  box-shadow: inset 0 2px 6px rgba(16, 24, 40, 0.10);
+}
+
+/* Primary: crisp, optimistic cyan with strong contrast and subtle elevation */
+.btn.primary {
+  background: linear-gradient(180deg, #6feaff 0%, #33d8ff 100%);
+  color: #0f172a;
+  border-color: #0f172a;
+  border-width: 1.5px;
+  box-shadow: 0 8px 20px rgba(104, 229, 255, 0.28);
+}
+.btn.primary:hover {
+  background: linear-gradient(180deg, #59e5ff 0%, #17d0ff 100%);
+  border-color: #0f172a;
+  color: #0f172a;
+  box-shadow: 0 10px 24px rgba(104, 229, 255, 0.32);
+}
+
+/* Ghost: quiet, minimal, harmonizes with card borders */
+.btn.ghost {
+  background: #fff;
+  color: #0f172a;
+  border-color: var(--border);
+}
+.btn.ghost:hover {
+  background: #f8fafc; /* slate-50 */
+  border-color: #d0d5dd; /* gray-300 */
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.06);
+}
+
+/* fine-tune focus and interaction states for accessibility */
+
+.btn:focus,
+.btn:focus-visible {
+  outline: 2px solid #68e5ff;
+  outline-offset: 2px;
+  border-color: #0f172a;
+}
+.btn.primary:focus,
+.btn.primary:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(104, 229, 255, 0.35),
+    0 8px 20px rgba(104, 229, 255, 0.28);
+}
+
+/* Primary active/pressed state */
+.btn.primary:active {
+  background: linear-gradient(180deg, #40dcff 0%, #12cafb 100%);
+  border-color: #0f172a;
+  color: #0f172a;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* Generic button focus ring while keeping black border */
+/* Disabled states */
+.btn:disabled,
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.btn.primary:disabled,
+.btn.primary[disabled],
+.btn.primary[aria-disabled="true"] {
+  background: linear-gradient(180deg, #bfefff 0%, #a6e8ff 100%);
+  border-color: #98a2b3; /* gray-400 */
+  color: #344054; /* gray-700 for legibility */
+}
+
+/* Ensure any plain <button> text is black */
+button {
+  color: #000;
+}
+
+.header .meta {
+  color: var(--muted);
+}
+.header .avatar {
+  border: 1px solid var(--border);
+}
+
+.message {
+  background: #fff;
+}
+.message.user {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+.message.assistant {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+}
+
+.composer {
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+.composer textarea {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.hero p {
+  color: var(--muted);
+}
+
+/* Light theme username row */
+.username-row {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.username-avatar {
+  border-color: var(--border);
+  background: #fff;
+}
+
+.username-avatar.placeholder {
+  background: #f8fafc;
+}
+
+.username-chip {
+  border-color: var(--border);
+  background: #fff;
+}
+
+.username-chip.filled {
+  background: #f1f5f9;
+}
+
+.username-chip.empty {
+  background: #fff;
+  border-style: dashed;
+}
+
+.username-chip.active {
+  border-color: #d0d5dd;
+  box-shadow: none;
+}
+
+.username-handle {
+  color: var(--text);
+}
+
+.reload-btn {
+  color: #667085;
+}
+
+.reload-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: var(--text);
+}
+
+.reload-btn:disabled {
+  color: #98a2b3;
+  background: transparent;
+}
+
+.username-slot .btn.icon,
+.reload-btn {
+  border-color: var(--border);
+}
+
+.username-slot .btn.icon:hover,
+.reload-btn:hover:not(:disabled) {
+  border-color: #d0d5dd;
+}
+
+.username-input {
+  background: #fff;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.username-input:focus {
+  background: #f0f9ff;
+  border-color: #d0d5dd;
+}
+
+.chat-panel {
+  background: transparent;
+}
+
+/* Send button tweaks: smaller, centered */
+.composer .send-btn {
+  min-width: auto;
+  padding: 8px 12px;
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}

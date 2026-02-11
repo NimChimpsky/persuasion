@@ -2,9 +2,9 @@
   "nodeModulesDir": "auto",
   "tasks": {
     "check": "deno fmt --check . && deno lint . && deno check",
-    "dev": "deno run -A --watch=static/,routes/ dev.ts",
-    "build": "deno run -A dev.ts build",
-    "start": "deno serve -A _fresh/server.js",
+    "dev": "deno run -A --unstable-kv --watch=static/,routes/ dev.ts",
+    "build": "deno run -A --unstable-kv dev.ts build",
+    "start": "deno serve -A --unstable-kv _fresh/server.js",
     "update": "deno run -A -r jsr:@fresh/update ."
   },
   "lint": {
@@ -28,7 +28,8 @@
       "dom",
       "dom.asynciterable",
       "dom.iterable",
-      "deno.ns"
+      "deno.ns",
+      "deno.unstable"
     ],
     "jsx": "precompile",
     "jsxImportSource": "preact",
