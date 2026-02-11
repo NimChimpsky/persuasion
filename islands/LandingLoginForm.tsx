@@ -134,17 +134,14 @@ export default function LandingLoginForm(props: LandingLoginFormProps) {
         </button>
       </div>
 
-      {message
-        ? (
-          <p
-            class={`notice landing-notice landing-form-message ${
-              status === "error" ? "bad" : "good"
-            }`}
-          >
-            {message}
-          </p>
-        )
-        : null}
+      <p
+        class={`landing-inline-feedback ${
+          status === "error" ? "is-error" : "is-success"
+        } ${message ? "is-visible" : ""}`}
+        aria-live="polite"
+      >
+        {message || "\u00A0"}
+      </p>
 
       {previewLink
         ? (
