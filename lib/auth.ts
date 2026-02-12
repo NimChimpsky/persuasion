@@ -7,6 +7,7 @@ import { env } from "./env.ts";
 import { getKv } from "./kv.ts";
 
 export const SESSION_COOKIE = "story_session";
+export const USER_BLOCKED_ERROR = "user_blocked";
 
 interface SessionRecord {
   email: string;
@@ -16,6 +17,12 @@ interface SessionRecord {
 interface MagicTokenRecord {
   email: string;
   createdAt: string;
+}
+
+export interface BlockedUserRecord {
+  email: string;
+  blockedAt: string;
+  blockedBy: string;
 }
 
 export function normalizeEmail(input: string): string {
@@ -137,11 +144,16 @@ export async function consumeMagicToken(token: string): Promise<string | null> {
 }
 
 export async function createSession(email: string): Promise<string> {
+  const normalizedEmail = normalizeEmail(email);
+  if (await isBlockedUser(normalizedEmail)) {
+    throw new Error(USER_BLOCKED_ERROR);
+  }
+
   const kv = await getKv();
   const sessionId = randomToken();
 
   const record = {
-    email,
+    email: normalizedEmail,
     createdAt: new Date().toISOString(),
   } as SessionRecord;
 
@@ -160,7 +172,15 @@ export async function getSessionEmail(req: Request): Promise<string | null> {
 
   const kv = await getKv();
   const entry = await kv.get<SessionRecord>(["sessions", sessionId]);
-  return entry.value?.email ?? null;
+  if (!entry.value) return null;
+
+  if (await isBlockedUser(entry.value.email)) {
+    await kv.delete(["sessions", sessionId]);
+    await kv.delete(["sessions_by_user", entry.value.email, sessionId]);
+    return null;
+  }
+
+  return entry.value.email;
 }
 
 export async function destroySession(req: Request): Promise<void> {
@@ -178,7 +198,8 @@ export async function destroySession(req: Request): Promise<void> {
 
 export async function destroyAllSessionsForEmail(email: string): Promise<void> {
   const kv = await getKv();
-  const prefix: Deno.KvKey = ["sessions_by_user", email];
+  const normalizedEmail = normalizeEmail(email);
+  const prefix: Deno.KvKey = ["sessions_by_user", normalizedEmail];
   const sessionIds: string[] = [];
 
   for await (const entry of kv.list<{ createdAt: string }>({ prefix })) {
@@ -191,9 +212,47 @@ export async function destroyAllSessionsForEmail(email: string): Promise<void> {
   await Promise.all(
     sessionIds.map(async (sessionId) => {
       await kv.delete(["sessions", sessionId]);
-      await kv.delete(["sessions_by_user", email, sessionId]);
+      await kv.delete(["sessions_by_user", normalizedEmail, sessionId]);
     }),
   );
+}
+
+export async function isBlockedUser(email: string): Promise<boolean> {
+  const kv = await getKv();
+  const normalizedEmail = normalizeEmail(email);
+  const entry = await kv.get<BlockedUserRecord>([
+    "blocked_users",
+    normalizedEmail,
+  ]);
+  return Boolean(entry.value);
+}
+
+export async function blockUser(
+  email: string,
+  blockedBy: string,
+): Promise<void> {
+  const kv = await getKv();
+  const normalizedEmail = normalizeEmail(email);
+  await kv.set(["blocked_users", normalizedEmail], {
+    email: normalizedEmail,
+    blockedAt: new Date().toISOString(),
+    blockedBy: normalizeEmail(blockedBy),
+  } as BlockedUserRecord);
+}
+
+export async function listBlockedUsers(): Promise<BlockedUserRecord[]> {
+  const kv = await getKv();
+  const blocked: BlockedUserRecord[] = [];
+
+  for await (
+    const entry of kv.list<BlockedUserRecord>({ prefix: ["blocked_users"] })
+  ) {
+    if (entry.value) {
+      blocked.push(entry.value);
+    }
+  }
+
+  return blocked.sort((a, b) => b.blockedAt.localeCompare(a.blockedAt));
 }
 
 export function setSessionCookie(

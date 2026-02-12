@@ -1,28 +1,23 @@
 interface SiteHeaderProps {
-  title: string;
   userEmail: string;
   isAdmin: boolean;
-  showHomeLink?: boolean;
-  showLogoutAllLink?: boolean;
 }
 
 export default function SiteHeader(props: SiteHeaderProps) {
-  const showHomeLink = props.showHomeLink ?? true;
-  const showLogoutAllLink = props.showLogoutAllLink ?? false;
-
   return (
     <header class="header card site-header">
-      <div>
-        <h1 class="display page-title">{props.title}</h1>
-        <p class="muted">{props.userEmail}</p>
+      <div class="header-top-row">
+        <a class="header-brand" href="/home">Persuasion</a>
+        <div class="header-spacer" />
+        <span class="header-email">{props.userEmail}</span>
+        <a class="btn ghost" href="/auth/logout-all">log out all</a>
+        <a class="btn ghost" href="/auth/logout">log out</a>
       </div>
-      <nav class="nav-row">
-        {showHomeLink ? <a class="btn ghost" href="/home">Home</a> : null}
-        {props.isAdmin ? <a class="btn primary" href="/admin">Admin</a> : null}
-        {showLogoutAllLink
-          ? <a class="btn ghost" href="/auth/logout-all">Log out all devices</a>
-          : null}
-        <a class="btn ghost" href="/auth/logout">Logout</a>
+      <nav class="header-subnav">
+        {props.isAdmin ? <a class="btn primary" href="/admin">admin</a> : null}
+        <a class="btn ghost" href="/publish">publish</a>
+        <a class="btn ghost" href="/home">active games</a>
+        <a class="btn ghost" href="/find">find</a>
       </nav>
     </header>
   );

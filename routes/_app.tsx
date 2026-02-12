@@ -2,8 +2,7 @@ import SiteHeader from "../components/SiteHeader.tsx";
 import { define } from "../utils.ts";
 import { Partial } from "fresh/runtime";
 
-export default define.page(function App({ Component, state, url }) {
-  const pathname = url.pathname;
+export default define.page(function App({ Component, state }) {
   const isLoggedIn = Boolean(state.userEmail);
 
   return (
@@ -24,11 +23,8 @@ export default define.page(function App({ Component, state, url }) {
               <div class="page-shell" style="padding-bottom: 0;">
                 <div class="container">
                   <SiteHeader
-                    title="Persuasion"
                     userEmail={state.userEmail}
                     isAdmin={state.isAdmin}
-                    showHomeLink={pathname !== "/home"}
-                    showLogoutAllLink
                   />
                 </div>
               </div>

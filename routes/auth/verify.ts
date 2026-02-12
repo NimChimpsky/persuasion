@@ -2,6 +2,7 @@ import {
   consumeMagicToken,
   createSession,
   setSessionCookie,
+  USER_BLOCKED_ERROR,
 } from "../../lib/auth.ts";
 import { define } from "../../utils.ts";
 
@@ -24,7 +25,21 @@ export const handler = define.handlers({
       );
     }
 
-    const sessionId = await createSession(email);
+    let sessionId = "";
+    try {
+      sessionId = await createSession(email);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === USER_BLOCKED_ERROR
+      ) {
+        return Response.redirect(
+          new URL("/?error=This+account+is+blocked", ctx.req.url),
+          303,
+        );
+      }
+      throw error;
+    }
     const headers = new Headers();
     setSessionCookie(headers, sessionId, url.protocol === "https:");
     headers.set("location", "/home");

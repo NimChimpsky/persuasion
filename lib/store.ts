@@ -47,6 +47,20 @@ export async function createGame(story: GameStory): Promise<void> {
   }
 }
 
+export async function deleteGameBySlug(slug: string): Promise<boolean> {
+  const kv = await getKv();
+  const existing = await kv.get<GameStory>(["games_by_slug", slug]);
+  if (!existing.value) return false;
+
+  const result = await kv.atomic()
+    .check(existing)
+    .delete(["games_by_slug", slug])
+    .delete(["games_index", slug])
+    .commit();
+
+  return result.ok;
+}
+
 export async function getUserProgress(
   email: string,
   slug: string,

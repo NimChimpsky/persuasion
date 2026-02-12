@@ -6,6 +6,10 @@ interface CharacterDraft {
   prompt: string;
 }
 
+interface AdminGameFormProps {
+  action?: string;
+}
+
 function createDraft(index: number): CharacterDraft {
   return {
     key: `char-${index}-${crypto.randomUUID()}`,
@@ -14,7 +18,7 @@ function createDraft(index: number): CharacterDraft {
   };
 }
 
-export default function AdminGameForm() {
+export default function AdminGameForm(props: AdminGameFormProps) {
   const [title, setTitle] = useState("");
   const [plotPointsText, setPlotPointsText] = useState("");
   const [narratorPrompt, setNarratorPrompt] = useState("");
@@ -55,7 +59,7 @@ export default function AdminGameForm() {
   return (
     <form
       method="POST"
-      action="/admin"
+      action={props.action ?? "/publish"}
       class="stack card"
       style="padding: 18px;"
     >
