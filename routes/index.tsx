@@ -7,7 +7,7 @@ import { define } from "../utils.ts";
 interface LandingData {
   sent: boolean;
   error: string;
-  previewLink: string;
+  emailSignInEnabled: boolean;
   localDevLink: string;
 }
 
@@ -20,12 +20,10 @@ export const handler = define.handlers<LandingData>({
     const url = new URL(ctx.req.url);
     const sent = url.searchParams.get("sent") === "1";
     const error = url.searchParams.get("error") ?? "";
-    const previewLink = url.searchParams.get("preview") ?? "";
-    const localDevLink = canUseLocalDevAuth(url)
-      ? `/auth/dev-login?email=${encodeURIComponent(env.localDevAuthEmail)}`
-      : "";
+    const emailSignInEnabled = Boolean(env.resendApiKey);
+    const localDevLink = canUseLocalDevAuth(url) ? "/auth/dev-login" : "";
 
-    return page({ sent, error, previewLink, localDevLink });
+    return page({ sent, error, emailSignInEnabled, localDevLink });
   },
 });
 
@@ -51,15 +49,8 @@ export default define.page<typeof handler>(
           {data.error
             ? <p class="notice landing-notice bad">{data.error}</p>
             : null}
-          <LandingLoginForm action="/auth/request-link" />
-          {data.previewLink
-            ? (
-              <p class="notice landing-notice">
-                Dev preview link:
-                <br />
-                <a href={data.previewLink}>{data.previewLink}</a>
-              </p>
-            )
+          {data.emailSignInEnabled
+            ? <LandingLoginForm action="/auth/request-link" />
             : null}
           {data.localDevLink
             ? (
@@ -67,6 +58,13 @@ export default define.page<typeof handler>(
                 Local developer login:
                 <br />
                 <a href={data.localDevLink}>{data.localDevLink}</a>
+              </p>
+            )
+            : null}
+          {!data.emailSignInEnabled && !data.localDevLink
+            ? (
+              <p class="notice landing-notice">
+                Sign-in is disabled in this environment.
               </p>
             )
             : null}

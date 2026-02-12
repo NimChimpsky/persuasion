@@ -15,9 +15,7 @@ export const handler = define.handlers({
       return new Response("Not Found", { status: 404 });
     }
 
-    const email = normalizeEmail(
-      url.searchParams.get("email") ?? env.localDevAuthEmail,
-    );
+    const email = normalizeEmail(env.localDevAuthEmail);
     if (!email || !email.includes("@")) {
       return Response.redirect(
         new URL("/?error=Invalid+dev+login+email", url),

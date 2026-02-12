@@ -23,6 +23,25 @@ export const handler = define.handlers({
   async POST(ctx) {
     const expectsJson = isJsonRequest(ctx.req);
     try {
+      if (!env.resendApiKey) {
+        if (expectsJson) {
+          return json(
+            {
+              ok: false,
+              error: "Email sign-in is disabled in this environment.",
+            },
+            503,
+          );
+        }
+        return Response.redirect(
+          new URL(
+            "/?error=Email+sign-in+is+disabled+in+this+environment",
+            ctx.req.url,
+          ),
+          303,
+        );
+      }
+
       let emailRaw = "";
       if (
         (ctx.req.headers.get("content-type") ?? "").includes(
@@ -56,24 +75,20 @@ export const handler = define.handlers({
       verifyUrl.searchParams.set("token", token);
 
       const result = await sendMagicLinkEmail(email, verifyUrl.toString());
-      const previewLink = !result.delivered && env.magicLinkPreview
-        ? verifyUrl.toString()
-        : "";
 
-      if (!result.delivered && !env.magicLinkPreview) {
+      if (!result.delivered) {
         if (expectsJson) {
           return json(
             {
               ok: false,
-              error:
-                "Email delivery is not configured. Set RESEND_API_KEY and EMAIL_FROM.",
+              error: "Unable to deliver sign-in email right now.",
             },
-            500,
+            502,
           );
         }
         return Response.redirect(
           new URL(
-            "/?error=Email+delivery+is+not+configured.+Set+RESEND_API_KEY+and+EMAIL_FROM",
+            "/?error=Unable+to+deliver+sign-in+email+right+now",
             ctx.req.url,
           ),
           303,
@@ -84,16 +99,11 @@ export const handler = define.handlers({
         return json({
           ok: true,
           message: "we sent a link to your inbox",
-          previewLink,
         });
       }
 
       const redirectUrl = new URL("/", ctx.req.url);
       redirectUrl.searchParams.set("sent", "1");
-
-      if (previewLink) {
-        redirectUrl.searchParams.set("preview", previewLink);
-      }
 
       return Response.redirect(redirectUrl, 303);
     } catch (error) {

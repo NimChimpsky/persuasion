@@ -31,12 +31,11 @@ deno task dev
 ADMIN_EMAILS=admin@example.com,another-admin@example.com
 APP_BASE_URL=https://persuasion.technology
 
-# Optional email sending (Resend). If missing, localhost uses local dev mode.
+# Email sending (Resend). Required for magic-link sign-in.
+# If missing, magic-link sign-in is disabled.
 RESEND_API_KEY=
 EMAIL_FROM=gamesmaster@persuasion.technology
 
-# Optional: if true and email delivery is not configured, login page shows dev preview link.
-MAGIC_LINK_PREVIEW=true
 MAGIC_LINK_SECRET=2Qv9hJr6Kx1mNp4Tz8bCd3Fw7Ls5Ye0Au2Hi9Mn6Rx4VqPk1
 
 # Optional: default email used by localhost-only dev login.
@@ -73,5 +72,6 @@ LLM_MODEL=gpt-4.1-mini
   system) across landing/admin/home/game pages.
 - Dev bypass login is only enabled on localhost (`localhost`, `127.0.0.1`,
   `::1`).
-- Missing `RESEND_API_KEY` automatically enables local dev mode on localhost.
+- Missing `RESEND_API_KEY` disables magic-link login and enables local dev login
+  on localhost.
 - Deno KV is mandatory for this app; there is no non-persistent fallback.

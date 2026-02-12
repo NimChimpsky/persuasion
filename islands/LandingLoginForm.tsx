@@ -8,7 +8,6 @@ interface RequestLinkResponse {
   ok?: boolean;
   message?: string;
   error?: string;
-  previewLink?: string;
 }
 
 const BASIC_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -19,7 +18,6 @@ export default function LandingLoginForm(props: LandingLoginFormProps) {
     "idle" | "sending" | "success" | "error"
   >("idle");
   const [message, setMessage] = useState("");
-  const [previewLink, setPreviewLink] = useState("");
 
   const onSubmit = async (event: Event) => {
     event.preventDefault();
@@ -31,13 +29,11 @@ export default function LandingLoginForm(props: LandingLoginFormProps) {
     if (!BASIC_EMAIL_REGEX.test(normalizedEmail)) {
       setStatus("error");
       setMessage("Please enter a valid email address.");
-      setPreviewLink("");
       return;
     }
 
     setStatus("sending");
     setMessage("");
-    setPreviewLink("");
 
     try {
       const response = await fetch(props.action, {
@@ -65,7 +61,6 @@ export default function LandingLoginForm(props: LandingLoginFormProps) {
 
       setStatus("success");
       setMessage(payload.message || "we sent a link to your inbox");
-      setPreviewLink(payload.previewLink ?? "");
       setEmail("");
     } catch (error) {
       setStatus("error");
@@ -140,16 +135,6 @@ export default function LandingLoginForm(props: LandingLoginFormProps) {
       >
         {message || "\u00A0"}
       </p>
-
-      {previewLink
-        ? (
-          <p class="notice landing-notice landing-form-message">
-            Dev preview link:
-            <br />
-            <a href={previewLink}>{previewLink}</a>
-          </p>
-        )
-        : null}
     </form>
   );
 }
