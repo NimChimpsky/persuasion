@@ -7,7 +7,7 @@ export default function SiteHeader(props: SiteHeaderProps) {
   return (
     <header class="header card site-header">
       <div class="header-top-row">
-        <a class="header-brand" href="/home">Persuasion</a>
+        <a class="header-brand" href="/home">PERSUASION</a>
         <div class="header-spacer" />
         <span class="header-email">{props.userEmail}</span>
         <a class="btn ghost" href="/auth/logout-all">Log out all devices</a>
