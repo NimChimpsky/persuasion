@@ -47,6 +47,10 @@ main {
   margin: 0 auto;
 }
 
+.header-shell {
+  padding: 18px 18px 0;
+}
+
 .site-header {
   margin-bottom: 16px;
   padding: 14px;
@@ -428,6 +432,10 @@ select:focus {
   .header-subnav {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .header-shell {
+    padding: 12px 12px 0;
   }
 
   .page-shell {

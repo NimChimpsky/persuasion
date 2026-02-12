@@ -18,23 +18,19 @@ export default define.page(function App({ Component, state }) {
       </head>
       <body f-client-nav>
         <Partial name="app-shell">
-          <Partial name="app-header">
-            {isLoggedIn && state.userEmail
-              ? (
-                <div class="page-shell" style="padding-bottom: 0;">
-                  <div class="container">
-                    <SiteHeader
-                      userEmail={state.userEmail}
-                      isAdmin={state.isAdmin}
-                    />
-                  </div>
+          {isLoggedIn && state.userEmail
+            ? (
+              <div class="header-shell">
+                <div class="container">
+                  <SiteHeader
+                    userEmail={state.userEmail}
+                    isAdmin={state.isAdmin}
+                  />
                 </div>
-              )
-              : null}
-          </Partial>
-          <Partial name="app-content">
-            <Component />
-          </Partial>
+              </div>
+            )
+            : null}
+          <Component />
         </Partial>
       </body>
     </html>
