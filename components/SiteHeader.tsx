@@ -18,7 +18,7 @@ export default function SiteHeader(props: SiteHeaderProps) {
       </div>
       <nav class="nav-row">
         {showHomeLink ? <a class="btn ghost" href="/home">Home</a> : null}
-        {props.isAdmin ? <a class="btn ghost" href="/admin">Admin</a> : null}
+        {props.isAdmin ? <a class="btn primary" href="/admin">Admin</a> : null}
         {showLogoutAllLink
           ? <a class="btn ghost" href="/auth/logout-all">Log out all devices</a>
           : null}
