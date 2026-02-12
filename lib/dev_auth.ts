@@ -11,10 +11,5 @@ export function isLocalDevMode(): boolean {
 }
 
 export function canUseLocalDevAuth(url: URL): boolean {
-  return isLocalhostRequest(url) &&
-    (isLocalDevMode() || Boolean(env.localDevAuthSecret));
-}
-
-export function shouldRequireLocalDevSecret(): boolean {
-  return !isLocalDevMode();
+  return isLocalhostRequest(url) && isLocalDevMode();
 }

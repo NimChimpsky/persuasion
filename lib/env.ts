@@ -8,6 +8,7 @@ function parseCsvSet(input: string | undefined): Set<string> {
 }
 
 export const env = {
+  appBaseUrl: Deno.env.get("APP_BASE_URL") ?? "https://persuasion.technology",
   adminEmails: parseCsvSet(Deno.env.get("ADMIN_EMAILS")),
   llmBaseUrl: Deno.env.get("LLM_BASE_URL") ?? "https://api.openai.com/v1",
   llmApiKey: Deno.env.get("LLM_API_KEY") ?? "",
@@ -17,7 +18,6 @@ export const env = {
   magicLinkSecret: Deno.env.get("MAGIC_LINK_SECRET") ??
     "2Qv9hJr6Kx1mNp4Tz8bCd3Fw7Ls5Ye0Au2Hi9Mn6Rx4VqPk1",
   magicLinkPreview: (Deno.env.get("MAGIC_LINK_PREVIEW") ?? "true") === "true",
-  localDevAuthSecret: Deno.env.get("LOCAL_DEV_AUTH_SECRET") ?? "",
   localDevAuthEmail: Deno.env.get("LOCAL_DEV_AUTH_EMAIL") ?? "dev@local.test",
 };
 

@@ -1,6 +1,6 @@
 import { page } from "fresh";
 import LandingLoginForm from "../islands/LandingLoginForm.tsx";
-import { canUseLocalDevAuth, isLocalDevMode } from "../lib/dev_auth.ts";
+import { canUseLocalDevAuth } from "../lib/dev_auth.ts";
 import { env } from "../lib/env.ts";
 import { define } from "../utils.ts";
 
@@ -22,11 +22,7 @@ export const handler = define.handlers<LandingData>({
     const error = url.searchParams.get("error") ?? "";
     const previewLink = url.searchParams.get("preview") ?? "";
     const localDevLink = canUseLocalDevAuth(url)
-      ? isLocalDevMode()
-        ? `/auth/dev-login?email=${encodeURIComponent(env.localDevAuthEmail)}`
-        : `/auth/dev-login?secret=${
-          encodeURIComponent(env.localDevAuthSecret)
-        }&email=${encodeURIComponent(env.localDevAuthEmail)}`
+      ? `/auth/dev-login?email=${encodeURIComponent(env.localDevAuthEmail)}`
       : "";
 
     return page({ sent, error, previewLink, localDevLink });

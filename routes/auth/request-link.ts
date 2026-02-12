@@ -52,7 +52,7 @@ export const handler = define.handlers({
       }
 
       const token = await createMagicToken(email);
-      const verifyUrl = new URL("/auth/verify", ctx.req.url);
+      const verifyUrl = new URL("/auth/verify", env.appBaseUrl);
       verifyUrl.searchParams.set("token", token);
 
       const result = await sendMagicLinkEmail(email, verifyUrl.toString());

@@ -29,6 +29,7 @@ deno task dev
 ```bash
 # Required for admin access. CSV list.
 ADMIN_EMAILS=admin@example.com,another-admin@example.com
+APP_BASE_URL=https://persuasion.technology
 
 # Optional email sending (Resend). If missing, localhost uses local dev mode.
 RESEND_API_KEY=
@@ -38,10 +39,8 @@ EMAIL_FROM=gamesmaster@persuasion.technology
 MAGIC_LINK_PREVIEW=true
 MAGIC_LINK_SECRET=2Qv9hJr6Kx1mNp4Tz8bCd3Fw7Ls5Ye0Au2Hi9Mn6Rx4VqPk1
 
-# Optional: localhost-only dev bypass login secret.
-# If RESEND_API_KEY is missing, local mode is enabled automatically on localhost
-# and this secret is not required.
-LOCAL_DEV_AUTH_SECRET=replace-with-long-random-secret
+# Optional: default email used by localhost-only dev login.
+# Local dev login exists only when RESEND_API_KEY is missing.
 LOCAL_DEV_AUTH_EMAIL=dev@local.test
 
 # Optional: enable AI character responses (OpenAI-compatible providers)
