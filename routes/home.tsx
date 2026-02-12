@@ -1,5 +1,4 @@
 import { page } from "fresh";
-import SiteHeader from "../components/SiteHeader.tsx";
 import { getUserProgressMap, listGames } from "../lib/store.ts";
 import { define } from "../utils.ts";
 
@@ -49,14 +48,6 @@ export default define.page<typeof handler>(function HomePage({ data, state }) {
   return (
     <main class="page-shell">
       <div class="container stack">
-        <SiteHeader
-          title="Persuasion"
-          userEmail={userEmail}
-          isAdmin={state.isAdmin}
-          showHomeLink={false}
-          showLogoutAllLink
-        />
-
         <section class="stack">
           <h2 class="display">Active Games</h2>
           {data.games.length === 0

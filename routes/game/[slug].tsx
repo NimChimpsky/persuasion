@@ -1,5 +1,4 @@
 import { page } from "fresh";
-import SiteHeader from "../../components/SiteHeader.tsx";
 import GameBoard from "../../islands/GameBoard.tsx";
 import { getGameBySlug, getUserProgress } from "../../lib/store.ts";
 import { buildSidePanes } from "../../shared/game_ui.ts";
@@ -52,12 +51,6 @@ export default define.page<typeof handler>(function GamePage({ data, state }) {
   return (
     <main class="page-shell">
       <div class="container stack">
-        <SiteHeader
-          title={data.title}
-          userEmail={userEmail}
-          isAdmin={state.isAdmin}
-        />
-
         <GameBoard
           slug={data.slug}
           characters={data.characters}

@@ -1,5 +1,4 @@
 import { page } from "fresh";
-import SiteHeader from "../components/SiteHeader.tsx";
 import AdminGameForm from "../islands/AdminGameForm.tsx";
 import { ensureUniqueIds, slugify } from "../lib/slug.ts";
 import { createGame, getGameBySlug, listGames } from "../lib/store.ts";
@@ -144,12 +143,6 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
   return (
     <main class="page-shell">
       <div class="container stack">
-        <SiteHeader
-          title="Admin Studio"
-          userEmail={userEmail}
-          isAdmin={state.isAdmin}
-        />
-
         {data.createdSlug
           ? (
             <p class="notice good">
