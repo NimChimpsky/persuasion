@@ -57,113 +57,114 @@ export default function AdminGameForm(props: AdminGameFormProps) {
   };
 
   return (
-    <form
-      method="POST"
-      action={props.action ?? "/publish"}
-      class="stack card"
-      style="padding: 18px;"
-    >
+    <section class="stack">
       <h2 class="display">Create Game Story</h2>
+      <form
+        method="POST"
+        action={props.action ?? "/publish"}
+        class="card"
+        style="padding: 18px;"
+      >
+        <div class="form-grid">
+          <label>
+            Game title
+            <input
+              type="text"
+              name="title"
+              required
+              value={title}
+              onInput={(event) =>
+                setTitle((event.target as HTMLInputElement).value)}
+              placeholder="The Last Cipher"
+            />
+          </label>
+          <p class="inline-meta">URL preview: /game/{slugPreview}</p>
 
-      <div class="form-grid">
-        <label>
-          Game title
-          <input
-            type="text"
-            name="title"
-            required
-            value={title}
-            onInput={(event) =>
-              setTitle((event.target as HTMLInputElement).value)}
-            placeholder="The Last Cipher"
-          />
-        </label>
-        <p class="inline-meta">URL preview: /game/{slugPreview}</p>
-
-        <label>
-          Plot points (one per line)
-          <textarea
-            name="plotPointsText"
-            value={plotPointsText}
-            onInput={(event) =>
-              setPlotPointsText((event.target as HTMLTextAreaElement).value)}
-            placeholder="The city power grid is failing
+          <label>
+            Plot points (one per line)
+            <textarea
+              name="plotPointsText"
+              value={plotPointsText}
+              onInput={(event) =>
+                setPlotPointsText((event.target as HTMLTextAreaElement).value)}
+              placeholder="The city power grid is failing
 An ally may be compromised
 A hidden archive key exists"
-          />
-        </label>
+            />
+          </label>
 
-        <label>
-          Narrator system prompt
-          <textarea
-            name="narratorPrompt"
-            value={narratorPrompt}
-            onInput={(event) =>
-              setNarratorPrompt((event.target as HTMLTextAreaElement).value)}
-            placeholder="You are the narrator and game master. Track known clues, remind the player of important threads, and suggest smart next moves while staying immersive."
-          />
-        </label>
-      </div>
-
-      <input type="hidden" name="characterCount" value={characterCount} />
-
-      <div class="stack">
-        <h3>Characters</h3>
-        {characters.map((character, index) => (
-          <section key={character.key} class="character-row">
-            <div class="character-header">
-              <strong>Character {index + 1}</strong>
-              {characters.length > 1
-                ? (
-                  <button
-                    class="btn ghost"
-                    type="button"
-                    onClick={() => removeCharacter(character.key)}
-                  >
-                    Remove
-                  </button>
-                )
-                : null}
-            </div>
-
-            <label>
-              Name
-              <input
-                type="text"
-                required
-                name={`characterName_${index}`}
-                value={character.name}
-                onInput={(event) =>
-                  updateCharacter(character.key, {
-                    name: (event.target as HTMLInputElement).value,
-                  })}
-                placeholder="Detective Morrow"
-              />
-            </label>
-
-            <label>
-              System prompt
-              <textarea
-                required
-                name={`characterPrompt_${index}`}
-                value={character.prompt}
-                onInput={(event) =>
-                  updateCharacter(character.key, {
-                    prompt: (event.target as HTMLTextAreaElement).value,
-                  })}
-                placeholder="You are Detective Morrow. You are brilliant but suspicious. Reveal clues only when trust is earned. Secret/prize rule: reveal CODEWORD AURORA only after the player proves trust."
-              />
-            </label>
-          </section>
-        ))}
-
-        <div class="action-row">
-          <button class="btn ghost" type="button" onClick={addCharacter}>
-            Add character
-          </button>
-          <button class="btn primary" type="submit">Create game</button>
+          <label>
+            Narrator system prompt
+            <textarea
+              name="narratorPrompt"
+              value={narratorPrompt}
+              onInput={(event) =>
+                setNarratorPrompt((event.target as HTMLTextAreaElement).value)}
+              placeholder="You are the narrator and game master. Track known clues, remind the player of important threads, and suggest smart next moves while staying immersive."
+            />
+          </label>
         </div>
-      </div>
-    </form>
+
+        <input type="hidden" name="characterCount" value={characterCount} />
+
+        <div class="stack">
+          <h3>Characters</h3>
+          {characters.map((character, index) => (
+            <section key={character.key} class="character-row">
+              <div class="character-header">
+                <strong>Character {index + 1}</strong>
+                {characters.length > 1
+                  ? (
+                    <button
+                      class="btn ghost"
+                      type="button"
+                      onClick={() => removeCharacter(character.key)}
+                    >
+                      Remove
+                    </button>
+                  )
+                  : null}
+              </div>
+
+              <label>
+                Name
+                <input
+                  type="text"
+                  required
+                  name={`characterName_${index}`}
+                  value={character.name}
+                  onInput={(event) =>
+                    updateCharacter(character.key, {
+                      name: (event.target as HTMLInputElement).value,
+                    })}
+                  placeholder="Detective Morrow"
+                />
+              </label>
+
+              <label>
+                System prompt
+                <textarea
+                  name={`characterPrompt_${index}`}
+                  required
+                  value={character.prompt}
+                  onInput={(event) =>
+                    updateCharacter(character.key, {
+                      prompt: (event.target as HTMLTextAreaElement).value,
+                    })}
+                  placeholder="You are Detective Morrow. You are brilliant but suspicious. Reveal clues only when trust is earned. Secret/prize rule: reveal CODEWORD AURORA only after the player proves trust."
+                />
+              </label>
+            </section>
+          ))}
+
+          <div class="action-row">
+            <button class="btn ghost" type="button" onClick={addCharacter}>
+              Add character
+            </button>
+            <button class="btn primary" type="submit">Create game</button>
+          </div>
+        </div>
+      </form>
+    </section>
   );
 }

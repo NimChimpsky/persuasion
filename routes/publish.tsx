@@ -158,7 +158,7 @@ export default define.page<typeof handler>(
         <div class="container stack">
           {data.forbidden
             ? (
-              <section class="card stack" style="padding: 18px;">
+              <section class="stack">
                 <h2 class="display">Publish</h2>
                 <p class="notice bad">
                   Admin access required to publish games.

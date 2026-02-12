@@ -99,7 +99,7 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
       <div class="container stack">
         {data.forbidden
           ? (
-            <section class="card stack" style="padding: 18px;">
+            <section class="stack">
               <h2 class="display">Admin</h2>
               <p class="notice bad">
                 Admin access required.
@@ -113,9 +113,9 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
 
         {!data.forbidden
           ? (
-            <section class="card stack" style="padding: 16px;">
+            <section class="stack">
               <h2 class="display">Delete Game</h2>
-              <form method="POST" action="/admin" class="form-grid">
+              <form method="POST" action="/admin" class="form-grid card" style="padding: 16px;">
                 <input type="hidden" name="action" value="delete_game" />
                 <label>
                   Game slug
