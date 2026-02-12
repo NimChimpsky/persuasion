@@ -216,8 +216,8 @@ textarea {
 input:focus,
 textarea:focus,
 select:focus {
-  outline: 2px solid var(--accent-2);
-  outline-offset: 1px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .action-row {
@@ -310,14 +310,14 @@ select:focus {
 
 .message.user {
   align-self: flex-end;
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: #fff7ed;
+  border-color: #fed7aa;
 }
 
 .message.character {
   align-self: flex-start;
-  background: #eef2ff;
-  border-color: #c7d2fe;
+  background: #faf5ff;
+  border-color: #e9d5ff;
 }
 
 .message-meta {
@@ -353,7 +353,7 @@ select:focus {
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 8px 30px rgba(68, 64, 60, 0.1);
   max-height: 180px;
   overflow: auto;
   z-index: 20;
@@ -371,7 +371,7 @@ select:focus {
 
 .mention-item:hover,
 .mention-item.active {
-  background: #f1f5f9;
+  background: #fafaf9;
 }
 
 .character-row {

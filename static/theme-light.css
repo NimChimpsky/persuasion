@@ -1,12 +1,12 @@
-/* Light theme overrides inspired by the provided screenshot */
+/* Light theme overrides with warm, sophisticated palette */
 :root {
-  --bg-1: #f7f8fb;
-  --bg-2: #ffffff;
-  --border: #e6e8ef;
-  --muted: #667085;
-  --text: #0f172a;
-  --accent: #68e5ff;
-  --accent-2: #68e5ff;
+  --bg-1: #fafaf9;
+  --bg-2: #fefdfb;
+  --border: #e7e5e4;
+  --muted: #78716c;
+  --text: #292524;
+  --accent: #f59e0b;
+  --accent-2: #ea580c;
 }
 
 html, body {
@@ -15,10 +15,10 @@ html, body {
   background:
     radial-gradient(
       circle at 1px 1px,
-      rgba(2, 6, 23, 0.05) 1px,
+      rgba(120, 113, 108, 0.04) 1px,
       transparent 1.6px
     ) 0 0/12px 12px,
-    linear-gradient(180deg, #fafbff 0%, var(--bg-1) 60%, #f7f9fc 100%);
+    linear-gradient(180deg, #fffbf5 0%, var(--bg-1) 60%, #fef7f0 100%);
 }
 
 .card {
@@ -26,8 +26,8 @@ html, body {
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow:
-    0 1px 2px rgba(16, 24, 40, 0.06),
-    0 1px 3px rgba(16, 24, 40, 0.04);
+    0 1px 2px rgba(68, 64, 60, 0.06),
+    0 1px 3px rgba(68, 64, 60, 0.04);
 }
 
 .btn {
@@ -40,73 +40,75 @@ html, body {
   background: #fff;
   color: var(--text);
   text-decoration: none;
+  letter-spacing: 0.01em;
   transition:
     transform 120ms ease,
     background-color 160ms ease,
     border-color 160ms ease,
     box-shadow 200ms ease;
   box-shadow:
-    0 1px 2px rgba(16, 24, 40, 0.06),
-    0 1px 3px rgba(16, 24, 40, 0.04);
+    0 1px 2px rgba(68, 64, 60, 0.06),
+    0 1px 3px rgba(68, 64, 60, 0.04);
 }
 .btn:hover {
   transform: translateY(-1px);
-  border-color: #cfd3db; /* slightly stronger than --border */
-  background-color: #fafafa;
-  box-shadow: 0 6px 16px rgba(16, 24, 40, 0.08);
+  border-color: #d6d3d1;
+  background-color: #fafaf9;
+  box-shadow: 0 4px 12px rgba(68, 64, 60, 0.08);
 }
 .btn:active {
   transform: translateY(0);
-  box-shadow: inset 0 2px 6px rgba(16, 24, 40, 0.10);
+  box-shadow: inset 0 2px 6px rgba(68, 64, 60, 0.10);
 }
 
-/* Primary: crisp, optimistic cyan with strong contrast and subtle elevation */
+/* Primary: warm amber gradient with subtle elevation */
 .btn.primary {
-  background: linear-gradient(180deg, #6feaff 0%, #33d8ff 100%);
-  color: #0f172a;
-  border-color: #0f172a;
-  border-width: 1.5px;
-  box-shadow: 0 8px 20px rgba(104, 229, 255, 0.28);
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+  color: #292524;
+  border-color: #78716c;
+  border-width: 1px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.12);
 }
 .btn.primary:hover {
-  background: linear-gradient(180deg, #59e5ff 0%, #17d0ff 100%);
-  border-color: #0f172a;
-  color: #0f172a;
-  box-shadow: 0 10px 24px rgba(104, 229, 255, 0.32);
+  background: linear-gradient(180deg, #fcd34d 0%, #fbbf24 100%);
+  border-color: #57534e;
+  color: #1c1917;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.16);
 }
 
 /* Ghost: quiet, minimal, harmonizes with card borders */
 .btn.ghost {
   background: #fff;
-  color: #0f172a;
+  color: var(--text);
   border-color: var(--border);
 }
 .btn.ghost:hover {
-  background: #f8fafc; /* slate-50 */
-  border-color: #d0d5dd; /* gray-300 */
-  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.06);
+  background: #fafaf9;
+  border-color: #d6d3d1;
+  box-shadow: 0 4px 12px rgba(68, 64, 60, 0.06);
 }
 
 /* fine-tune focus and interaction states for accessibility */
 
 .btn:focus,
 .btn:focus-visible {
-  outline: 2px solid #68e5ff;
-  outline-offset: 2px;
-  border-color: #0f172a;
+  outline: 2px solid #f59e0b;
+  outline-offset: 3px;
+  border-color: #78716c;
 }
 .btn.primary:focus,
 .btn.primary:focus-visible {
   box-shadow:
-    0 0 0 3px rgba(104, 229, 255, 0.35),
-    0 8px 20px rgba(104, 229, 255, 0.28);
+    0 0 0 3px rgba(245, 158, 11, 0.25),
+    0 4px 12px rgba(245, 158, 11, 0.12);
 }
 
 /* Primary active/pressed state */
 .btn.primary:active {
-  background: linear-gradient(180deg, #40dcff 0%, #12cafb 100%);
-  border-color: #0f172a;
-  color: #0f172a;
+  background: linear-gradient(180deg, #f59e0b 0%, #ea580c 100%);
+  border-color: #57534e;
+  color: #1c1917;
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
@@ -123,14 +125,14 @@ html, body {
 .btn.primary:disabled,
 .btn.primary[disabled],
 .btn.primary[aria-disabled="true"] {
-  background: linear-gradient(180deg, #bfefff 0%, #a6e8ff 100%);
-  border-color: #98a2b3; /* gray-400 */
-  color: #344054; /* gray-700 for legibility */
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #a8a29e;
+  color: #57534e;
 }
 
-/* Ensure any plain <button> text is black */
+/* Ensure any plain <button> text is dark */
 button {
-  color: #000;
+  color: var(--text);
 }
 
 .header .meta {
@@ -144,12 +146,12 @@ button {
   background: #fff;
 }
 .message.user {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
 }
 .message.assistant {
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
 }
 
 .composer {
@@ -170,7 +172,7 @@ button {
 .username-row {
   background: var(--bg-2);
   border: 1px solid var(--border);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 28px rgba(68, 64, 60, 0.08);
 }
 
 .username-avatar {
@@ -179,7 +181,7 @@ button {
 }
 
 .username-avatar.placeholder {
-  background: #f8fafc;
+  background: #fafaf9;
 }
 
 .username-chip {
@@ -188,7 +190,7 @@ button {
 }
 
 .username-chip.filled {
-  background: #f1f5f9;
+  background: #fafaf9;
 }
 
 .username-chip.empty {
@@ -197,7 +199,7 @@ button {
 }
 
 .username-chip.active {
-  border-color: #d0d5dd;
+  border-color: #d6d3d1;
   box-shadow: none;
 }
 
@@ -206,16 +208,16 @@ button {
 }
 
 .reload-btn {
-  color: #667085;
+  color: #78716c;
 }
 
 .reload-btn:hover:not(:disabled) {
-  background: #e2e8f0;
+  background: #f5f5f4;
   color: var(--text);
 }
 
 .reload-btn:disabled {
-  color: #98a2b3;
+  color: #a8a29e;
   background: transparent;
 }
 
@@ -226,7 +228,7 @@ button {
 
 .username-slot .btn.icon:hover,
 .reload-btn:hover:not(:disabled) {
-  border-color: #d0d5dd;
+  border-color: #d6d3d1;
 }
 
 .username-input {
@@ -236,8 +238,8 @@ button {
 }
 
 .username-input:focus {
-  background: #f0f9ff;
-  border-color: #d0d5dd;
+  background: #fffbeb;
+  border-color: #d6d3d1;
 }
 
 .chat-panel {
