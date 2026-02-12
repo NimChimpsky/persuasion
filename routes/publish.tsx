@@ -11,6 +11,7 @@ interface PublishData {
   >;
   createdSlug: string;
   error: string;
+  forbidden: boolean;
 }
 
 async function findAvailableSlug(baseSlug: string): Promise<string> {
@@ -57,7 +58,15 @@ export const handler = define.handlers<PublishData>({
       return Response.redirect(new URL("/", ctx.req.url), 302);
     }
     if (!ctx.state.isAdmin) {
-      return new Response("Forbidden", { status: 403 });
+      return page(
+        {
+          createdSlug: "",
+          error: "",
+          forbidden: true,
+          games: [],
+        },
+        { status: 403 },
+      );
     }
 
     const url = new URL(ctx.req.url);
@@ -69,6 +78,7 @@ export const handler = define.handlers<PublishData>({
     return page({
       createdSlug,
       error,
+      forbidden: false,
       games: games.map((game) => ({
         slug: game.slug,
         title: game.title,
@@ -83,7 +93,10 @@ export const handler = define.handlers<PublishData>({
       return Response.redirect(new URL("/", ctx.req.url), 302);
     }
     if (!ctx.state.isAdmin) {
-      return new Response("Forbidden", { status: 403 });
+      return Response.redirect(
+        new URL("/publish?error=Admin+access+required", ctx.req.url),
+        303,
+      );
     }
 
     const form = await ctx.req.formData();
@@ -143,6 +156,17 @@ export default define.page<typeof handler>(
     return (
       <main class="page-shell">
         <div class="container stack">
+          {data.forbidden
+            ? (
+              <section class="card stack" style="padding: 18px;">
+                <h2 class="display">Publish</h2>
+                <p class="notice bad">
+                  Admin access required to publish games.
+                </p>
+              </section>
+            )
+            : null}
+
           {data.createdSlug
             ? (
               <p class="notice good">
@@ -156,7 +180,7 @@ export default define.page<typeof handler>(
 
           {data.error ? <p class="notice bad">{data.error}</p> : null}
 
-          <AdminGameForm action="/publish" />
+          {!data.forbidden ? <AdminGameForm action="/publish" /> : null}
 
           <section class="stack">
             <h2 class="display">Published Games</h2>

@@ -19,6 +19,7 @@ interface AdminData {
   blockedUsers: BlockedUserRecord[];
   message: string;
   error: string;
+  forbidden: boolean;
 }
 
 function adminRedirect(ctx: { req: Request }, params: {
@@ -37,7 +38,16 @@ export const handler = define.handlers<AdminData>({
       return Response.redirect(new URL("/", ctx.req.url), 302);
     }
     if (!ctx.state.isAdmin) {
-      return new Response("Forbidden", { status: 403 });
+      return page(
+        {
+          message: "",
+          error: "",
+          forbidden: true,
+          blockedUsers: [],
+          games: [],
+        },
+        { status: 403 },
+      );
     }
 
     const url = new URL(ctx.req.url);
@@ -49,6 +59,7 @@ export const handler = define.handlers<AdminData>({
     return page({
       message,
       error,
+      forbidden: false,
       blockedUsers,
       games: games.map((game) => ({
         slug: game.slug,
@@ -64,7 +75,10 @@ export const handler = define.handlers<AdminData>({
       return Response.redirect(new URL("/", ctx.req.url), 302);
     }
     if (!ctx.state.isAdmin) {
-      return new Response("Forbidden", { status: 403 });
+      return Response.redirect(
+        new URL("/admin?error=Admin+access+required", ctx.req.url),
+        303,
+      );
     }
 
     const form = await ctx.req.formData();
@@ -117,85 +131,112 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
   return (
     <main class="page-shell">
       <div class="container stack">
+        {data.forbidden
+          ? (
+            <section class="card stack" style="padding: 18px;">
+              <h2 class="display">Admin</h2>
+              <p class="notice bad">
+                Admin access required.
+              </p>
+            </section>
+          )
+          : null}
+
         {data.message ? <p class="notice good">{data.message}</p> : null}
         {data.error ? <p class="notice bad">{data.error}</p> : null}
 
-        <section class="card stack" style="padding: 16px;">
-          <h2 class="display">Delete Game</h2>
-          <form method="POST" action="/admin" class="form-grid">
-            <input type="hidden" name="action" value="delete_game" />
-            <label>
-              Game slug
-              <input
-                type="text"
-                name="gameSlug"
-                placeholder="the-last-cipher"
-                required
-              />
-            </label>
-            <div class="action-row">
-              <button class="btn primary" type="submit">Delete game</button>
-            </div>
-          </form>
-        </section>
+        {!data.forbidden
+          ? (
+            <section class="card stack" style="padding: 16px;">
+              <h2 class="display">Delete Game</h2>
+              <form method="POST" action="/admin" class="form-grid">
+                <input type="hidden" name="action" value="delete_game" />
+                <label>
+                  Game slug
+                  <input
+                    type="text"
+                    name="gameSlug"
+                    placeholder="the-last-cipher"
+                    required
+                  />
+                </label>
+                <div class="action-row">
+                  <button class="btn primary" type="submit">Delete game</button>
+                </div>
+              </form>
+            </section>
+          )
+          : null}
 
-        <section class="card stack" style="padding: 16px;">
-          <h2 class="display">Block User</h2>
-          <form method="POST" action="/admin" class="form-grid">
-            <input type="hidden" name="action" value="block_user" />
-            <label>
-              User email
-              <input
-                type="email"
-                name="userEmail"
-                placeholder="player@example.com"
-                required
-              />
-            </label>
-            <div class="action-row">
-              <button class="btn primary" type="submit">Block user</button>
-            </div>
-          </form>
-        </section>
+        {!data.forbidden
+          ? (
+            <section class="card stack" style="padding: 16px;">
+              <h2 class="display">Block User</h2>
+              <form method="POST" action="/admin" class="form-grid">
+                <input type="hidden" name="action" value="block_user" />
+                <label>
+                  User email
+                  <input
+                    type="email"
+                    name="userEmail"
+                    placeholder="player@example.com"
+                    required
+                  />
+                </label>
+                <div class="action-row">
+                  <button class="btn primary" type="submit">Block user</button>
+                </div>
+              </form>
+            </section>
+          )
+          : null}
 
-        <section class="stack">
-          <h2 class="display">Published Games</h2>
-          {data.games.length === 0
-            ? <p class="notice">No games yet.</p>
-            : (
-              <div class="cards-grid">
-                {data.games.map((game) => (
-                  <article class="card game-card" key={game.slug}>
-                    <h3>{game.title}</h3>
-                    <p class="muted">Slug: {game.slug}</p>
-                    <p class="inline-meta">
-                      {game.characterCount} character(s) · updated{" "}
-                      {new Date(game.updatedAt).toLocaleString()}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            )}
-        </section>
+        {!data.forbidden
+          ? (
+            <section class="stack">
+              <h2 class="display">Published Games</h2>
+              {data.games.length === 0
+                ? <p class="notice">No games yet.</p>
+                : (
+                  <div class="cards-grid">
+                    {data.games.map((game) => (
+                      <article class="card game-card" key={game.slug}>
+                        <h3>{game.title}</h3>
+                        <p class="muted">Slug: {game.slug}</p>
+                        <p class="inline-meta">
+                          {game.characterCount} character(s) · updated{" "}
+                          {new Date(game.updatedAt).toLocaleString()}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                )}
+            </section>
+          )
+          : null}
 
-        <section class="stack">
-          <h2 class="display">Blocked Users</h2>
-          {data.blockedUsers.length === 0
-            ? <p class="notice">No blocked users.</p>
-            : (
-              <div class="cards-grid">
-                {data.blockedUsers.map((user) => (
-                  <article class="card game-card" key={user.email}>
-                    <h3>{user.email}</h3>
-                    <p class="inline-meta">
-                      blocked by {user.blockedBy} on{" "}
-                      {new Date(user.blockedAt).toLocaleString()}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            )}
-        </section>
+        {!data.forbidden
+          ? (
+            <section class="stack">
+              <h2 class="display">Blocked Users</h2>
+              {data.blockedUsers.length === 0
+                ? <p class="notice">No blocked users.</p>
+                : (
+                  <div class="cards-grid">
+                    {data.blockedUsers.map((user) => (
+                      <article class="card game-card" key={user.email}>
+                        <h3>{user.email}</h3>
+                        <p class="inline-meta">
+                          blocked by {user.blockedBy} on{" "}
+                          {new Date(user.blockedAt).toLocaleString()}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                )}
+            </section>
+          )
+          : null}
       </div>
     </main>
   );
