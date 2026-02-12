@@ -18,7 +18,7 @@ export default define.page(function App({ Component, state, url }) {
         <link rel="stylesheet" href="/theme-light.css" />
       </head>
       <body f-client-nav>
-        <Partial name="app-shell">
+        <Partial name="app-header">
           {isLoggedIn && state.userEmail
             ? (
               <div class="page-shell" style="padding-bottom: 0;">
@@ -34,6 +34,8 @@ export default define.page(function App({ Component, state, url }) {
               </div>
             )
             : null}
+        </Partial>
+        <Partial name="app-content">
           <Component />
         </Partial>
       </body>
