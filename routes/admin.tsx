@@ -1,22 +1,12 @@
 import { page } from "fresh";
-import {
-  type BlockedUserRecord,
-  blockUser,
-  destroyAllSessionsForEmail,
-  listBlockedUsers,
-  normalizeEmail,
-} from "../lib/auth.ts";
 import { isAdminEmail } from "../lib/env.ts";
 import { deleteGameBySlug, listGames } from "../lib/store.ts";
 import { define } from "../utils.ts";
-
-const BASIC_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface AdminData {
   games: Array<
     { slug: string; title: string; updatedAt: string; characterCount: number }
   >;
-  blockedUsers: BlockedUserRecord[];
   message: string;
   error: string;
   forbidden: boolean;
@@ -43,7 +33,6 @@ export const handler = define.handlers<AdminData>({
           message: "",
           error: "",
           forbidden: true,
-          blockedUsers: [],
           games: [],
         },
         { status: 403 },
@@ -54,13 +43,11 @@ export const handler = define.handlers<AdminData>({
     const message = url.searchParams.get("message") ?? "";
     const error = url.searchParams.get("error") ?? "";
     const games = await listGames();
-    const blockedUsers = await listBlockedUsers();
 
     return page({
       message,
       error,
       forbidden: false,
-      blockedUsers,
       games: games.map((game) => ({
         slug: game.slug,
         title: game.title,
@@ -96,27 +83,6 @@ export const handler = define.handlers<AdminData>({
       }
 
       return adminRedirect(ctx, { message: `Deleted game: ${slug}` });
-    }
-
-    if (action === "block_user") {
-      const rawEmail = String(form.get("userEmail") ?? "");
-      const email = normalizeEmail(rawEmail);
-      if (!BASIC_EMAIL_REGEX.test(email)) {
-        return adminRedirect(ctx, { error: "Enter a valid user email." });
-      }
-      if (email === ctx.state.userEmail) {
-        return adminRedirect(ctx, {
-          error: "You cannot block your own account.",
-        });
-      }
-      if (isAdminEmail(email)) {
-        return adminRedirect(ctx, { error: "Cannot block an admin email." });
-      }
-
-      await blockUser(email, ctx.state.userEmail);
-      await destroyAllSessionsForEmail(email);
-
-      return adminRedirect(ctx, { message: `Blocked user: ${email}` });
     }
 
     return adminRedirect(ctx, { error: "Unknown admin action." });
@@ -170,29 +136,6 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
 
         {!data.forbidden
           ? (
-            <section class="card stack" style="padding: 16px;">
-              <h2 class="display">Block User</h2>
-              <form method="POST" action="/admin" class="form-grid">
-                <input type="hidden" name="action" value="block_user" />
-                <label>
-                  User email
-                  <input
-                    type="email"
-                    name="userEmail"
-                    placeholder="player@example.com"
-                    required
-                  />
-                </label>
-                <div class="action-row">
-                  <button class="btn primary" type="submit">Block user</button>
-                </div>
-              </form>
-            </section>
-          )
-          : null}
-
-        {!data.forbidden
-          ? (
             <section class="stack">
               <h2 class="display">Published Games</h2>
               {data.games.length === 0
@@ -206,29 +149,6 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
                         <p class="inline-meta">
                           {game.characterCount} character(s) · updated{" "}
                           {new Date(game.updatedAt).toLocaleString()}
-                        </p>
-                      </article>
-                    ))}
-                  </div>
-                )}
-            </section>
-          )
-          : null}
-
-        {!data.forbidden
-          ? (
-            <section class="stack">
-              <h2 class="display">Blocked Users</h2>
-              {data.blockedUsers.length === 0
-                ? <p class="notice">No blocked users.</p>
-                : (
-                  <div class="cards-grid">
-                    {data.blockedUsers.map((user) => (
-                      <article class="card game-card" key={user.email}>
-                        <h3>{user.email}</h3>
-                        <p class="inline-meta">
-                          blocked by {user.blockedBy} on{" "}
-                          {new Date(user.blockedAt).toLocaleString()}
                         </p>
                       </article>
                     ))}

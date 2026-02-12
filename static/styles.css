@@ -39,7 +39,7 @@ main {
 
 .page-shell {
   min-height: 100vh;
-  padding: 18px;
+  padding: 0 18px 18px;
 }
 
 .container {
@@ -48,11 +48,11 @@ main {
 }
 
 .header-shell {
-  padding: 18px 18px 0;
+  padding: 18px 18px 4px;
 }
 
 .site-header {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   padding: 14px;
   display: flex;
   flex-direction: column;

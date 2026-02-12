@@ -1,6 +1,5 @@
 import {
   createMagicToken,
-  isBlockedUser,
   normalizeEmail,
 } from "../../lib/auth.ts";
 import { sendMagicLinkEmail } from "../../lib/email.ts";
@@ -70,19 +69,6 @@ export const handler = define.handlers({
         }
         return Response.redirect(
           new URL("/?error=Please+enter+a+valid+email", ctx.req.url),
-          303,
-        );
-      }
-
-      if (await isBlockedUser(email)) {
-        if (expectsJson) {
-          return json(
-            { ok: false, error: "This account is blocked." },
-            403,
-          );
-        }
-        return Response.redirect(
-          new URL("/?error=This+account+is+blocked", ctx.req.url),
           303,
         );
       }
