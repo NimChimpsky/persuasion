@@ -7,6 +7,7 @@ import { env } from "./env.ts";
 import { getKv } from "./kv.ts";
 
 export const SESSION_COOKIE = "story_session";
+export const USER_BLOCKED_ERROR = "user_blocked";
 
 interface SessionRecord {
   email: string;
