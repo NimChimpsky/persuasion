@@ -94,7 +94,7 @@ export const handler = define.handlers<PublishData>({
     }
     if (!ctx.state.isAdmin) {
       return Response.redirect(
-        new URL("/publish?error=Admin+access+required", ctx.req.url),
+        new URL("/create-game?error=Admin+access+required", ctx.req.url),
         303,
       );
     }
@@ -108,7 +108,7 @@ export const handler = define.handlers<PublishData>({
     if (!title || characters.length === 0) {
       return Response.redirect(
         new URL(
-          "/publish?error=Provide+title+and+at+least+one+character",
+          "/create-game?error=Provide+title+and+at+least+one+character",
           ctx.req.url,
         ),
         303,
@@ -135,13 +135,13 @@ export const handler = define.handlers<PublishData>({
       await createGame(story);
     } catch {
       return Response.redirect(
-        new URL("/publish?error=Unable+to+create+game", ctx.req.url),
+        new URL("/create-game?error=Unable+to+create+game", ctx.req.url),
         303,
       );
     }
 
     return Response.redirect(
-      new URL(`/publish?created=${slug}`, ctx.req.url),
+      new URL(`/create-game?created=${slug}`, ctx.req.url),
       303,
     );
   },
@@ -151,7 +151,7 @@ export default define.page<typeof handler>(
   function PublishPage({ data, state }) {
     if (!state.userEmail) return null;
 
-    state.title = "Persuasion | Publish";
+    state.title = "Persuasion | Create Game";
 
     return (
       <main class="page-shell">
@@ -159,9 +159,9 @@ export default define.page<typeof handler>(
           {data.forbidden
             ? (
               <section class="stack">
-                <h2 class="display">Publish</h2>
+                <h2 class="display">Create Game</h2>
                 <p class="notice bad">
-                  Admin access required to publish games.
+                  Admin access required to create games.
                 </p>
               </section>
             )
@@ -180,7 +180,7 @@ export default define.page<typeof handler>(
 
           {data.error ? <p class="notice bad">{data.error}</p> : null}
 
-          {!data.forbidden ? <AdminGameForm action="/publish" /> : null}
+          {!data.forbidden ? <AdminGameForm action="/create-game" /> : null}
 
           <section class="stack">
             <h2 class="display">Published Games</h2>

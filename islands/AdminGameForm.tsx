@@ -61,7 +61,7 @@ export default function AdminGameForm(props: AdminGameFormProps) {
       <h2 class="display">Create Game Story</h2>
       <form
         method="POST"
-        action={props.action ?? "/publish"}
+        action={props.action ?? "/create-game"}
         class="card"
         style="padding: 18px;"
       >

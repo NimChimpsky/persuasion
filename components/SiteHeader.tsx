@@ -15,7 +15,7 @@ export default function SiteHeader(props: SiteHeaderProps) {
       </div>
       <nav class="header-subnav">
         {props.isAdmin ? <a class="btn primary" href="/admin">admin</a> : null}
-        <a class="btn ghost" href="/publish">publish</a>
+        <a class="btn ghost" href="/create-game">create game</a>
         <a class="btn ghost" href="/home">active games</a>
         <a class="btn ghost" href="/find">find</a>
       </nav>
