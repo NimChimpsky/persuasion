@@ -122,6 +122,22 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
 
   state.title = "Persuasion | Admin";
   const currentProviderConfig = getLlmProviderConfig(data.currentLlmProvider);
+  const providerMessage = data.message.startsWith("LLM provider switched to")
+    ? data.message
+    : "";
+  const providerError = data.error === "Select a valid LLM provider."
+    ? data.error
+    : "";
+  const globalMessage = providerMessage ? "" : data.message;
+  const globalError = providerError ? "" : data.error;
+  const providerFeedbackText = providerError || providerMessage || "\u00A0";
+  const providerFeedbackClass = `provider-feedback-slot ${
+    providerError
+      ? "is-error is-visible"
+      : providerMessage
+      ? "is-success is-visible"
+      : ""
+  }`;
 
   return (
     <main class="page-shell">
@@ -137,40 +153,49 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
           )
           : null}
 
-        {data.message ? <p class="notice good">{data.message}</p> : null}
-        {data.error ? <p class="notice bad">{data.error}</p> : null}
+        {globalMessage ? <p class="notice good">{globalMessage}</p> : null}
+        {globalError ? <p class="notice bad">{globalError}</p> : null}
 
         {!data.forbidden
           ? (
             <section class="stack">
               <h2 class="display">LLM Provider</h2>
               <div class="form-grid card" style="padding: 16px;">
-                <div class="action-row">
-                  {data.llmProviderOptions.map((option) => (
-                    <form
-                      key={option.id}
-                      method="POST"
-                      action="/admin"
-                      style="display: inline;"
-                    >
-                      <input
-                        type="hidden"
-                        name="intent"
-                        value="set_llm_provider"
-                      />
-                      <input type="hidden" name="provider" value={option.id} />
-                      <button
-                        class={`btn ${
-                          data.currentLlmProvider === option.id
-                            ? "primary"
-                            : "ghost"
-                        }`}
-                        type="submit"
+                <div class="provider-toolbar">
+                  <div class="action-row provider-buttons">
+                    {data.llmProviderOptions.map((option) => (
+                      <form
+                        key={option.id}
+                        method="POST"
+                        action="/admin"
+                        style="display: inline;"
                       >
-                        {option.label}
-                      </button>
-                    </form>
-                  ))}
+                        <input
+                          type="hidden"
+                          name="intent"
+                          value="set_llm_provider"
+                        />
+                        <input
+                          type="hidden"
+                          name="provider"
+                          value={option.id}
+                        />
+                        <button
+                          class={`btn ${
+                            data.currentLlmProvider === option.id
+                              ? "primary"
+                              : "ghost"
+                          }`}
+                          type="submit"
+                        >
+                          {option.label}
+                        </button>
+                      </form>
+                    ))}
+                  </div>
+                  <p class={providerFeedbackClass} aria-live="polite">
+                    {providerFeedbackText}
+                  </p>
                 </div>
                 <p class="muted">
                   Current: {currentProviderConfig.label} (

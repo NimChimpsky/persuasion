@@ -230,6 +230,41 @@ select:focus {
   flex-wrap: wrap;
 }
 
+.provider-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.provider-buttons {
+  flex: 1;
+}
+
+.provider-feedback-slot {
+  width: min(420px, 48%);
+  min-height: 42px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  visibility: hidden;
+}
+
+.provider-feedback-slot.is-visible {
+  visibility: visible;
+}
+
+.provider-feedback-slot.is-success {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.provider-feedback-slot.is-error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
 .notice {
   border-radius: 12px;
   padding: 10px 12px;
@@ -437,6 +472,15 @@ select:focus {
     justify-content: flex-start;
     margin-top: 4px;
     padding-top: 10px;
+  }
+
+  .provider-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .provider-feedback-slot {
+    width: 100%;
   }
 
   .header-shell {
