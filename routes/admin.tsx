@@ -121,6 +121,7 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
   if (!state.userEmail) return null;
 
   state.title = "Persuasion | Admin";
+  const currentProviderConfig = getLlmProviderConfig(data.currentLlmProvider);
 
   return (
     <main class="page-shell">
@@ -143,41 +144,46 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
           ? (
             <section class="stack">
               <h2 class="display">LLM Provider</h2>
-              <form
-                method="POST"
-                action="/admin"
-                class="form-grid card"
-                style="padding: 16px;"
-              >
-                <input type="hidden" name="action" value="set_llm_provider" />
+              <div class="form-grid card" style="padding: 16px;">
                 <div class="action-row">
                   {data.llmProviderOptions.map((option) => (
-                    <button
+                    <form
                       key={option.id}
-                      class={`btn ${
-                        data.currentLlmProvider === option.id
-                          ? "primary"
-                          : "ghost"
-                      }`}
-                      name="provider"
-                      type="submit"
-                      value={option.id}
+                      method="POST"
+                      action="/admin"
+                      style="display: inline;"
                     >
-                      {option.label}
-                    </button>
+                      <input
+                        type="hidden"
+                        name="action"
+                        value="set_llm_provider"
+                      />
+                      <input type="hidden" name="provider" value={option.id} />
+                      <button
+                        class={`btn ${
+                          data.currentLlmProvider === option.id
+                            ? "primary"
+                            : "ghost"
+                        }`}
+                        type="submit"
+                      >
+                        {option.label}
+                      </button>
+                    </form>
                   ))}
                 </div>
                 <p class="muted">
-                  Current: {getLlmProviderConfig(data.currentLlmProvider).label}
+                  Current: {currentProviderConfig.label} (
+                  <code>{currentProviderConfig.model}</code>)
                 </p>
                 <p class="muted">
                   {data.llmProviderOptions.map((option) =>
-                    `${option.label}: ${
-                      option.configured ? "configured" : "missing API key"
-                    }`
+                    `${option.label} (${
+                      getLlmProviderConfig(option.id).model
+                    }): ${option.configured ? "configured" : "missing API key"}`
                   ).join(" · ")}
                 </p>
-              </form>
+              </div>
             </section>
           )
           : null}
