@@ -34,9 +34,17 @@ export interface TranscriptEvent {
   at: string;
 }
 
+export interface UserGameSnapshot {
+  title: string;
+  plotPointsText: string;
+  narratorPrompt?: string;
+  characters: Character[];
+}
+
 export interface UserProgress {
   transcript: string;
   updatedAt: string;
+  gameSnapshot?: UserGameSnapshot;
 }
 
 export interface SidePane {

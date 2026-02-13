@@ -149,7 +149,7 @@ export async function createSession(email: string): Promise<string> {
   } as SessionRecord;
 
   await kv.set(["sessions", sessionId], record);
-  await kv.set(["sessions_by_user", email, sessionId], {
+  await kv.set(["sessions_by_user", normalizedEmail, sessionId], {
     createdAt: record.createdAt,
   });
 

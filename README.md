@@ -60,7 +60,8 @@ OPENAI_MODEL=gpt-4.1-mini
 
 - `games_by_slug/<slug>`: full game config
 - `games_index/<slug>`: list/home metadata
-- `user_progress/<email>/<slug>`: transcript text + updated timestamp
+- `user_progress/<email>/<slug>`: transcript text + updated timestamp + user
+  game snapshot (title/plot/narrator/characters)
 - `magic_tokens/<nonce>`: one-time magic login nonce (token carries HMAC
   signature)
 - `sessions/<sessionId>`: login session record

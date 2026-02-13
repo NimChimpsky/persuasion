@@ -28,16 +28,23 @@ export const handler = define.handlers<GamePageData>({
 
     const progress = await getUserProgress(userEmail, slug);
     const events = parseTranscript(progress?.transcript ?? "");
+    const gameForUser = progress?.gameSnapshot
+      ? { ...game, ...progress.gameSnapshot }
+      : game;
 
     return page({
       slug,
-      title: game.title,
-      characters: game.characters.map((character) => ({
+      title: gameForUser.title,
+      characters: gameForUser.characters.map((character) => ({
         id: character.id,
         name: character.name,
       })),
       events,
-      sidePanes: buildSidePanes(game.characters, game.plotPointsText, events),
+      sidePanes: buildSidePanes(
+        gameForUser.characters,
+        gameForUser.plotPointsText,
+        events,
+      ),
     });
   },
 });

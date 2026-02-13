@@ -13,7 +13,11 @@ import {
   appendEvents,
   parseTranscript,
 } from "../../../../shared/transcript.ts";
-import type { TranscriptEvent } from "../../../../shared/types.ts";
+import type {
+  GameConfig,
+  TranscriptEvent,
+  UserGameSnapshot,
+} from "../../../../shared/types.ts";
 import { define } from "../../../../utils.ts";
 
 interface MessageRequest {
@@ -26,6 +30,25 @@ function json(data: unknown, status = 200): Response {
     status,
     headers: { "content-type": "application/json" },
   });
+}
+
+function buildUserGameSnapshot(game: GameConfig): UserGameSnapshot {
+  return {
+    title: game.title,
+    plotPointsText: game.plotPointsText,
+    narratorPrompt: game.narratorPrompt,
+    characters: game.characters.map((character) => ({
+      ...character,
+    })),
+  };
+}
+
+function getGameForUser(
+  game: GameConfig,
+  snapshot: UserGameSnapshot | undefined,
+): GameConfig {
+  if (!snapshot) return game;
+  return { ...game, ...snapshot };
 }
 
 export const handler = define.handlers({
@@ -59,15 +82,19 @@ export const handler = define.handlers({
       return json({ ok: false, error: "Prompt is too long" }, 400);
     }
 
-    const narratorCharacter = createNarratorCharacter(game.narratorPrompt);
+    const progress = await getUserProgress(userEmail, slug);
+    const gameSnapshot = progress?.gameSnapshot ?? buildUserGameSnapshot(game);
+    const gameForUser = getGameForUser(game, gameSnapshot);
+
+    const narratorCharacter = createNarratorCharacter(
+      gameForUser.narratorPrompt,
+    );
     const targetCharacter =
       !targetCharacterId || targetCharacterId === NARRATOR_ID
         ? narratorCharacter
-        : game.characters.find((character) =>
+        : gameForUser.characters.find((character) =>
           character.id.toLowerCase() === targetCharacterId
         ) ?? narratorCharacter;
-
-    const progress = await getUserProgress(userEmail, slug);
     const events = parseTranscript(progress?.transcript ?? "");
 
     const userEvent: TranscriptEvent = {
@@ -79,7 +106,7 @@ export const handler = define.handlers({
     };
 
     const replyText = await generateCharacterReply({
-      game,
+      game: gameForUser,
       character: targetCharacter,
       events: [...events, userEvent],
       userPrompt: text,
@@ -101,6 +128,7 @@ export const handler = define.handlers({
     await saveUserProgress(userEmail, slug, {
       transcript: appended,
       updatedAt: new Date().toISOString(),
+      gameSnapshot,
     });
 
     const updatedEvents = [...events, userEvent, characterEvent];
@@ -109,8 +137,8 @@ export const handler = define.handlers({
       ok: true,
       events: [userEvent, characterEvent],
       sidePanes: buildSidePanes(
-        game.characters,
-        game.plotPointsText,
+        gameForUser.characters,
+        gameForUser.plotPointsText,
         updatedEvents,
       ),
     });
