@@ -17,6 +17,10 @@ export const env = {
     "https://api.deepseek.com/v1",
   deepseekApiKey: Deno.env.get("DEEPSEEK_API_KEY") ?? "",
   deepseekModel: Deno.env.get("DEEPSEEK_MODEL") ?? "deepseek-chat",
+  mistralBaseUrl: Deno.env.get("MISTRAL_BASE_URL") ??
+    "https://api.mistral.ai/v1",
+  mistralApiKey: Deno.env.get("MISTRAL_API_KEY") ?? "",
+  mistralModel: Deno.env.get("MISTRAL_MODEL") ?? "mistral-small-latest",
   resendApiKey: Deno.env.get("RESEND_API_KEY") ?? "",
   emailFrom: Deno.env.get("EMAIL_FROM") ?? "gamesmaster@persuasion.technology",
   magicLinkSecret: Deno.env.get("MAGIC_LINK_SECRET") ??

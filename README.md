@@ -45,7 +45,7 @@ LOCAL_DEV_AUTH_EMAIL=dev@local.test
 # LLM providers (OpenAI-compatible API format).
 # Active provider is selected by admins at runtime in /admin and stored in KV.
 
-# DeepSeek (default provider)
+# DeepSeek
 DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
 DEEPSEEK_API_KEY=
 DEEPSEEK_MODEL=deepseek-chat
@@ -54,6 +54,11 @@ DEEPSEEK_MODEL=deepseek-chat
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4.1-mini
+
+# Mistral (default provider)
+MISTRAL_BASE_URL=https://api.mistral.ai/v1
+MISTRAL_API_KEY=
+MISTRAL_MODEL=mistral-small-latest
 ```
 
 ## Data model (KV)
@@ -65,7 +70,8 @@ OPENAI_MODEL=gpt-4.1-mini
 - `magic_tokens/<nonce>`: one-time magic login nonce (token carries HMAC
   signature)
 - `sessions/<sessionId>`: login session record
-- `app_settings/llm_provider`: active LLM provider (`deepseek` or `openai`)
+- `app_settings/llm_provider`: active LLM provider (`deepseek`, `openai`, or
+  `mistral`)
 
 ## Notes
 
@@ -82,4 +88,4 @@ OPENAI_MODEL=gpt-4.1-mini
 - Missing `RESEND_API_KEY` disables magic-link login and enables local dev login
   on localhost.
 - Deno KV is mandatory for this app; there is no non-persistent fallback.
-- DeepSeek is the default LLM provider until an admin switches it in `/admin`.
+- Mistral is the default LLM provider until an admin switches it in `/admin`.

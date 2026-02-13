@@ -40,7 +40,7 @@ export const handler = define.handlers<AdminData>({
     if (!ctx.state.isAdmin) {
       return page(
         {
-          currentLlmProvider: "deepseek",
+          currentLlmProvider: "mistral",
           llmProviderOptions: listLlmProviderOptions(),
           message: "",
           error: "",
