@@ -84,9 +84,9 @@ export const handler = define.handlers<AdminData>({
     }
 
     const form = await ctx.req.formData();
-    const action = String(form.get("action") ?? "");
+    const intent = String(form.get("intent") ?? "");
 
-    if (action === "delete_game") {
+    if (intent === "delete_game") {
       const slug = String(form.get("gameSlug") ?? "").trim();
       if (!slug) {
         return adminRedirect(ctx, { error: "Enter a game slug to delete." });
@@ -100,7 +100,7 @@ export const handler = define.handlers<AdminData>({
       return adminRedirect(ctx, { message: `Deleted game: ${slug}` });
     }
 
-    if (action === "set_llm_provider") {
+    if (intent === "set_llm_provider") {
       const provider = String(form.get("provider") ?? "").trim().toLowerCase();
       if (!isLlmProvider(provider)) {
         return adminRedirect(ctx, { error: "Select a valid LLM provider." });
@@ -155,7 +155,7 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
                     >
                       <input
                         type="hidden"
-                        name="action"
+                        name="intent"
                         value="set_llm_provider"
                       />
                       <input type="hidden" name="provider" value={option.id} />
@@ -198,7 +198,7 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
                 class="form-grid card"
                 style="padding: 16px;"
               >
-                <input type="hidden" name="action" value="delete_game" />
+                <input type="hidden" name="intent" value="delete_game" />
                 <label>
                   Game slug
                   <input
