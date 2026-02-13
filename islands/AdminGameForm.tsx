@@ -36,7 +36,7 @@ export default function AdminGameForm(props: AdminGameFormProps) {
       .replace(/[^a-z0-9\s-]/g, "")
       .trim()
       .replace(/\s+/g, "-")
-      .replace(/-+/g, "-") || "story";
+      .replace(/-+/g, "-") || "game";
   }, [title]);
 
   const addCharacter = () => {
@@ -58,7 +58,7 @@ export default function AdminGameForm(props: AdminGameFormProps) {
 
   return (
     <section class="stack">
-      <h2 class="display">Create Game Story</h2>
+      <h2 class="display">Create Game</h2>
       <form
         method="POST"
         action={props.action ?? "/create-game"}

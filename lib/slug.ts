@@ -8,7 +8,7 @@ export function slugify(input: string): string {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
 
-  return normalized || "story";
+  return normalized || "game";
 }
 
 export function ensureUniqueIds(rawIds: string[]): string[] {

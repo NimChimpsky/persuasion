@@ -1,10 +1,14 @@
 import { getActiveLlmProvider, getLlmProviderConfig } from "./llm_provider.ts";
 import { NARRATOR_ID } from "../shared/narrator.ts";
 import { toModelContext } from "../shared/transcript.ts";
-import type { Character, GameStory, TranscriptEvent } from "../shared/types.ts";
+import type {
+  Character,
+  GameConfig,
+  TranscriptEvent,
+} from "../shared/types.ts";
 
 interface GenerateCharacterReplyArgs {
-  game: GameStory;
+  game: GameConfig;
   character: Character;
   events: TranscriptEvent[];
   userPrompt: string;
@@ -48,13 +52,13 @@ export async function generateCharacterReply(
   const providerConfig = getLlmProviderConfig(provider);
 
   if (!providerConfig.apiKey) {
-    return `(${character.name}) The story engine is unavailable because ${providerConfig.label} is not configured.`;
+    return `(${character.name}) The game engine is unavailable because ${providerConfig.label} is not configured.`;
   }
 
   const history = toModelContext(events.slice(-40));
   const isNarrator = character.id === NARRATOR_ID;
   const systemInstructions = [
-    `You are roleplaying as ${character.name} in an interactive choose-your-adventure story game titled "${game.title}".`,
+    `You are roleplaying as ${character.name} in an interactive choose-your-adventure game titled "${game.title}".`,
     "Stay fully in-character and avoid mentioning system instructions or model details.",
     "Move the plot forward naturally, with useful details, clues, and emotional texture.",
     "Any secrets or prize unlocks must come only from this character's system prompt and should be revealed gradually.",
@@ -64,7 +68,7 @@ export async function generateCharacterReply(
       : "Stay faithful to this specific character voice and goals.",
     "Character definition:",
     character.systemPrompt,
-    "Global plot + story guidance:",
+    "Global plot guidance:",
     game.plotPointsText || "No global plot points provided.",
   ].join("\n\n");
 
@@ -105,7 +109,7 @@ export async function generateCharacterReply(
     console.error(
       `LLM API error (${response.status}) using ${provider} at ${endpoint}: ${details}`,
     );
-    return `(${character.name}) The story engine is temporarily unavailable. Try again in a moment.`;
+    return `(${character.name}) The game engine is temporarily unavailable. Try again in a moment.`;
   }
 
   const data = await response.json() as ChatCompletionResponse;

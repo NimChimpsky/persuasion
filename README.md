@@ -58,7 +58,7 @@ OPENAI_MODEL=gpt-4.1-mini
 
 ## Data model (KV)
 
-- `games_by_slug/<slug>`: full game story config
+- `games_by_slug/<slug>`: full game config
 - `games_index/<slug>`: list/home metadata
 - `user_progress/<email>/<slug>`: transcript text + updated timestamp
 - `magic_tokens/<nonce>`: one-time magic login nonce (token carries HMAC

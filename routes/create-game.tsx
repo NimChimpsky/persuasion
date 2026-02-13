@@ -2,7 +2,7 @@ import { page } from "fresh";
 import AdminGameForm from "../islands/AdminGameForm.tsx";
 import { ensureUniqueIds, slugify } from "../lib/slug.ts";
 import { createGame, getGameBySlug, listGames } from "../lib/store.ts";
-import type { Character, GameStory } from "../shared/types.ts";
+import type { Character, GameConfig } from "../shared/types.ts";
 import { define } from "../utils.ts";
 
 interface PublishData {
@@ -119,7 +119,7 @@ export const handler = define.handlers<PublishData>({
     const slug = await findAvailableSlug(baseSlug);
 
     const now = new Date().toISOString();
-    const story: GameStory = {
+    const gameConfig: GameConfig = {
       slug,
       title,
       plotPointsText,
@@ -132,7 +132,7 @@ export const handler = define.handlers<PublishData>({
     };
 
     try {
-      await createGame(story);
+      await createGame(gameConfig);
     } catch {
       return Response.redirect(
         new URL("/create-game?error=Unable+to+create+game", ctx.req.url),

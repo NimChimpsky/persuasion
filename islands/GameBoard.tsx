@@ -123,7 +123,7 @@ export default function GameBoard(props: GameBoardProps) {
 
     const userText = stripMentions(draft);
     if (!userText) {
-      setError("Enter a prompt to continue the story.");
+      setError("Enter a prompt to continue the game.");
       return;
     }
 

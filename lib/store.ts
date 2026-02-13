@@ -1,13 +1,13 @@
 import { getKv } from "./kv.ts";
 import type {
+  GameConfig,
   GameIndexEntry,
-  GameStory,
   UserProgress,
 } from "../shared/types.ts";
 
-export async function getGameBySlug(slug: string): Promise<GameStory | null> {
+export async function getGameBySlug(slug: string): Promise<GameConfig | null> {
   const kv = await getKv();
-  const entry = await kv.get<GameStory>(["games_by_slug", slug]);
+  const entry = await kv.get<GameConfig>(["games_by_slug", slug]);
   return entry.value;
 }
 
@@ -26,20 +26,20 @@ export async function listGames(): Promise<GameIndexEntry[]> {
   return games.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export async function createGame(story: GameStory): Promise<void> {
+export async function createGame(game: GameConfig): Promise<void> {
   const kv = await getKv();
   const index: GameIndexEntry = {
-    slug: story.slug,
-    title: story.title,
-    active: story.active,
-    characterCount: story.characters.length,
-    updatedAt: story.updatedAt,
+    slug: game.slug,
+    title: game.title,
+    active: game.active,
+    characterCount: game.characters.length,
+    updatedAt: game.updatedAt,
   };
 
   const result = await kv.atomic()
-    .check({ key: ["games_by_slug", story.slug], versionstamp: null })
-    .set(["games_by_slug", story.slug], story)
-    .set(["games_index", story.slug], index)
+    .check({ key: ["games_by_slug", game.slug], versionstamp: null })
+    .set(["games_by_slug", game.slug], game)
+    .set(["games_index", game.slug], index)
     .commit();
 
   if (!result.ok) {
@@ -49,7 +49,7 @@ export async function createGame(story: GameStory): Promise<void> {
 
 export async function deleteGameBySlug(slug: string): Promise<boolean> {
   const kv = await getKv();
-  const existing = await kv.get<GameStory>(["games_by_slug", slug]);
+  const existing = await kv.get<GameConfig>(["games_by_slug", slug]);
   if (!existing.value) return false;
 
   const result = await kv.atomic()

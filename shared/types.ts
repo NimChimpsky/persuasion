@@ -4,7 +4,7 @@ export interface Character {
   systemPrompt: string;
 }
 
-export interface GameStory {
+export interface GameConfig {
   slug: string;
   title: string;
   plotPointsText: string;
