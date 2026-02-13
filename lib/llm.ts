@@ -1,4 +1,4 @@
-import { env } from "./env.ts";
+import { getActiveLlmProvider, getLlmProviderConfig } from "./llm_provider.ts";
 import { NARRATOR_ID } from "../shared/narrator.ts";
 import { toModelContext } from "../shared/transcript.ts";
 import type { Character, GameStory, TranscriptEvent } from "../shared/types.ts";
@@ -44,9 +44,11 @@ export async function generateCharacterReply(
   args: GenerateCharacterReplyArgs,
 ): Promise<string> {
   const { game, character, events, userPrompt } = args;
+  const provider = await getActiveLlmProvider();
+  const providerConfig = getLlmProviderConfig(provider);
 
-  if (!env.llmApiKey) {
-    return `(${character.name}) I heard you: "${userPrompt}". This is a local fallback response. Configure LLM_API_KEY to enable dynamic character behavior.`;
+  if (!providerConfig.apiKey) {
+    return `(${character.name}) The story engine is unavailable because ${providerConfig.label} is not configured.`;
   }
 
   const history = toModelContext(events.slice(-40));
@@ -74,16 +76,16 @@ export async function generateCharacterReply(
     userPrompt,
   ].join("\n");
 
-  const endpoint = buildChatEndpoint(env.llmBaseUrl);
+  const endpoint = buildChatEndpoint(providerConfig.baseUrl);
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.llmApiKey}`,
+      Authorization: `Bearer ${providerConfig.apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: env.llmModel,
+      model: providerConfig.model,
       temperature: 0.9,
       messages: [
         {
@@ -101,7 +103,7 @@ export async function generateCharacterReply(
   if (!response.ok) {
     const details = await response.text();
     console.error(
-      `LLM API error (${response.status}) at ${endpoint}: ${details}`,
+      `LLM API error (${response.status}) using ${provider} at ${endpoint}: ${details}`,
     );
     return `(${character.name}) The story engine is temporarily unavailable. Try again in a moment.`;
   }

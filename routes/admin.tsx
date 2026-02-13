@@ -1,5 +1,13 @@
 import { page } from "fresh";
-import { isAdminEmail } from "../lib/env.ts";
+import {
+  getActiveLlmProvider,
+  getLlmProviderConfig,
+  isLlmProvider,
+  listLlmProviderOptions,
+  type LlmProvider,
+  type LlmProviderOption,
+  setActiveLlmProvider,
+} from "../lib/llm_provider.ts";
 import { deleteGameBySlug, listGames } from "../lib/store.ts";
 import { define } from "../utils.ts";
 
@@ -7,6 +15,8 @@ interface AdminData {
   games: Array<
     { slug: string; title: string; updatedAt: string; characterCount: number }
   >;
+  currentLlmProvider: LlmProvider;
+  llmProviderOptions: LlmProviderOption[];
   message: string;
   error: string;
   forbidden: boolean;
@@ -30,6 +40,8 @@ export const handler = define.handlers<AdminData>({
     if (!ctx.state.isAdmin) {
       return page(
         {
+          currentLlmProvider: "deepseek",
+          llmProviderOptions: listLlmProviderOptions(),
           message: "",
           error: "",
           forbidden: true,
@@ -42,9 +54,12 @@ export const handler = define.handlers<AdminData>({
     const url = new URL(ctx.req.url);
     const message = url.searchParams.get("message") ?? "";
     const error = url.searchParams.get("error") ?? "";
+    const currentLlmProvider = await getActiveLlmProvider();
     const games = await listGames();
 
     return page({
+      currentLlmProvider,
+      llmProviderOptions: listLlmProviderOptions(),
       message,
       error,
       forbidden: false,
@@ -85,6 +100,19 @@ export const handler = define.handlers<AdminData>({
       return adminRedirect(ctx, { message: `Deleted game: ${slug}` });
     }
 
+    if (action === "set_llm_provider") {
+      const provider = String(form.get("provider") ?? "").trim().toLowerCase();
+      if (!isLlmProvider(provider)) {
+        return adminRedirect(ctx, { error: "Select a valid LLM provider." });
+      }
+
+      await setActiveLlmProvider(provider, ctx.state.userEmail);
+      const providerLabel = getLlmProviderConfig(provider).label;
+      return adminRedirect(ctx, {
+        message: `LLM provider switched to ${providerLabel}.`,
+      });
+    }
+
     return adminRedirect(ctx, { error: "Unknown admin action." });
   },
 });
@@ -114,8 +142,56 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
         {!data.forbidden
           ? (
             <section class="stack">
+              <h2 class="display">LLM Provider</h2>
+              <form
+                method="POST"
+                action="/admin"
+                class="form-grid card"
+                style="padding: 16px;"
+              >
+                <input type="hidden" name="action" value="set_llm_provider" />
+                <div class="action-row">
+                  {data.llmProviderOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      class={`btn ${
+                        data.currentLlmProvider === option.id
+                          ? "primary"
+                          : "ghost"
+                      }`}
+                      name="provider"
+                      type="submit"
+                      value={option.id}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p class="muted">
+                  Current: {getLlmProviderConfig(data.currentLlmProvider).label}
+                </p>
+                <p class="muted">
+                  {data.llmProviderOptions.map((option) =>
+                    `${option.label}: ${
+                      option.configured ? "configured" : "missing API key"
+                    }`
+                  ).join(" · ")}
+                </p>
+              </form>
+            </section>
+          )
+          : null}
+
+        {!data.forbidden
+          ? (
+            <section class="stack">
               <h2 class="display">Delete Game</h2>
-              <form method="POST" action="/admin" class="form-grid card" style="padding: 16px;">
+              <form
+                method="POST"
+                action="/admin"
+                class="form-grid card"
+                style="padding: 16px;"
+              >
                 <input type="hidden" name="action" value="delete_game" />
                 <label>
                   Game slug

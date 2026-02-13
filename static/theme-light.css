@@ -1,12 +1,12 @@
-/* Light theme overrides with warm, sophisticated palette */
+/* Light theme overrides */
 :root {
-  --bg-1: #fafaf9;
-  --bg-2: #fefdfb;
-  --border: #e7e5e4;
-  --muted: #78716c;
-  --text: #292524;
-  --accent: #f59e0b;
-  --accent-2: #ea580c;
+  --bg-1: #f7f8fb;
+  --bg-2: #ffffff;
+  --border: #e4e7ee;
+  --muted: #667085;
+  --text: #0f172a;
+  --accent: #d0d5dd;
+  --accent-2: #d0d5dd;
 }
 
 html, body {
@@ -15,10 +15,10 @@ html, body {
   background:
     radial-gradient(
       circle at 1px 1px,
-      rgba(120, 113, 108, 0.04) 1px,
+      rgba(2, 6, 23, 0.05) 1px,
       transparent 1.6px
     ) 0 0/12px 12px,
-    linear-gradient(180deg, #fffbf5 0%, var(--bg-1) 60%, #fef7f0 100%);
+    linear-gradient(180deg, #fafbff 0%, var(--bg-1) 60%, #f6f8fc 100%);
 }
 
 .card {
@@ -26,8 +26,8 @@ html, body {
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow:
-    0 1px 2px rgba(68, 64, 60, 0.06),
-    0 1px 3px rgba(68, 64, 60, 0.04);
+    0 1px 2px rgba(16, 24, 40, 0.06),
+    0 1px 3px rgba(16, 24, 40, 0.04);
 }
 
 .btn {
@@ -40,41 +40,42 @@ html, body {
   background: #fff;
   color: var(--text);
   text-decoration: none;
-  letter-spacing: 0.01em;
   transition:
     transform 120ms ease,
     background-color 160ms ease,
     border-color 160ms ease,
     box-shadow 200ms ease;
   box-shadow:
-    0 1px 2px rgba(68, 64, 60, 0.06),
-    0 1px 3px rgba(68, 64, 60, 0.04);
+    0 1px 2px rgba(16, 24, 40, 0.06),
+    0 1px 3px rgba(16, 24, 40, 0.04);
 }
 .btn:hover {
   transform: translateY(-1px);
-  border-color: #d6d3d1;
-  background-color: #fafaf9;
-  box-shadow: 0 4px 12px rgba(68, 64, 60, 0.08);
+  border-color: #cfd5df;
+  background-color: #fafafa;
+  box-shadow: 0 6px 14px rgba(16, 24, 40, 0.08);
 }
 .btn:active {
   transform: translateY(0);
-  box-shadow: inset 0 2px 6px rgba(68, 64, 60, 0.10);
+  box-shadow: inset 0 2px 6px rgba(16, 24, 40, 0.10);
 }
 
-/* Primary: warm amber gradient with subtle elevation */
+/* Primary is intentionally white to match project style */
 .btn.primary {
-  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
-  color: #292524;
-  border-color: #78716c;
+  background: #fff;
+  color: #0f172a;
+  border-color: #0f172a;
   border-width: 1px;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.12);
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.06),
+    0 1px 3px rgba(16, 24, 40, 0.04);
 }
 .btn.primary:hover {
-  background: linear-gradient(180deg, #fcd34d 0%, #fbbf24 100%);
-  border-color: #57534e;
-  color: #1c1917;
-  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.16);
+  background: #fafafa;
+  border-color: #0f172a;
+  color: #0f172a;
+  box-shadow: 0 6px 14px rgba(16, 24, 40, 0.08);
 }
 
 /* Ghost: quiet, minimal, harmonizes with card borders */
@@ -84,32 +85,32 @@ html, body {
   border-color: var(--border);
 }
 .btn.ghost:hover {
-  background: #fafaf9;
-  border-color: #d6d3d1;
-  box-shadow: 0 4px 12px rgba(68, 64, 60, 0.06);
+  background: #fafafa;
+  border-color: #cfd5df;
+  box-shadow: 0 6px 14px rgba(16, 24, 40, 0.06);
 }
 
 /* fine-tune focus and interaction states for accessibility */
 
 .btn:focus,
 .btn:focus-visible {
-  outline: 2px solid #f59e0b;
-  outline-offset: 3px;
-  border-color: #78716c;
+  outline: 2px solid #d0d5dd;
+  outline-offset: 2px;
+  border-color: #0f172a;
 }
 .btn.primary:focus,
 .btn.primary:focus-visible {
   box-shadow:
-    0 0 0 3px rgba(245, 158, 11, 0.25),
-    0 4px 12px rgba(245, 158, 11, 0.12);
+    0 0 0 3px rgba(208, 213, 221, 0.5),
+    0 6px 14px rgba(16, 24, 40, 0.08);
 }
 
 /* Primary active/pressed state */
 .btn.primary:active {
-  background: linear-gradient(180deg, #f59e0b 0%, #ea580c 100%);
-  border-color: #57534e;
-  color: #1c1917;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12);
+  background: #f8fafc;
+  border-color: #0f172a;
+  color: #0f172a;
+  box-shadow: inset 0 2px 6px rgba(16, 24, 40, 0.12);
 }
 
 /* Generic button focus ring while keeping black border */
@@ -125,9 +126,9 @@ html, body {
 .btn.primary:disabled,
 .btn.primary[disabled],
 .btn.primary[aria-disabled="true"] {
-  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
-  border-color: #a8a29e;
-  color: #57534e;
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #64748b;
 }
 
 /* Ensure any plain <button> text is dark */
@@ -146,12 +147,12 @@ button {
   background: #fff;
 }
 .message.user {
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 .message.assistant {
-  background: #faf5ff;
-  border: 1px solid #e9d5ff;
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
 }
 
 .composer {
@@ -172,7 +173,7 @@ button {
 .username-row {
   background: var(--bg-2);
   border: 1px solid var(--border);
-  box-shadow: 0 12px 28px rgba(68, 64, 60, 0.08);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 .username-avatar {
@@ -181,7 +182,7 @@ button {
 }
 
 .username-avatar.placeholder {
-  background: #fafaf9;
+  background: #f8fafc;
 }
 
 .username-chip {
@@ -190,7 +191,7 @@ button {
 }
 
 .username-chip.filled {
-  background: #fafaf9;
+  background: #f1f5f9;
 }
 
 .username-chip.empty {
@@ -199,7 +200,7 @@ button {
 }
 
 .username-chip.active {
-  border-color: #d6d3d1;
+  border-color: #d0d5dd;
   box-shadow: none;
 }
 
@@ -208,16 +209,16 @@ button {
 }
 
 .reload-btn {
-  color: #78716c;
+  color: #667085;
 }
 
 .reload-btn:hover:not(:disabled) {
-  background: #f5f5f4;
+  background: #eceff3;
   color: var(--text);
 }
 
 .reload-btn:disabled {
-  color: #a8a29e;
+  color: #98a2b3;
   background: transparent;
 }
 
@@ -228,7 +229,7 @@ button {
 
 .username-slot .btn.icon:hover,
 .reload-btn:hover:not(:disabled) {
-  border-color: #d6d3d1;
+  border-color: #d0d5dd;
 }
 
 .username-input {

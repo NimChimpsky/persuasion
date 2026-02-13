@@ -42,13 +42,18 @@ MAGIC_LINK_SECRET=2Qv9hJr6Kx1mNp4Tz8bCd3Fw7Ls5Ye0Au2Hi9Mn6Rx4VqPk1
 # Local dev login exists only when RESEND_API_KEY is missing.
 LOCAL_DEV_AUTH_EMAIL=dev@local.test
 
-# Optional: enable AI character responses (OpenAI-compatible providers)
-# Examples:
-# - OpenAI: LLM_BASE_URL=https://api.openai.com/v1
-# - OpenRouter: LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_API_KEY=
-LLM_MODEL=gpt-4.1-mini
+# LLM providers (OpenAI-compatible API format).
+# Active provider is selected by admins at runtime in /admin and stored in KV.
+
+# DeepSeek (default provider)
+DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+DEEPSEEK_API_KEY=
+DEEPSEEK_MODEL=deepseek-chat
+
+# OpenAI
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
 ```
 
 ## Data model (KV)
@@ -59,6 +64,7 @@ LLM_MODEL=gpt-4.1-mini
 - `magic_tokens/<nonce>`: one-time magic login nonce (token carries HMAC
   signature)
 - `sessions/<sessionId>`: login session record
+- `app_settings/llm_provider`: active LLM provider (`deepseek` or `openai`)
 
 ## Notes
 
@@ -75,3 +81,4 @@ LLM_MODEL=gpt-4.1-mini
 - Missing `RESEND_API_KEY` disables magic-link login and enables local dev login
   on localhost.
 - Deno KV is mandatory for this app; there is no non-persistent fallback.
+- DeepSeek is the default LLM provider until an admin switches it in `/admin`.

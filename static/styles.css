@@ -53,7 +53,7 @@ main {
 
 .site-header {
   margin-bottom: 8px;
-  padding: 14px;
+  padding: 6px 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -96,16 +96,9 @@ main {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin: 4px -14px -14px;
-  padding: 12px 14px 10px;
-  background: linear-gradient(
-    180deg,
-    rgba(15, 23, 42, 0.045) 0%,
-    rgba(15, 23, 42, 0) 100%
-  );
-  box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.12);
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(15, 23, 42, 0.14);
 }
 
 .muted {
@@ -442,8 +435,8 @@ select:focus {
 
   .header-subnav {
     justify-content: flex-start;
-    margin: 8px -14px -14px;
-    padding: 10px 14px 10px;
+    margin-top: 4px;
+    padding-top: 10px;
   }
 
   .header-shell {

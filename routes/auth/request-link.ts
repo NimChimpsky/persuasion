@@ -1,7 +1,4 @@
-import {
-  createMagicToken,
-  normalizeEmail,
-} from "../../lib/auth.ts";
+import { createMagicToken, normalizeEmail } from "../../lib/auth.ts";
 import { sendMagicLinkEmail } from "../../lib/email.ts";
 import { env } from "../../lib/env.ts";
 import { define } from "../../utils.ts";

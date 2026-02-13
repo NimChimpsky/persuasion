@@ -10,9 +10,13 @@ function parseCsvSet(input: string | undefined): Set<string> {
 export const env = {
   appBaseUrl: Deno.env.get("APP_BASE_URL") ?? "https://persuasion.technology",
   adminEmails: parseCsvSet(Deno.env.get("ADMIN_EMAILS")),
-  llmBaseUrl: Deno.env.get("LLM_BASE_URL") ?? "https://api.openai.com/v1",
-  llmApiKey: Deno.env.get("LLM_API_KEY") ?? "",
-  llmModel: Deno.env.get("LLM_MODEL") ?? "gpt-4.1-mini",
+  openaiBaseUrl: Deno.env.get("OPENAI_BASE_URL") ?? "https://api.openai.com/v1",
+  openaiApiKey: Deno.env.get("OPENAI_API_KEY") ?? "",
+  openaiModel: Deno.env.get("OPENAI_MODEL") ?? "gpt-4.1-mini",
+  deepseekBaseUrl: Deno.env.get("DEEPSEEK_BASE_URL") ??
+    "https://api.deepseek.com/v1",
+  deepseekApiKey: Deno.env.get("DEEPSEEK_API_KEY") ?? "",
+  deepseekModel: Deno.env.get("DEEPSEEK_MODEL") ?? "deepseek-chat",
   resendApiKey: Deno.env.get("RESEND_API_KEY") ?? "",
   emailFrom: Deno.env.get("EMAIL_FROM") ?? "gamesmaster@persuasion.technology",
   magicLinkSecret: Deno.env.get("MAGIC_LINK_SECRET") ??
