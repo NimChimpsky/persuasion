@@ -1,19 +1,20 @@
 import { generateCharacterReply } from "../../../../lib/llm.ts";
-import {
-  createNarratorCharacter,
-  NARRATOR_ID,
-} from "../../../../shared/narrator.ts";
+import { slugify } from "../../../../lib/slug.ts";
 import {
   getGameBySlug,
   getUserProgress,
   saveUserProgress,
 } from "../../../../lib/store.ts";
-import { buildSidePanes } from "../../../../shared/game_ui.ts";
+import {
+  createNarratorCharacter,
+  NARRATOR_ID,
+} from "../../../../shared/narrator.ts";
 import {
   appendEvents,
   parseTranscript,
 } from "../../../../shared/transcript.ts";
 import type {
+  Character,
   GameConfig,
   TranscriptEvent,
   UserGameSnapshot,
@@ -23,6 +24,22 @@ import { define } from "../../../../utils.ts";
 interface MessageRequest {
   text: string;
   targetCharacterId?: string;
+}
+
+interface NewCharacterInput {
+  name: string;
+  bio: string;
+  systemPrompt: string;
+}
+
+interface GameUpdateDirective {
+  cleanText: string;
+  newCharacters: NewCharacterInput[];
+  unlockCharacterIds: string[];
+}
+
+interface GameForUser extends GameConfig {
+  encounteredCharacterIds: string[];
 }
 
 function json(data: unknown, status = 200): Response {
@@ -35,20 +52,130 @@ function json(data: unknown, status = 200): Response {
 function buildUserGameSnapshot(game: GameConfig): UserGameSnapshot {
   return {
     title: game.title,
+    introText: game.introText,
     plotPointsText: game.plotPointsText,
     narratorPrompt: game.narratorPrompt,
     characters: game.characters.map((character) => ({
       ...character,
     })),
+    encounteredCharacterIds: [],
   };
 }
 
 function getGameForUser(
   game: GameConfig,
   snapshot: UserGameSnapshot | undefined,
-): GameConfig {
-  if (!snapshot) return game;
-  return { ...game, ...snapshot };
+): GameForUser {
+  if (!snapshot) {
+    return { ...game, encounteredCharacterIds: [] };
+  }
+
+  return {
+    ...game,
+    ...snapshot,
+    encounteredCharacterIds: snapshot.encounteredCharacterIds ?? [],
+  };
+}
+
+function uniqueCharacterId(baseName: string, used: Set<string>): string {
+  const base = slugify(baseName);
+  let candidate = base;
+  let index = 2;
+  while (used.has(candidate)) {
+    candidate = `${base}-${index}`;
+    index++;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+function parseGameUpdateDirective(replyText: string): GameUpdateDirective {
+  const match = replyText.match(
+    /<game_update>\s*([\s\S]*?)\s*<\/game_update>/i,
+  );
+
+  if (!match) {
+    return {
+      cleanText: replyText.trim(),
+      newCharacters: [],
+      unlockCharacterIds: [],
+    };
+  }
+
+  const before = replyText.slice(0, match.index).trimEnd();
+  const after = replyText.slice((match.index ?? 0) + match[0].length)
+    .trimStart();
+  const cleanText = `${before}${before && after ? "\n\n" : ""}${after}`.trim();
+
+  try {
+    const parsed = JSON.parse(match[1]) as {
+      new_characters?: Array<{
+        name?: string;
+        bio?: string;
+        systemPrompt?: string;
+      }>;
+      unlock_character_ids?: string[];
+    };
+
+    const newCharacters = (parsed.new_characters ?? [])
+      .map((item) => ({
+        name: String(item.name ?? "").trim(),
+        bio: String(item.bio ?? "").trim(),
+        systemPrompt: String(item.systemPrompt ?? "").trim(),
+      }))
+      .filter((item) => item.name && item.bio && item.systemPrompt)
+      .slice(0, 3);
+
+    const unlockCharacterIds = (parsed.unlock_character_ids ?? [])
+      .map((id) => slugify(String(id ?? "").trim()))
+      .filter(Boolean);
+
+    return {
+      cleanText,
+      newCharacters,
+      unlockCharacterIds,
+    };
+  } catch {
+    return {
+      cleanText,
+      newCharacters: [],
+      unlockCharacterIds: [],
+    };
+  }
+}
+
+function mergeCharacters(
+  existing: Character[],
+  incoming: NewCharacterInput[],
+): { characters: Character[]; addedCharacterIds: string[] } {
+  if (incoming.length === 0) {
+    return { characters: existing, addedCharacterIds: [] };
+  }
+
+  const usedIds = new Set(existing.map((character) => character.id));
+  const existingByName = new Set(
+    existing.map((character) => character.name.trim().toLowerCase()),
+  );
+
+  const merged = [...existing];
+  const addedCharacterIds: string[] = [];
+
+  for (const item of incoming) {
+    const normalizedName = item.name.toLowerCase();
+    if (existingByName.has(normalizedName)) continue;
+
+    const id = uniqueCharacterId(item.name, usedIds);
+    merged.push({
+      id,
+      name: item.name,
+      bio: item.bio,
+      systemPrompt: item.systemPrompt,
+    });
+    existingByName.add(normalizedName);
+    addedCharacterIds.push(id);
+  }
+
+  return { characters: merged, addedCharacterIds };
 }
 
 export const handler = define.handlers({
@@ -105,18 +232,21 @@ export const handler = define.handlers({
       at: new Date().toISOString(),
     };
 
-    const replyText = await generateCharacterReply({
+    const rawReplyText = await generateCharacterReply({
       game: gameForUser,
       character: targetCharacter,
       events: [...events, userEvent],
       userPrompt: text,
     });
+    const parsedUpdate = parseGameUpdateDirective(rawReplyText);
+    const visibleReply = parsedUpdate.cleanText ||
+      `(${targetCharacter.name}) ...`;
 
     const characterEvent: TranscriptEvent = {
       role: "character",
       characterId: targetCharacter.id,
       characterName: targetCharacter.name,
-      text: replyText,
+      text: visibleReply,
       at: new Date().toISOString(),
     };
 
@@ -125,22 +255,50 @@ export const handler = define.handlers({
       characterEvent,
     ]);
 
+    const mergedCharacters = mergeCharacters(
+      gameForUser.characters,
+      parsedUpdate.newCharacters,
+    );
+    const updatedCharacters = mergedCharacters.characters;
+    const validCharacterIds = new Set(updatedCharacters.map((c) => c.id));
+    const encounteredCharacterIds = new Set(
+      gameForUser.encounteredCharacterIds,
+    );
+
+    if (
+      targetCharacter.id !== NARRATOR_ID &&
+      validCharacterIds.has(targetCharacter.id)
+    ) {
+      encounteredCharacterIds.add(targetCharacter.id);
+    }
+    for (const id of parsedUpdate.unlockCharacterIds) {
+      if (validCharacterIds.has(id)) encounteredCharacterIds.add(id);
+    }
+
+    const nextSnapshot: UserGameSnapshot = {
+      title: gameForUser.title,
+      introText: gameForUser.introText,
+      plotPointsText: gameForUser.plotPointsText,
+      narratorPrompt: gameForUser.narratorPrompt,
+      characters: updatedCharacters,
+      encounteredCharacterIds: [...encounteredCharacterIds],
+    };
+
     await saveUserProgress(userEmail, slug, {
       transcript: appended,
       updatedAt: new Date().toISOString(),
-      gameSnapshot,
+      gameSnapshot: nextSnapshot,
     });
-
-    const updatedEvents = [...events, userEvent, characterEvent];
 
     return json({
       ok: true,
       events: [userEvent, characterEvent],
-      sidePanes: buildSidePanes(
-        gameForUser.characters,
-        gameForUser.plotPointsText,
-        updatedEvents,
-      ),
+      characters: updatedCharacters.map((character) => ({
+        id: character.id,
+        name: character.name,
+        bio: character.bio,
+      })),
+      encounteredCharacterIds: nextSnapshot.encounteredCharacterIds,
     });
   },
 });

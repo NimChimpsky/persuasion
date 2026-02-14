@@ -11,6 +11,7 @@ export function createNarratorCharacter(
   return {
     id: NARRATOR_ID,
     name: NARRATOR_NAME,
+    bio: "Keeps track of clues, continuity, and next best moves.",
     systemPrompt: narratorPrompt?.trim() || DEFAULT_NARRATOR_PROMPT,
   };
 }

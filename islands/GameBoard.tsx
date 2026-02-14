@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { NARRATOR_ID, NARRATOR_NAME } from "../shared/narrator.ts";
-import type { SidePane, TranscriptEvent } from "../shared/types.ts";
+import type { TranscriptEvent } from "../shared/types.ts";
 
 interface CharacterRef {
   id: string;
   name: string;
+  bio: string;
 }
 
 interface GameBoardProps {
   slug: string;
   characters: CharacterRef[];
   initialEvents: TranscriptEvent[];
-  initialSidePanes: SidePane[];
+  initialEncounteredCharacterIds: string[];
 }
 
 interface MentionState {
@@ -23,13 +24,15 @@ interface MentionState {
 interface ApiResponse {
   ok: boolean;
   events?: TranscriptEvent[];
-  sidePanes?: SidePane[];
+  characters?: CharacterRef[];
+  encounteredCharacterIds?: string[];
   error?: string;
 }
 
 const NARRATOR_REF: CharacterRef = {
   id: NARRATOR_ID,
   name: NARRATOR_NAME,
+  bio: "Keeps track of clues and suggests strong next moves.",
 };
 
 function parseMention(text: string, cursor: number): MentionState | null {
@@ -59,9 +62,12 @@ function stripMentions(input: string): string {
 
 export default function GameBoard(props: GameBoardProps) {
   const [events, setEvents] = useState<TranscriptEvent[]>(props.initialEvents);
-  const [sidePanes, setSidePanes] = useState<SidePane[]>(
-    props.initialSidePanes,
+  const [characters, setCharacters] = useState<CharacterRef[]>(
+    props.characters,
   );
+  const [encounteredCharacterIds, setEncounteredCharacterIds] = useState<
+    string[]
+  >(props.initialEncounteredCharacterIds);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -72,8 +78,8 @@ export default function GameBoard(props: GameBoardProps) {
 
   const mention = useMemo(() => parseMention(draft, cursor), [draft, cursor]);
   const mentionableCharacters = useMemo(
-    () => [NARRATOR_REF, ...props.characters],
-    [props.characters],
+    () => [NARRATOR_REF, ...characters],
+    [characters],
   );
 
   const filteredCharacters = useMemo(() => {
@@ -84,6 +90,11 @@ export default function GameBoard(props: GameBoardProps) {
         character.name.toLowerCase().includes(mention.query);
     });
   }, [mention, mentionableCharacters]);
+
+  const encounteredSet = useMemo(
+    () => new Set(encounteredCharacterIds.map((id) => id.toLowerCase())),
+    [encounteredCharacterIds],
+  );
 
   useEffect(() => {
     const el = messagesRef.current;
@@ -113,14 +124,12 @@ export default function GameBoard(props: GameBoardProps) {
 
   const onSubmit = async (event: Event) => {
     event.preventDefault();
-
     if (loading) return;
 
     const targetCharacterId = findTargetCharacterId(
       draft,
       mentionableCharacters,
     );
-
     const userText = stripMentions(draft);
     if (!userText) {
       setError("Enter a prompt to continue the game.");
@@ -133,9 +142,7 @@ export default function GameBoard(props: GameBoardProps) {
     try {
       const response = await fetch(`/api/games/${props.slug}/message`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: userText,
           targetCharacterId,
@@ -143,14 +150,23 @@ export default function GameBoard(props: GameBoardProps) {
       });
 
       const payload = await response.json() as ApiResponse;
-      if (
-        !response.ok || !payload.ok || !payload.events || !payload.sidePanes
-      ) {
+      if (!response.ok || !payload.ok) {
         throw new Error(payload.error || "Unable to send message");
       }
+      if (
+        !payload.events || !payload.characters ||
+        !payload.encounteredCharacterIds
+      ) {
+        throw new Error("Malformed response payload");
+      }
 
-      setEvents((prev) => [...prev, ...payload.events!]);
-      setSidePanes(payload.sidePanes!);
+      const nextEvents = payload.events;
+      const nextCharacters = payload.characters;
+      const nextEncounteredIds = payload.encounteredCharacterIds;
+
+      setEvents((prev) => [...prev, ...nextEvents]);
+      setCharacters(nextCharacters);
+      setEncounteredCharacterIds(nextEncounteredIds);
       setDraft("");
       setCursor(0);
     } catch (err) {
@@ -160,105 +176,100 @@ export default function GameBoard(props: GameBoardProps) {
     }
   };
 
-  let sideIndex = 0;
-
   return (
-    <section class="game-board">
-      {Array.from({ length: 9 }).map((_, index) => {
-        if (index === 4) {
-          return (
-            <article key="center" class="card board-pane board-center">
-              <div class="chat-shell">
-                <div class="messages" ref={messagesRef}>
-                  {events.length === 0
-                    ? (
-                      <p class="notice">
-                        Start the scene by typing normally for the narrator, or
-                        mention a character like @{props.characters[0]?.id ??
-                          NARRATOR_ID}.
-                      </p>
-                    )
-                    : null}
+    <section class="game-layout">
+      <aside class="game-characters">
+        <h3>Characters</h3>
+        <div class="character-grid">
+          {characters.map((character) => {
+            const encountered = encounteredSet.has(character.id.toLowerCase());
+            return (
+              <article
+                key={character.id}
+                class={`card character-summary ${
+                  encountered ? "" : "is-blurred"
+                }`}
+              >
+                <p class="character-id">@{character.id}</p>
+                <h4>{character.name}</h4>
+                <p>{character.bio}</p>
+              </article>
+            );
+          })}
+        </div>
+      </aside>
 
-                  {events.map((item, itemIndex) => (
-                    <div
-                      class={`message ${
-                        item.role === "user" ? "user" : "character"
-                      }`}
-                      key={`${item.at}-${itemIndex}`}
+      <article class="card chat-panel">
+        <div class="chat-shell">
+          <div class="messages" ref={messagesRef}>
+            {events.length === 0
+              ? (
+                <p class="notice">
+                  Start by talking to the narrator, or mention a character like
+                  {" "}
+                  @{characters[0]?.id ?? NARRATOR_ID}.
+                </p>
+              )
+              : null}
+
+            {events.map((item, itemIndex) => (
+              <div
+                class={`message ${item.role === "user" ? "user" : "character"}`}
+                key={`${item.at}-${itemIndex}`}
+              >
+                <p class="message-meta">
+                  {item.role === "user"
+                    ? `You -> ${item.characterName}`
+                    : item.characterName}
+                </p>
+                <p>{item.text}</p>
+              </div>
+            ))}
+          </div>
+
+          <form class="composer" onSubmit={onSubmit}>
+            {mention && filteredCharacters.length > 0
+              ? (
+                <div class="mention-list">
+                  {filteredCharacters.map((character) => (
+                    <button
+                      key={character.id}
+                      type="button"
+                      class="mention-item"
+                      onClick={() => applyMention(character)}
                     >
-                      <p class="message-meta">
-                        {item.role === "user"
-                          ? `You -> ${item.characterName}`
-                          : item.characterName}
-                      </p>
-                      <p>{item.text}</p>
-                    </div>
+                      @{character.id} · {character.name}
+                    </button>
                   ))}
                 </div>
+              )
+              : null}
 
-                <form class="composer" onSubmit={onSubmit}>
-                  {mention && filteredCharacters.length > 0
-                    ? (
-                      <div class="mention-list">
-                        {filteredCharacters.map((character) => (
-                          <button
-                            key={character.id}
-                            type="button"
-                            class="mention-item"
-                            onClick={() => applyMention(character)}
-                          >
-                            @{character.id} · {character.name}
-                          </button>
-                        ))}
-                      </div>
-                    )
-                    : null}
+            <textarea
+              ref={textareaRef}
+              value={draft}
+              placeholder="Message the narrator, or type @character to direct someone specific..."
+              onInput={(event) => {
+                const value = (event.target as HTMLTextAreaElement).value;
+                setDraft(value);
+              }}
+              onKeyUp={(event) => {
+                const target = event.currentTarget as HTMLTextAreaElement;
+                setCursor(target.selectionStart || 0);
+              }}
+              onClick={(event) => {
+                const target = event.currentTarget as HTMLTextAreaElement;
+                setCursor(target.selectionStart || 0);
+              }}
+            />
 
-                  <textarea
-                    ref={textareaRef}
-                    value={draft}
-                    placeholder="Type your message (or @character to direct someone specific)..."
-                    onInput={(event) => {
-                      const value = (event.target as HTMLTextAreaElement).value;
-                      setDraft(value);
-                    }}
-                    onKeyUp={(event) => {
-                      const target = event.currentTarget as HTMLTextAreaElement;
-                      setCursor(target.selectionStart || 0);
-                    }}
-                    onClick={(event) => {
-                      const target = event.currentTarget as HTMLTextAreaElement;
-                      setCursor(target.selectionStart || 0);
-                    }}
-                  />
-
-                  <button class="btn primary" type="submit" disabled={loading}>
-                    {loading ? "Sending..." : "Send"}
-                  </button>
-                </form>
-              </div>
-              {error
-                ? <p class="notice bad" style="margin: 8px;">{error}</p>
-                : null}
-            </article>
-          );
-        }
-
-        const pane = sidePanes[sideIndex] ?? {
-          title: `Panel ${sideIndex + 1}`,
-          body: "Placeholder",
-          kind: "plot" as const,
-        };
-        sideIndex++;
-
-        return (
-          <article key={`side-${index}`} class="card board-pane">
-            <h3>{pane.title}</h3>
-            <p>{pane.body}</p>
-          </article>
-        );
-      })}
+            <button class="btn primary" type="submit" disabled={loading}>
+              {loading ? "Sending..." : "Send"}
+            </button>
+          </form>
+        </div>
+        {error ? <p class="notice bad" style="margin: 8px;">{error}</p> : null}
+      </article>
     </section>
   );
 }

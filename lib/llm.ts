@@ -70,6 +70,9 @@ export async function generateCharacterReply(
     character.systemPrompt,
     "Global plot guidance:",
     game.plotPointsText || "No global plot points provided.",
+    "If you introduce a brand-new character, append this machine-readable block at the very end:",
+    '<game_update>{"new_characters":[{"name":"Character Name","bio":"Short public bio","systemPrompt":"System prompt for the new character"}],"unlock_character_ids":["character-id"]}</game_update>',
+    "Only include game_update when there is a meaningful state update. Keep JSON valid and use lowercase kebab-case IDs in unlock_character_ids.",
   ].join("\n\n");
 
   const userInput = [

@@ -3,6 +3,7 @@ import { useMemo, useState } from "preact/hooks";
 interface CharacterDraft {
   key: string;
   name: string;
+  bio: string;
   prompt: string;
 }
 
@@ -14,12 +15,14 @@ function createDraft(index: number): CharacterDraft {
   return {
     key: `char-${index}-${crypto.randomUUID()}`,
     name: "",
+    bio: "",
     prompt: "",
   };
 }
 
 export default function AdminGameForm(props: AdminGameFormProps) {
   const [title, setTitle] = useState("");
+  const [introText, setIntroText] = useState("");
   const [plotPointsText, setPlotPointsText] = useState("");
   const [narratorPrompt, setNarratorPrompt] = useState("");
   const [characters, setCharacters] = useState<CharacterDraft[]>([
@@ -49,7 +52,7 @@ export default function AdminGameForm(props: AdminGameFormProps) {
 
   const updateCharacter = (
     key: string,
-    patch: Partial<Pick<CharacterDraft, "name" | "prompt">>,
+    patch: Partial<Pick<CharacterDraft, "name" | "bio" | "prompt">>,
   ) => {
     setCharacters((prev) =>
       prev.map((item) => item.key === key ? { ...item, ...patch } : item)
@@ -79,6 +82,18 @@ export default function AdminGameForm(props: AdminGameFormProps) {
             />
           </label>
           <p class="inline-meta">URL preview: /game/{slugPreview}</p>
+
+          <label>
+            Intro text
+            <textarea
+              name="introText"
+              required
+              value={introText}
+              onInput={(event) =>
+                setIntroText((event.target as HTMLTextAreaElement).value)}
+              placeholder="You arrive at the estate moments before midnight. Five witnesses are present, each hiding something that could change the outcome."
+            />
+          </label>
 
           <label>
             Plot points (one per line)
@@ -138,6 +153,20 @@ A hidden archive key exists"
                       name: (event.target as HTMLInputElement).value,
                     })}
                   placeholder="Detective Morrow"
+                />
+              </label>
+
+              <label>
+                Bio
+                <textarea
+                  name={`characterBio_${index}`}
+                  required
+                  value={character.bio}
+                  onInput={(event) =>
+                    updateCharacter(character.key, {
+                      bio: (event.target as HTMLTextAreaElement).value,
+                    })}
+                  placeholder="A sharp and composed investigator with a habit of testing every claim."
                 />
               </label>
 

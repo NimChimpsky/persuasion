@@ -1,12 +1,14 @@
 export interface Character {
   id: string;
   name: string;
+  bio: string;
   systemPrompt: string;
 }
 
 export interface GameConfig {
   slug: string;
   title: string;
+  introText: string;
   plotPointsText: string;
   narratorPrompt?: string;
   characters: Character[];
@@ -36,19 +38,15 @@ export interface TranscriptEvent {
 
 export interface UserGameSnapshot {
   title: string;
+  introText: string;
   plotPointsText: string;
   narratorPrompt?: string;
   characters: Character[];
+  encounteredCharacterIds: string[];
 }
 
 export interface UserProgress {
   transcript: string;
   updatedAt: string;
   gameSnapshot?: UserGameSnapshot;
-}
-
-export interface SidePane {
-  title: string;
-  body: string;
-  kind: "character" | "plot";
 }

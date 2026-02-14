@@ -33,13 +33,16 @@ function parseCharacters(form: FormData): Character[] {
     : 0;
 
   const names: string[] = [];
+  const bios: string[] = [];
   const prompts: string[] = [];
 
   for (let i = 0; i < count; i++) {
     const name = String(form.get(`characterName_${i}`) ?? "").trim();
+    const bio = String(form.get(`characterBio_${i}`) ?? "").trim();
     const prompt = String(form.get(`characterPrompt_${i}`) ?? "").trim();
-    if (!name || !prompt) continue;
+    if (!name || !bio || !prompt) continue;
     names.push(name);
+    bios.push(bio);
     prompts.push(prompt);
   }
 
@@ -48,6 +51,7 @@ function parseCharacters(form: FormData): Character[] {
   return names.map((name, index) => ({
     id: ids[index],
     name,
+    bio: bios[index],
     systemPrompt: prompts[index],
   }));
 }
@@ -101,14 +105,15 @@ export const handler = define.handlers<PublishData>({
 
     const form = await ctx.req.formData();
     const title = String(form.get("title") ?? "").trim();
+    const introText = String(form.get("introText") ?? "").trim();
     const plotPointsText = String(form.get("plotPointsText") ?? "").trim();
     const narratorPrompt = String(form.get("narratorPrompt") ?? "").trim();
     const characters = parseCharacters(form);
 
-    if (!title || characters.length === 0) {
+    if (!title || !introText || characters.length === 0) {
       return Response.redirect(
         new URL(
-          "/create-game?error=Provide+title+and+at+least+one+character",
+          "/create-game?error=Provide+title,+intro,+and+at+least+one+character",
           ctx.req.url,
         ),
         303,
@@ -122,6 +127,7 @@ export const handler = define.handlers<PublishData>({
     const gameConfig: GameConfig = {
       slug,
       title,
+      introText,
       plotPointsText,
       narratorPrompt,
       characters,
