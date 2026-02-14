@@ -20,7 +20,7 @@ export default function SiteHeader(props: SiteHeaderProps) {
         <div class="header-spacer" />
         <span class="header-email">{props.userEmail}</span>
         <a class="btn ghost" href="/auth/logout-all">Log out all devices</a>
-        <a class="btn ghost" href="/auth/logout">Log out this</a>
+        <a class="btn ghost" href="/auth/logout">Log out</a>
       </div>
       <nav class="header-subnav">
         {props.isAdmin ? <a class="btn primary" href="/admin">admin</a> : null}
