@@ -30,7 +30,7 @@ export default define.page(function App({ Component, state }) {
         <link rel="stylesheet" href="/styles.css" />
         <link rel="stylesheet" href="/theme-light.css" />
       </head>
-      <body f-client-nav>
+      <body class={isLoggedIn ? "has-app-header" : ""} f-client-nav>
         <Partial name="app-shell">
           {isLoggedIn && state.userEmail
             ? (

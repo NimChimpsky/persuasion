@@ -14,7 +14,7 @@ body {
 }
 
 body {
-  line-height: 1.5;
+  line-height: 1.42;
 }
 
 img,
@@ -39,7 +39,15 @@ main {
 
 .page-shell {
   min-height: 100vh;
-  padding: 0 18px 18px;
+  padding: 0 14px 14px;
+}
+
+body.has-app-header .page-shell {
+  margin-top: -14px;
+}
+
+body.has-app-header .page-shell > .container {
+  margin-top: 0;
 }
 
 .container {
@@ -48,17 +56,17 @@ main {
 }
 
 .header-shell {
-  padding: 8px 18px 0;
+  padding: 4px 14px 0;
 }
 
 .site-header {
-  margin-bottom: 2px;
-  padding: 2px 0;
+  margin-bottom: 0;
+  padding: 1px 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 4px;
 }
 
 .page-title {
@@ -69,16 +77,16 @@ main {
 .header-top-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .header-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.38rem;
   font-weight: 700;
   text-decoration: none;
   letter-spacing: -0.02em;
@@ -103,10 +111,10 @@ main {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   margin-top: 0;
-  padding-top: 8px;
+  padding-top: 6px;
   border-top: 1px solid rgba(15, 23, 42, 0.14);
 }
 
@@ -117,33 +125,33 @@ main {
 .nav-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .form-card {
   max-width: 620px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 18px;
 }
 
 .landing-hero {
   text-align: center;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 180px);
+  min-height: calc(100vh - 150px);
 }
 
 .landing-title {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .landing-title h1 {
@@ -152,19 +160,19 @@ main {
 }
 
 .landing-title-logo {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
 }
 
 .landing-login-form {
   width: min(280px, 100%);
-  margin-top: 28px;
+  margin-top: 16px;
 }
 
 .landing-login-form input,
 .landing-login-form .landing-cta-btn {
-  min-height: 46px;
+  min-height: 40px;
 }
 
 .landing-login-form .action-row {
@@ -191,10 +199,10 @@ main {
 
 .landing-inline-feedback {
   width: 100%;
-  min-height: 44px;
+  min-height: 38px;
   margin: 4px 0 0;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
   border: 1px solid transparent;
   opacity: 0;
   transition: opacity 120ms ease;
@@ -216,15 +224,15 @@ main {
 
 .form-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 label {
-  font-size: 0.93rem;
+  font-size: 0.9rem;
   color: var(--muted);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 input,
@@ -232,14 +240,14 @@ textarea,
 select {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 11px 12px;
+  border-radius: 10px;
+  padding: 9px 10px;
   background: #fff;
   color: var(--text);
 }
 
 textarea {
-  min-height: 120px;
+  min-height: 96px;
   resize: vertical;
 }
 
@@ -252,7 +260,7 @@ select:focus {
 
 .action-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -260,7 +268,7 @@ select:focus {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .provider-buttons {
@@ -269,9 +277,9 @@ select:focus {
 
 .provider-feedback-slot {
   width: min(420px, 48%);
-  min-height: 42px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
   visibility: hidden;
@@ -292,8 +300,8 @@ select:focus {
 }
 
 .notice {
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 8px 10px;
   border: 1px solid var(--border);
   background: #fff;
 }
@@ -310,24 +318,24 @@ select:focus {
 
 .cards-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
 .game-card {
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .game-intro {
-  padding: 14px 16px;
+  padding: 10px 12px;
 }
 
 .game-intro h2 {
-  font-size: 1.5rem;
-  margin-bottom: 8px;
+  font-size: 1.35rem;
+  margin-bottom: 6px;
 }
 
 .game-intro p {
@@ -337,32 +345,32 @@ select:focus {
 .game-layout {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-  gap: 12px;
-  min-height: calc(100vh - 260px);
+  gap: 10px;
+  min-height: calc(100vh - 230px);
 }
 
 .game-characters {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .game-characters h3 {
-  font-size: 1.04rem;
+  font-size: 1rem;
 }
 
 .character-grid {
   display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
 .character-summary {
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: 148px;
+  gap: 6px;
+  min-height: 132px;
   transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
@@ -372,7 +380,7 @@ select:focus {
 
 .character-summary p {
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 
 .character-summary.is-blurred {
@@ -386,7 +394,7 @@ select:focus {
 }
 
 .chat-panel {
-  min-height: 420px;
+  min-height: 380px;
   padding: 0;
 }
 
@@ -394,22 +402,22 @@ select:focus {
   display: grid;
   grid-template-rows: 1fr auto;
   height: 100%;
-  min-height: 420px;
+  min-height: 380px;
 }
 
 .messages {
   overflow-y: auto;
-  padding: 14px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .message {
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: #fff;
-  padding: 10px 12px;
+  padding: 8px 10px;
   max-width: 94%;
 }
 
@@ -430,24 +438,24 @@ select:focus {
 }
 
 .message-meta {
-  font-size: 0.83rem;
+  font-size: 0.8rem;
   color: var(--muted);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .composer {
   border-top: 1px solid var(--border);
-  padding: 10px;
+  padding: 8px;
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 10px;
+  gap: 8px;
   position: relative;
   background: #fff;
 }
 
 .composer textarea {
-  min-height: 84px;
-  max-height: 220px;
+  min-height: 72px;
+  max-height: 180px;
 }
 
 .composer .btn {
@@ -456,14 +464,14 @@ select:focus {
 
 .mention-list {
   position: absolute;
-  left: 10px;
-  right: 118px;
-  bottom: calc(100% + 8px);
+  left: 8px;
+  right: 104px;
+  bottom: calc(100% + 6px);
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 8px 30px rgba(68, 64, 60, 0.1);
-  max-height: 180px;
+  max-height: 160px;
   overflow: auto;
   z-index: 20;
 }
@@ -474,7 +482,7 @@ select:focus {
   border: 0;
   background: transparent;
   text-align: left;
-  padding: 9px 11px;
+  padding: 7px 9px;
   cursor: pointer;
 }
 
@@ -485,23 +493,23 @@ select:focus {
 
 .character-row {
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 10px;
   background: #fff;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .character-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .inline-meta {
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   color: var(--muted);
 }
 
@@ -540,8 +548,8 @@ select:focus {
 
   .header-subnav {
     justify-content: flex-start;
-    margin-top: 4px;
-    padding-top: 10px;
+    margin-top: 2px;
+    padding-top: 8px;
   }
 
   .provider-toolbar {
@@ -554,14 +562,22 @@ select:focus {
   }
 
   .header-shell {
-    padding: 8px 12px 0;
+    padding: 4px 10px 0;
   }
 
   .page-shell {
-    padding: 12px;
+    padding: 10px;
+  }
+
+  body.has-app-header .page-shell {
+    margin-top: -10px;
+  }
+
+  body.has-app-header .page-shell > .container {
+    margin-top: 0;
   }
 
   .hero {
-    padding-top: 72px;
+    padding-top: 52px;
   }
 }
