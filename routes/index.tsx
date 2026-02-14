@@ -34,7 +34,16 @@ export default define.page<typeof handler>(
     return (
       <main class="hero page-shell">
         <div class="container landing-hero stack" style="max-width: 760px;">
-          <h1>PERSUASION</h1>
+          <div class="landing-title">
+            <img
+              class="landing-title-logo"
+              src="/robot-book-yellow-64.png"
+              width="40"
+              height="40"
+              alt=""
+            />
+            <h1>PERSUASION</h1>
+          </div>
           <p class="muted">
             An interactive character driven experience of secrets and lies ...
             and crypto prizes
