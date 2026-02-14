@@ -425,6 +425,10 @@ select:focus {
   border-color: #e9d5ff;
 }
 
+.message.is-streaming {
+  opacity: 0.94;
+}
+
 .message-meta {
   font-size: 0.83rem;
   color: var(--muted);

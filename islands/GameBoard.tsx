@@ -21,11 +21,27 @@ interface MentionState {
   cursor: number;
 }
 
-interface ApiResponse {
-  ok: boolean;
-  events?: TranscriptEvent[];
-  characters?: CharacterRef[];
-  encounteredCharacterIds?: string[];
+interface JsonErrorResponse {
+  ok?: boolean;
+  error?: string;
+}
+
+interface StreamAckPayload {
+  userEvent: TranscriptEvent;
+  character: { id: string; name: string };
+}
+
+interface StreamDeltaPayload {
+  text: string;
+}
+
+interface StreamFinalPayload {
+  characterEvent: TranscriptEvent;
+  characters: CharacterRef[];
+  encounteredCharacterIds: string[];
+}
+
+interface StreamErrorPayload {
   error?: string;
 }
 
@@ -34,6 +50,46 @@ const NARRATOR_REF: CharacterRef = {
   name: NARRATOR_NAME,
   bio: "Keeps track of clues and suggests strong next moves.",
 };
+
+function renderInlineAsterisk(text: string) {
+  const parts = [];
+  const tokenRegex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let tokenIndex = 0;
+
+  while ((match = tokenRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    const token = match[0];
+    if (token.startsWith("**") && token.endsWith("**")) {
+      parts.push(
+        <strong key={`strong-${tokenIndex}`}>{token.slice(2, -2)}</strong>,
+      );
+    } else {
+      parts.push(<em key={`em-${tokenIndex}`}>{token.slice(1, -1)}</em>);
+    }
+    tokenIndex++;
+    lastIndex = tokenRegex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
+function renderMessageText(text: string) {
+  const lines = text.split("\n");
+  return lines.flatMap((line, index) => {
+    const renderedLine = renderInlineAsterisk(line);
+    if (index === lines.length - 1) return [renderedLine];
+    return [renderedLine, <br key={`br-${index}`} />];
+  });
+}
 
 function parseMention(text: string, cursor: number): MentionState | null {
   const before = text.slice(0, cursor);
@@ -60,6 +116,60 @@ function stripMentions(input: string): string {
   return input.replace(/@[a-z0-9_-]+/gi, "").replace(/\s+/g, " ").trim();
 }
 
+async function consumeSseStream(
+  response: Response,
+  onEvent: (eventName: string, data: string) => void,
+): Promise<void> {
+  if (!response.body) {
+    throw new Error("No stream body");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let currentEvent = "message";
+  let dataLines: string[] = [];
+
+  const dispatch = () => {
+    if (!dataLines.length) {
+      currentEvent = "message";
+      return;
+    }
+    onEvent(currentEvent, dataLines.join("\n"));
+    currentEvent = "message";
+    dataLines = [];
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    let newlineIndex = buffer.indexOf("\n");
+    while (newlineIndex !== -1) {
+      const rawLine = buffer.slice(0, newlineIndex);
+      buffer = buffer.slice(newlineIndex + 1);
+      const line = rawLine.replace(/\r$/, "");
+
+      if (line === "") {
+        dispatch();
+      } else if (line.startsWith("event:")) {
+        currentEvent = line.slice(6).trim() || "message";
+      } else if (line.startsWith("data:")) {
+        dataLines.push(line.slice(5).trimStart());
+      }
+
+      newlineIndex = buffer.indexOf("\n");
+    }
+  }
+
+  const trailing = buffer.trim();
+  if (trailing.startsWith("data:")) {
+    dataLines.push(trailing.slice(5).trimStart());
+  }
+  dispatch();
+}
+
 export default function GameBoard(props: GameBoardProps) {
   const [events, setEvents] = useState<TranscriptEvent[]>(props.initialEvents);
   const [characters, setCharacters] = useState<CharacterRef[]>(
@@ -68,6 +178,8 @@ export default function GameBoard(props: GameBoardProps) {
   const [encounteredCharacterIds, setEncounteredCharacterIds] = useState<
     string[]
   >(props.initialEncounteredCharacterIds);
+  const [streamingText, setStreamingText] = useState("");
+  const [streamingCharacterName, setStreamingCharacterName] = useState("");
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -100,7 +212,7 @@ export default function GameBoard(props: GameBoardProps) {
     const el = messagesRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [events]);
+  }, [events, streamingText]);
 
   const applyMention = (character: CharacterRef) => {
     if (!mention) return;
@@ -138,6 +250,8 @@ export default function GameBoard(props: GameBoardProps) {
 
     setError("");
     setLoading(true);
+    setStreamingText("");
+    setStreamingCharacterName("");
 
     try {
       const response = await fetch(`/api/games/${props.slug}/message`, {
@@ -149,28 +263,71 @@ export default function GameBoard(props: GameBoardProps) {
         }),
       });
 
-      const payload = await response.json() as ApiResponse;
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.error || "Unable to send message");
-      }
-      if (
-        !payload.events || !payload.characters ||
-        !payload.encounteredCharacterIds
-      ) {
-        throw new Error("Malformed response payload");
+      const contentType = response.headers.get("content-type") ?? "";
+
+      if (!contentType.includes("text/event-stream")) {
+        const payload = await response.json() as JsonErrorResponse;
+        if (!response.ok) {
+          throw new Error(payload.error || "Unable to send message");
+        }
+        throw new Error("Unexpected non-stream response payload");
       }
 
-      const nextEvents = payload.events;
-      const nextCharacters = payload.characters;
-      const nextEncounteredIds = payload.encounteredCharacterIds;
+      let sawFinal = false;
 
-      setEvents((prev) => [...prev, ...nextEvents]);
-      setCharacters(nextCharacters);
-      setEncounteredCharacterIds(nextEncounteredIds);
-      setDraft("");
-      setCursor(0);
+      await consumeSseStream(response, (eventName, data) => {
+        const parsed = data ? JSON.parse(data) as unknown : {};
+
+        if (eventName === "ack") {
+          const payload = parsed as StreamAckPayload;
+          if (!payload.userEvent || !payload.character?.name) {
+            throw new Error("Malformed stream ack event");
+          }
+          setEvents((prev) => [...prev, payload.userEvent]);
+          setStreamingCharacterName(payload.character.name);
+          setDraft("");
+          setCursor(0);
+          return;
+        }
+
+        if (eventName === "delta") {
+          const payload = parsed as StreamDeltaPayload;
+          if (payload.text) {
+            setStreamingText((prev) => `${prev}${payload.text}`);
+          }
+          return;
+        }
+
+        if (eventName === "final") {
+          const payload = parsed as StreamFinalPayload;
+          if (
+            !payload.characterEvent || !payload.characters ||
+            !payload.encounteredCharacterIds
+          ) {
+            throw new Error("Malformed stream final event");
+          }
+          setEvents((prev) => [...prev, payload.characterEvent]);
+          setCharacters(payload.characters);
+          setEncounteredCharacterIds(payload.encounteredCharacterIds);
+          setStreamingText("");
+          setStreamingCharacterName("");
+          sawFinal = true;
+          return;
+        }
+
+        if (eventName === "error") {
+          const payload = parsed as StreamErrorPayload;
+          throw new Error(payload.error || "Unable to complete message stream");
+        }
+      });
+
+      if (!sawFinal) {
+        throw new Error("Stream ended before final message");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error");
+      setStreamingText("");
+      setStreamingCharacterName("");
     } finally {
       setLoading(false);
     }
@@ -222,9 +379,20 @@ export default function GameBoard(props: GameBoardProps) {
                     ? `You -> ${item.characterName}`
                     : item.characterName}
                 </p>
-                <p>{item.text}</p>
+                <p class="message-body">{renderMessageText(item.text)}</p>
               </div>
             ))}
+
+            {loading && streamingCharacterName
+              ? (
+                <div class="message character is-streaming">
+                  <p class="message-meta">{streamingCharacterName}</p>
+                  <p class="message-body">
+                    {streamingText ? renderMessageText(streamingText) : "..."}
+                  </p>
+                </div>
+              )
+              : null}
           </div>
 
           <form class="composer" onSubmit={onSubmit}>

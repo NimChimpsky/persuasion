@@ -1,4 +1,4 @@
-import { generateCharacterReply } from "../../../../lib/llm.ts";
+import { streamCharacterReply } from "../../../../lib/llm.ts";
 import { slugify } from "../../../../lib/slug.ts";
 import {
   getGameBySlug,
@@ -147,9 +147,9 @@ function parseGameUpdateDirective(replyText: string): GameUpdateDirective {
 function mergeCharacters(
   existing: Character[],
   incoming: NewCharacterInput[],
-): { characters: Character[]; addedCharacterIds: string[] } {
+): Character[] {
   if (incoming.length === 0) {
-    return { characters: existing, addedCharacterIds: [] };
+    return existing;
   }
 
   const usedIds = new Set(existing.map((character) => character.id));
@@ -158,7 +158,6 @@ function mergeCharacters(
   );
 
   const merged = [...existing];
-  const addedCharacterIds: string[] = [];
 
   for (const item of incoming) {
     const normalizedName = item.name.toLowerCase();
@@ -172,10 +171,9 @@ function mergeCharacters(
       systemPrompt: item.systemPrompt,
     });
     existingByName.add(normalizedName);
-    addedCharacterIds.push(id);
   }
 
-  return { characters: merged, addedCharacterIds };
+  return merged;
 }
 
 export const handler = define.handlers({
@@ -232,73 +230,117 @@ export const handler = define.handlers({
       at: new Date().toISOString(),
     };
 
-    const rawReplyText = await generateCharacterReply({
-      game: gameForUser,
-      character: targetCharacter,
-      events: [...events, userEvent],
-      userPrompt: text,
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const sendEvent = (event: string, data: unknown) => {
+          controller.enqueue(
+            encoder.encode(
+              `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`,
+            ),
+          );
+        };
+
+        try {
+          sendEvent("ack", {
+            userEvent,
+            character: {
+              id: targetCharacter.id,
+              name: targetCharacter.name,
+            },
+          });
+
+          const rawReplyText = await streamCharacterReply(
+            {
+              game: gameForUser,
+              character: targetCharacter,
+              events: [...events, userEvent],
+              userPrompt: text,
+            },
+            (delta) => {
+              if (!delta) return;
+              sendEvent("delta", { text: delta });
+            },
+          );
+
+          const parsedUpdate = parseGameUpdateDirective(rawReplyText);
+          const visibleReply = parsedUpdate.cleanText ||
+            `(${targetCharacter.name}) ...`;
+
+          const characterEvent: TranscriptEvent = {
+            role: "character",
+            characterId: targetCharacter.id,
+            characterName: targetCharacter.name,
+            text: visibleReply,
+            at: new Date().toISOString(),
+          };
+
+          const appended = appendEvents(progress?.transcript ?? "", [
+            userEvent,
+            characterEvent,
+          ]);
+
+          const updatedCharacters = mergeCharacters(
+            gameForUser.characters,
+            parsedUpdate.newCharacters,
+          );
+          const validCharacterIds = new Set(updatedCharacters.map((c) => c.id));
+          const encounteredCharacterIds = new Set(
+            gameForUser.encounteredCharacterIds,
+          );
+
+          if (
+            targetCharacter.id !== NARRATOR_ID &&
+            validCharacterIds.has(targetCharacter.id)
+          ) {
+            encounteredCharacterIds.add(targetCharacter.id);
+          }
+          for (const id of parsedUpdate.unlockCharacterIds) {
+            if (validCharacterIds.has(id)) encounteredCharacterIds.add(id);
+          }
+
+          const nextSnapshot: UserGameSnapshot = {
+            title: gameForUser.title,
+            introText: gameForUser.introText,
+            plotPointsText: gameForUser.plotPointsText,
+            narratorPrompt: gameForUser.narratorPrompt,
+            characters: updatedCharacters,
+            encounteredCharacterIds: [...encounteredCharacterIds],
+          };
+
+          await saveUserProgress(userEmail, slug, {
+            transcript: appended,
+            updatedAt: new Date().toISOString(),
+            gameSnapshot: nextSnapshot,
+          });
+
+          sendEvent("final", {
+            characterEvent,
+            characters: updatedCharacters.map((character) => ({
+              id: character.id,
+              name: character.name,
+              bio: character.bio,
+            })),
+            encounteredCharacterIds: nextSnapshot.encounteredCharacterIds,
+          });
+        } catch (error) {
+          const message = error instanceof Error
+            ? error.message
+            : "Unable to complete message stream";
+          sendEvent("error", { error: message });
+        } finally {
+          controller.close();
+        }
+      },
     });
-    const parsedUpdate = parseGameUpdateDirective(rawReplyText);
-    const visibleReply = parsedUpdate.cleanText ||
-      `(${targetCharacter.name}) ...`;
 
-    const characterEvent: TranscriptEvent = {
-      role: "character",
-      characterId: targetCharacter.id,
-      characterName: targetCharacter.name,
-      text: visibleReply,
-      at: new Date().toISOString(),
-    };
-
-    const appended = appendEvents(progress?.transcript ?? "", [
-      userEvent,
-      characterEvent,
-    ]);
-
-    const mergedCharacters = mergeCharacters(
-      gameForUser.characters,
-      parsedUpdate.newCharacters,
-    );
-    const updatedCharacters = mergedCharacters.characters;
-    const validCharacterIds = new Set(updatedCharacters.map((c) => c.id));
-    const encounteredCharacterIds = new Set(
-      gameForUser.encounteredCharacterIds,
-    );
-
-    if (
-      targetCharacter.id !== NARRATOR_ID &&
-      validCharacterIds.has(targetCharacter.id)
-    ) {
-      encounteredCharacterIds.add(targetCharacter.id);
-    }
-    for (const id of parsedUpdate.unlockCharacterIds) {
-      if (validCharacterIds.has(id)) encounteredCharacterIds.add(id);
-    }
-
-    const nextSnapshot: UserGameSnapshot = {
-      title: gameForUser.title,
-      introText: gameForUser.introText,
-      plotPointsText: gameForUser.plotPointsText,
-      narratorPrompt: gameForUser.narratorPrompt,
-      characters: updatedCharacters,
-      encounteredCharacterIds: [...encounteredCharacterIds],
-    };
-
-    await saveUserProgress(userEmail, slug, {
-      transcript: appended,
-      updatedAt: new Date().toISOString(),
-      gameSnapshot: nextSnapshot,
-    });
-
-    return json({
-      ok: true,
-      events: [userEvent, characterEvent],
-      characters: updatedCharacters.map((character) => ({
-        id: character.id,
-        name: character.name,
-        bio: character.bio,
-      })),
-      encounteredCharacterIds: nextSnapshot.encounteredCharacterIds,
+    return new Response(stream, {
+      headers: {
+        "content-type": "text/event-stream; charset=utf-8",
+        "cache-control": "no-cache, no-transform",
+        "x-accel-buffering": "no",
+      },
     });
   },
 });
