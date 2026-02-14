@@ -3,10 +3,9 @@ import { env } from "./env.ts";
 export async function sendMagicLinkEmail(
   email: string,
   link: string,
-): Promise<{ delivered: boolean }> {
-  if (!env.resendApiKey || !env.emailFrom) {
-    console.log(`Magic link for ${email}: ${link}`);
-    return { delivered: false };
+): Promise<void> {
+  if (!env.resendApiKey) {
+    throw new Error("resend_not_configured");
   }
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -30,6 +29,4 @@ export async function sendMagicLinkEmail(
     console.error(`Resend error (${response.status}): ${details}`);
     throw new Error("email_send_failed");
   }
-
-  return { delivered: true };
 }

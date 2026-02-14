@@ -14,14 +14,6 @@ interface GenerateCharacterReplyArgs {
   userPrompt: string;
 }
 
-interface ChatCompletionResponse {
-  choices?: Array<{
-    message?: {
-      content?: string | Array<{ type?: string; text?: string }>;
-    };
-  }>;
-}
-
 interface ChatCompletionStreamChunk {
   choices?: Array<{
     delta?: {
@@ -44,28 +36,6 @@ const MARKDOWN_OUTPUT_INSTRUCTIONS = [
 function buildChatEndpoint(baseUrl: string): string {
   const normalized = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   return new URL("chat/completions", normalized).toString();
-}
-
-function extractContentText(
-  content: string | Array<{ type?: string; text?: string }> | undefined,
-): string {
-  if (typeof content === "string") {
-    return content.trim();
-  }
-
-  if (Array.isArray(content)) {
-    return content
-      .map((part) => part.text?.trim() ?? "")
-      .filter(Boolean)
-      .join("\n\n")
-      .trim();
-  }
-
-  return "";
-}
-
-function extractReply(data: ChatCompletionResponse): string {
-  return extractContentText(data.choices?.[0]?.message?.content);
 }
 
 function extractStreamDelta(data: ChatCompletionStreamChunk): string {
@@ -124,59 +94,6 @@ function buildUserInput(
     `Player now addresses ${character.name}:`,
     userPrompt,
   ].join("\n");
-}
-
-export async function generateCharacterReply(
-  args: GenerateCharacterReplyArgs,
-): Promise<string> {
-  const { game, character, events, userPrompt } = args;
-  const provider = await getActiveLlmProvider();
-  const providerConfig = getLlmProviderConfig(provider);
-
-  if (!providerConfig.apiKey) {
-    return `(${character.name}) The game engine is unavailable because ${providerConfig.label} is not configured.`;
-  }
-
-  const systemInstructions = buildSystemInstructions(game, character);
-  const userInput = buildUserInput(character, events, userPrompt);
-
-  const endpoint = buildChatEndpoint(providerConfig.baseUrl);
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${providerConfig.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: providerConfig.model,
-      temperature: 0.9,
-      messages: [
-        {
-          role: "system",
-          content: systemInstructions,
-        },
-        {
-          role: "user",
-          content: userInput,
-        },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    const details = await response.text();
-    console.error(
-      `LLM API error (${response.status}) using ${provider} at ${endpoint}: ${details}`,
-    );
-    return `(${character.name}) The game engine is temporarily unavailable. Try again in a moment.`;
-  }
-
-  const data = await response.json() as ChatCompletionResponse;
-  const text = extractReply(data);
-
-  return text ||
-    `(${character.name}) I need a moment to gather my thoughts. Ask me again.`;
 }
 
 export async function streamCharacterReply(

@@ -74,26 +74,7 @@ export const handler = define.handlers({
       const verifyUrl = new URL("/auth/verify", env.appBaseUrl);
       verifyUrl.searchParams.set("token", token);
 
-      const result = await sendMagicLinkEmail(email, verifyUrl.toString());
-
-      if (!result.delivered) {
-        if (expectsJson) {
-          return json(
-            {
-              ok: false,
-              error: "Unable to deliver sign-in email right now.",
-            },
-            502,
-          );
-        }
-        return Response.redirect(
-          new URL(
-            "/?error=Unable+to+deliver+sign-in+email+right+now",
-            ctx.req.url,
-          ),
-          303,
-        );
-      }
+      await sendMagicLinkEmail(email, verifyUrl.toString());
 
       if (expectsJson) {
         return json({
