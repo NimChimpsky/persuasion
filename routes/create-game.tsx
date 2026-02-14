@@ -11,7 +11,6 @@ interface PublishData {
   >;
   createdSlug: string;
   error: string;
-  forbidden: boolean;
 }
 
 async function findAvailableSlug(baseSlug: string): Promise<string> {
@@ -61,17 +60,6 @@ export const handler = define.handlers<PublishData>({
     if (!ctx.state.userEmail) {
       return Response.redirect(new URL("/", ctx.req.url), 302);
     }
-    if (!ctx.state.isAdmin) {
-      return page(
-        {
-          createdSlug: "",
-          error: "",
-          forbidden: true,
-          games: [],
-        },
-        { status: 403 },
-      );
-    }
 
     const url = new URL(ctx.req.url);
     const createdSlug = url.searchParams.get("created") ?? "";
@@ -82,7 +70,6 @@ export const handler = define.handlers<PublishData>({
     return page({
       createdSlug,
       error,
-      forbidden: false,
       games: games.map((game) => ({
         slug: game.slug,
         title: game.title,
@@ -95,12 +82,6 @@ export const handler = define.handlers<PublishData>({
   async POST(ctx) {
     if (!ctx.state.userEmail) {
       return Response.redirect(new URL("/", ctx.req.url), 302);
-    }
-    if (!ctx.state.isAdmin) {
-      return Response.redirect(
-        new URL("/create-game?error=Admin+access+required", ctx.req.url),
-        303,
-      );
     }
 
     const form = await ctx.req.formData();
@@ -162,17 +143,6 @@ export default define.page<typeof handler>(
     return (
       <main class="page-shell">
         <div class="container stack">
-          {data.forbidden
-            ? (
-              <section class="stack">
-                <h2 class="display">Create Game</h2>
-                <p class="notice bad">
-                  Admin access required to create games.
-                </p>
-              </section>
-            )
-            : null}
-
           {data.createdSlug
             ? (
               <p class="notice good">
@@ -186,7 +156,7 @@ export default define.page<typeof handler>(
 
           {data.error ? <p class="notice bad">{data.error}</p> : null}
 
-          {!data.forbidden ? <AdminGameForm action="/create-game" /> : null}
+          <AdminGameForm action="/create-game" />
 
           <section class="stack">
             <h2 class="display">Published Games</h2>
