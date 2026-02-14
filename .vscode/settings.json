@@ -1,0 +1,12 @@
+{
+  "deno.enable": true,
+  "deno.config": "./deno.json",
+  "deno.unstable": [
+    "kv"
+  ],
+  "deno.lint": true,
+  "deno.suggest.imports.hosts": {
+    "https://deno.land": true,
+    "https://jsr.io": true
+  }
+}
