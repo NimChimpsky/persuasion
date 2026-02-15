@@ -57,7 +57,7 @@ body.has-app-header .page-shell > .container {
 }
 
 .header-shell {
-  padding: 0 14px;
+  padding: 0 14px 6px;
 }
 
 .site-header {
@@ -560,7 +560,7 @@ select:focus {
   }
 
   .header-shell {
-    padding: 0 10px;
+    padding: 0 10px 6px;
   }
 
   .page-shell {
