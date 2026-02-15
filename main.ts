@@ -9,8 +9,10 @@ export const app = new App<State>();
 
 // Fail fast: this app requires persistent Deno KV.
 await getKv();
-// TEMPORARY EARLY-DEV RESET (destructive for game data).
-// Remove this call once startup resets are no longer desired.
+// TEMPORARY EARLY-DEV RESET/SEED STARTUP FLOW.
+// Controlled by RESET_GAME_STATE_ON_STARTUP in env.ts:
+// - true  => wipe game data + reseed
+// - false => seed-only upsert
 await resetAndSeedOliveFarmOnStartup();
 
 app.use(staticFiles());

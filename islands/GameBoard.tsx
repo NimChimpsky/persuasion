@@ -474,6 +474,16 @@ export default function GameBoard(props: GameBoardProps) {
                 const value = (event.target as HTMLTextAreaElement).value;
                 setDraft(value);
               }}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" || event.shiftKey || event.ctrlKey) {
+                  return;
+                }
+                if (event.isComposing) return;
+                event.preventDefault();
+                if (loading || !activeCharacter) return;
+                (event.currentTarget.form as HTMLFormElement | null)
+                  ?.requestSubmit();
+              }}
             />
 
             <button

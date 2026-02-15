@@ -88,6 +88,11 @@ export default function LandingLoginForm(props: LandingLoginFormProps) {
         aria-label="Email address"
         value={email}
         onInput={(event) => setEmail((event.target as HTMLInputElement).value)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          (event.currentTarget.form as HTMLFormElement | null)?.requestSubmit();
+        }}
       />
       <div class="action-row center">
         <button

@@ -9,6 +9,14 @@ function parseCsvSet(input: string | undefined): Set<string> {
   );
 }
 
+function parseBoolean(input: string | undefined, defaultValue: boolean): boolean {
+  if (input == null) return defaultValue;
+  const normalized = input.trim().toLowerCase();
+  if (["true", "1", "yes", "on"].includes(normalized)) return true;
+  if (["false", "0", "no", "off"].includes(normalized)) return false;
+  return defaultValue;
+}
+
 export const env = {
   appBaseUrl: Deno.env.get("APP_BASE_URL") ?? "https://persuasion.technology",
   adminEmails: parseCsvSet(Deno.env.get("ADMIN_EMAILS")),
@@ -28,6 +36,11 @@ export const env = {
   magicLinkSecret: Deno.env.get("MAGIC_LINK_SECRET") ??
     "2Qv9hJr6Kx1mNp4Tz8bCd3Fw7Ls5Ye0Au2Hi9Mn6Rx4VqPk1",
   localDevAuthEmail: Deno.env.get("LOCAL_DEV_AUTH_EMAIL") ?? "dev@local.test",
+  // Default ON by design for early dev stages.
+  resetGameStateOnStartup: parseBoolean(
+    Deno.env.get("RESET_GAME_STATE_ON_STARTUP"),
+    true,
+  ),
 };
 
 export function isAdminEmail(email: string): boolean {

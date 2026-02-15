@@ -1,3 +1,4 @@
+import { env } from "./env.ts";
 import { getKv } from "./kv.ts";
 import {
   buildOliveFarmGameConfig,
@@ -9,11 +10,17 @@ import {
 // Remove this file + main.ts startup call when moving to non-destructive environments.
 //
 // Current behavior:
-// - Wipes prefixes: games_by_slug, games_index, user_progress
-// - Seeds: murder-at-the-olive-farm.txt
-// - Frequency:
-//   - Once per deployment when DENO_DEPLOYMENT_ID is present
-//   - Every startup when DENO_DEPLOYMENT_ID is absent (local)
+// - Controlled by RESET_GAME_STATE_ON_STARTUP (default true)
+// - If true:
+//   - Wipes prefixes:
+//     games_by_slug, games_index, user_progress, user_progress_meta, user_progress_chunk
+//   - Seeds: murder-at-the-olive-farm.txt
+//   - Frequency:
+//     - Once per deployment when DENO_DEPLOYMENT_ID is present
+//     - Every startup when DENO_DEPLOYMENT_ID is absent (local)
+// - If false:
+//   - No wipe
+//   - Seed-only upsert for murder-at-the-olive-farm.txt
 
 const RESET_VERSION = "olive_farm_seed_v1";
 const DELETE_BATCH_SIZE = 10;
@@ -22,6 +29,8 @@ const WIPE_PREFIXES: Deno.KvKey[] = [
   ["games_by_slug"],
   ["games_index"],
   ["user_progress"],
+  ["user_progress_meta"],
+  ["user_progress_chunk"],
 ];
 
 interface ResetMarker {
@@ -68,21 +77,19 @@ function markerKey(deploymentId: string): Deno.KvKey {
   return ["startup_reset", RESET_VERSION, deploymentId];
 }
 
-export async function resetAndSeedOliveFarmOnStartup(): Promise<void> {
-  const kv = await getKv();
-  const deploymentId = Deno.env.get("DENO_DEPLOYMENT_ID")?.trim() ?? "";
-  const now = new Date().toISOString();
+async function seedOliveFarmOnly(
+  kv: Deno.Kv,
+  now: string,
+): Promise<string> {
+  const game = await buildOliveFarmGameConfig(now);
+  await upsertGameAndIndex(kv, game);
+  return game.slug;
+}
 
-  if (deploymentId) {
-    const marker = await kv.get<ResetMarker>(markerKey(deploymentId));
-    if (marker.value) {
-      console.log(
-        `[startup-reset] skip: already applied for deployment ${deploymentId}`,
-      );
-      return;
-    }
-  }
-
+async function wipeGameDataAndSeed(
+  kv: Deno.Kv,
+  now: string,
+): Promise<{ gameSlug: string; wipeSummary: string }> {
   // Fail before destructive wipe if source game file is invalid.
   const game = await buildOliveFarmGameConfig(now);
 
@@ -94,16 +101,46 @@ export async function resetAndSeedOliveFarmOnStartup(): Promise<void> {
 
   await upsertGameAndIndex(kv, game);
 
+  return {
+    gameSlug: game.slug,
+    wipeSummary: wipeResults.map((item) => `${item.prefix}:${item.deleted}`)
+      .join(", "),
+  };
+}
+
+export async function resetAndSeedOliveFarmOnStartup(): Promise<void> {
+  const kv = await getKv();
+  const deploymentId = Deno.env.get("DENO_DEPLOYMENT_ID")?.trim() ?? "";
+  const now = new Date().toISOString();
+
+  if (!env.resetGameStateOnStartup) {
+    const slug = await seedOliveFarmOnly(kv, now);
+    console.log(
+      `[startup-reset] flag off (RESET_GAME_STATE_ON_STARTUP=false): seed-only upsert /game/${slug}`,
+    );
+    return;
+  }
+
+  if (deploymentId) {
+    const marker = await kv.get<ResetMarker>(markerKey(deploymentId));
+    if (marker.value) {
+      console.log(
+        `[startup-reset] skip: already applied for deployment ${deploymentId}`,
+      );
+      return;
+    }
+  }
+
+  const { gameSlug, wipeSummary } = await wipeGameDataAndSeed(kv, now);
+
   if (deploymentId) {
     await kv.set(markerKey(deploymentId), {
       version: RESET_VERSION,
       deploymentId,
-      gameSlug: game.slug,
+      gameSlug,
       appliedAt: now,
     } as ResetMarker);
   }
 
-  const summary = wipeResults.map((item) => `${item.prefix}:${item.deleted}`)
-    .join(", ");
-  console.log(`[startup-reset] applied (${summary}); seeded /game/${game.slug}`);
+  console.log(`[startup-reset] applied (${wipeSummary}); seeded /game/${gameSlug}`);
 }

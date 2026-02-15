@@ -41,6 +41,9 @@ MAGIC_LINK_SECRET=2Qv9hJr6Kx1mNp4Tz8bCd3Fw7Ls5Ye0Au2Hi9Mn6Rx4VqPk1
 # Local dev login exists only when RESEND_API_KEY is missing.
 LOCAL_DEV_AUTH_EMAIL=dev@local.test
 
+# Startup game reset toggle (early dev). Default is true if omitted.
+RESET_GAME_STATE_ON_STARTUP=true
+
 # LLM providers (OpenAI-compatible API format).
 # Active provider is selected by admins at runtime in /admin and stored in KV.
 
@@ -64,8 +67,12 @@ MISTRAL_MODEL=mistral-small-latest
 
 - `games_by_slug/<slug>`: full game config
 - `games_index/<slug>`: list/home metadata
-- `user_progress/<email>/<slug>`: transcript text + updated timestamp + user
-  game snapshot (title/plot/characters/encountered)
+- `user_progress_meta/<email>/<slug>`: chunked transcript metadata
+  (codec/version/chunk counts + updated timestamp + user game snapshot)
+- `user_progress_chunk/<email>/<slug>/<chunkIndex>`: gzip-compressed transcript
+  chunks (JSONL events)
+- `user_progress/<email>/<slug>`: legacy format (ignored by reads, still wiped by
+  startup reset for cleanup)
 - `magic_tokens/<nonce>`: one-time magic login nonce (token carries HMAC
   signature)
 - `sessions/<sessionId>`: login session record
@@ -81,23 +88,33 @@ The app currently runs a **destructive game-data reset** at startup via:
 
 Behavior:
 
-- Wipes KV prefixes:
-  - `games_by_slug`
-  - `games_index`
-  - `user_progress`
+- Controlled by `RESET_GAME_STATE_ON_STARTUP` (defaults to `true` in code).
+- When `RESET_GAME_STATE_ON_STARTUP=true`:
+  - Wipes KV prefixes:
+    - `games_by_slug`
+    - `games_index`
+    - `user_progress`
+    - `user_progress_meta`
+    - `user_progress_chunk`
+  - Reseeds exactly one game from:
+    - `/Users/sbatty/Dev/cognition/murder-at-the-olive-farm.txt`
+- When `RESET_GAME_STATE_ON_STARTUP=false`:
+  - No wipe is performed.
+  - Olive farm is still upserted at startup (seed-only mode).
 - Preserves:
   - `sessions`
   - `sessions_by_user`
   - `magic_tokens`
   - `app_settings`
-- Reseeds exactly one game from:
-  - `/Users/sbatty/Dev/cognition/murder-at-the-olive-farm.txt`
 
 Execution frequency:
 
-- If `DENO_DEPLOYMENT_ID` exists: runs once per deployment (marker key:
+- If `RESET_GAME_STATE_ON_STARTUP=true` and `DENO_DEPLOYMENT_ID` exists:
+  runs once per deployment (marker key:
   `startup_reset/olive_farm_seed_v1/<deploymentId>`)
-- If `DENO_DEPLOYMENT_ID` is missing (local): runs on every startup
+- If `RESET_GAME_STATE_ON_STARTUP=true` and `DENO_DEPLOYMENT_ID` is missing
+  (local): runs on every startup
+- If `RESET_GAME_STATE_ON_STARTUP=false`: runs seed-only upsert on every startup
 
 ### How to remove later
 
@@ -111,7 +128,7 @@ Execution frequency:
 
 ## Notes
 
-- User progress is stored as full transcript text (JSON lines).
+- User progress is stored as chunked, gzip-compressed transcript JSONL in KV.
 - Game chat targets the currently selected character from the roster.
 - Character-specific secrets/prize logic should be written directly in each
   character system prompt.
