@@ -5,7 +5,7 @@ interface SiteHeaderProps {
 
 export default function SiteHeader(props: SiteHeaderProps) {
   return (
-    <header class="header site-header">
+    <header class="site-header">
       <div class="header-top-row">
         <a class="header-brand" href="/home">
           <img
