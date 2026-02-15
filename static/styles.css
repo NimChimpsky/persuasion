@@ -334,13 +334,22 @@ select:focus {
   padding: 10px 12px;
 }
 
+.game-intro-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .game-intro h2 {
   font-size: 1.35rem;
-  margin-bottom: 6px;
+  margin: 0;
 }
 
 .game-intro p {
   color: var(--muted);
+  margin: 0;
+  flex: 1 1 320px;
 }
 
 .game-layout {

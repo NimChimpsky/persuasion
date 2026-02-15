@@ -98,8 +98,10 @@ export default define.page<typeof handler>(function GamePage({ data, state }) {
     <main class="page-shell game-page-shell">
       <div class="container stack game-page-container">
         <section class="card game-intro">
-          <h2>{data.title}</h2>
-          <p>{data.introText}</p>
+          <div class="game-intro-row">
+            <h2>{data.title}</h2>
+            <p>{data.introText}</p>
+          </div>
         </section>
         <GameBoard
           slug={data.slug}
