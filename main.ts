@@ -2,12 +2,14 @@ import { App, staticFiles } from "fresh";
 import { getSessionEmail } from "./lib/auth.ts";
 import { isAdminEmail } from "./lib/env.ts";
 import { getKv } from "./lib/kv.ts";
+import { seedLocalOliveFarmGameOnStartup } from "./lib/local_seed_game.ts";
 import { define, type State } from "./utils.ts";
 
 export const app = new App<State>();
 
 // Fail fast: this app requires persistent Deno KV.
 await getKv();
+await seedLocalOliveFarmGameOnStartup();
 
 app.use(staticFiles());
 
