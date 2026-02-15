@@ -376,3 +376,22 @@ export async function getUserProgressMap(
 
   return map;
 }
+
+export async function clearUserProgressForGame(
+  email: string,
+  slug: string,
+): Promise<void> {
+  const kv = await getKv();
+
+  const chunkEntries = await readAllChunkEntries(kv, email, slug);
+  let op = kv.atomic()
+    .delete(metaKey(email, slug))
+    // Legacy cleanup for hard-cut transition.
+    .delete(["user_progress", email, slug]);
+
+  for (const entry of chunkEntries) {
+    op = op.delete(entry.key);
+  }
+
+  await op.commit();
+}

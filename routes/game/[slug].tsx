@@ -1,5 +1,6 @@
 import { page } from "fresh";
 import GameBoard from "../../islands/GameBoard.tsx";
+import ResetGameButton from "../../islands/ResetGameButton.tsx";
 import { getGameBySlug, getUserProgress } from "../../lib/store.ts";
 import { parseTranscript } from "../../shared/transcript.ts";
 import { define } from "../../utils.ts";
@@ -99,8 +100,11 @@ export default define.page<typeof handler>(function GamePage({ data, state }) {
       <div class="container stack game-page-container">
         <section class="card game-intro">
           <div class="game-intro-row">
-            <h2>{data.title}</h2>
-            <p>{data.introText}</p>
+            <div class="game-intro-copy">
+              <h2>{data.title}</h2>
+              <p>{data.introText}</p>
+            </div>
+            <ResetGameButton slug={data.slug} />
           </div>
         </section>
         <GameBoard
