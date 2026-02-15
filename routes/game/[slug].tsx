@@ -26,6 +26,24 @@ function detectEncounteredCharacterIds(
   return [...ids];
 }
 
+function ensureFirstCharacterEncountered(
+  encounteredCharacterIds: string[],
+  characters: Array<{ id: string }>,
+): string[] {
+  if (characters.length === 0) return encounteredCharacterIds;
+  const firstCharacterId = characters[0].id;
+  if (!firstCharacterId) return encounteredCharacterIds;
+
+  const encounteredSet = new Set(
+    encounteredCharacterIds.map((id) => id.toLowerCase()),
+  );
+  if (encounteredSet.has(firstCharacterId.toLowerCase())) {
+    return encounteredCharacterIds;
+  }
+
+  return [...encounteredCharacterIds, firstCharacterId];
+}
+
 export const handler = define.handlers<GamePageData>({
   async GET(ctx) {
     const userEmail = ctx.state.userEmail;
@@ -47,9 +65,13 @@ export const handler = define.handlers<GamePageData>({
     const validCharacterIds = new Set(
       gameForUser.characters.map((character) => character.id),
     );
-    const encounteredCharacterIds = progress?.gameSnapshot
+    const encounteredCharacterIdsRaw = progress?.gameSnapshot
       ?.encounteredCharacterIds ??
       detectEncounteredCharacterIds(validCharacterIds, events);
+    const encounteredCharacterIds = ensureFirstCharacterEncountered(
+      encounteredCharacterIdsRaw,
+      gameForUser.characters,
+    );
 
     return page({
       slug,

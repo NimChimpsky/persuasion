@@ -116,7 +116,6 @@ export async function streamCharacterReply(
     },
     body: JSON.stringify({
       model: providerConfig.model,
-      temperature: 0.9,
       stream: true,
       messages: [
         {

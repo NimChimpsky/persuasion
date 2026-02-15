@@ -1,3 +1,5 @@
+import "jsr:@std/dotenv@^0.225.0/load";
+
 function parseCsvSet(input: string | undefined): Set<string> {
   if (!input) return new Set();
   return new Set(
