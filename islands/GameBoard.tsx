@@ -162,10 +162,16 @@ export default function GameBoard(props: GameBoardProps) {
   );
   const [streamingText, setStreamingText] = useState("");
   const [streamingCharacterName, setStreamingCharacterName] = useState("");
+  const [streamingCharacterId, setStreamingCharacterId] = useState("");
+  const [desktopBoardHeight, setDesktopBoardHeight] = useState<number | null>(
+    null,
+  );
+  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const layoutRef = useRef<HTMLElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -179,12 +185,20 @@ export default function GameBoard(props: GameBoardProps) {
         null,
     [characters, activeCharacterId],
   );
+  const visibleEvents = useMemo(() => {
+    if (!activeCharacterId) return [];
+    return events.filter((item) => item.characterId === activeCharacterId);
+  }, [events, activeCharacterId]);
+  const hasPlaceholderSlot = isDesktopLayout && characters.length % 2 === 1;
+  const layoutStyle = desktopBoardHeight
+    ? `height: ${desktopBoardHeight}px;`
+    : undefined;
 
   useEffect(() => {
     const el = messagesRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [events, streamingText]);
+  }, [visibleEvents, streamingText, activeCharacterId]);
 
   useEffect(() => {
     if (
@@ -196,6 +210,38 @@ export default function GameBoard(props: GameBoardProps) {
       pickInitialCharacterId(characters, encounteredCharacterIds),
     );
   }, [characters, encounteredCharacterIds, activeCharacterId]);
+
+  useEffect(() => {
+    const host = globalThis;
+    const recalc = () => {
+      const desktop = host.matchMedia("(min-width: 981px)").matches;
+      setIsDesktopLayout(desktop);
+
+      if (!desktop) {
+        setDesktopBoardHeight(null);
+        return;
+      }
+
+      const layout = layoutRef.current;
+      if (!layout) return;
+
+      const rect = layout.getBoundingClientRect();
+      const bottomPadding = 8;
+      const next = Math.max(
+        360,
+        Math.floor(host.innerHeight - rect.top - bottomPadding),
+      );
+      setDesktopBoardHeight(next);
+    };
+
+    const run = () => host.requestAnimationFrame(recalc);
+    run();
+    host.addEventListener("resize", run);
+
+    return () => {
+      host.removeEventListener("resize", run);
+    };
+  }, [characters.length]);
 
   const onSubmit = async (event: Event) => {
     event.preventDefault();
@@ -243,11 +289,15 @@ export default function GameBoard(props: GameBoardProps) {
 
         if (eventName === "ack") {
           const payload = parsed as StreamAckPayload;
-          if (!payload.userEvent || !payload.character?.name) {
+          if (
+            !payload.userEvent || !payload.character?.name ||
+            !payload.character?.id
+          ) {
             throw new Error("Malformed stream ack event");
           }
           setEvents((prev) => [...prev, payload.userEvent]);
           setStreamingCharacterName(payload.character.name);
+          setStreamingCharacterId(payload.character.id);
           setDraft("");
           requestAnimationFrame(() => {
             textareaRef.current?.focus();
@@ -276,6 +326,7 @@ export default function GameBoard(props: GameBoardProps) {
           setEncounteredCharacterIds(payload.encounteredCharacterIds);
           setStreamingText("");
           setStreamingCharacterName("");
+          setStreamingCharacterId("");
           sawFinal = true;
           return;
         }
@@ -293,15 +344,15 @@ export default function GameBoard(props: GameBoardProps) {
       setError(err instanceof Error ? err.message : "Unexpected error");
       setStreamingText("");
       setStreamingCharacterName("");
+      setStreamingCharacterId("");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <section class="game-layout">
+    <section class="game-layout" ref={layoutRef} style={layoutStyle}>
       <aside class="game-characters">
-        <h3>Characters</h3>
         <div class="character-grid">
           {characters.map((character) => {
             const encountered = encounteredSet.has(character.id.toLowerCase());
@@ -312,15 +363,26 @@ export default function GameBoard(props: GameBoardProps) {
                 type="button"
                 class={`card character-summary ${
                   isActive ? "is-active" : "is-inactive"
-                } ${encountered ? "" : "is-blurred"}`}
-                onClick={() => setActiveCharacterId(character.id)}
+                }`}
+                data-encountered={encountered ? "true" : "false"}
+                disabled={loading}
+                onClick={() => {
+                  if (loading) return;
+                  setActiveCharacterId(character.id);
+                }}
               >
-                <p class="character-id">{character.id}</p>
                 <h4>{character.name}</h4>
                 <p>{character.bio}</p>
               </button>
             );
           })}
+          {hasPlaceholderSlot
+            ? (
+              <div class="card character-placeholder">
+                Select a character to chat
+              </div>
+            )
+            : null}
         </div>
       </aside>
 
@@ -335,7 +397,8 @@ export default function GameBoard(props: GameBoardProps) {
           </div>
 
           <div class="messages" ref={messagesRef}>
-            {events.length === 0
+            {visibleEvents.length === 0 &&
+                !(loading && streamingCharacterId === activeCharacterId)
               ? (
                 <p class="notice">
                   Select a character on the left and send your first message.
@@ -343,7 +406,7 @@ export default function GameBoard(props: GameBoardProps) {
               )
               : null}
 
-            {events.map((item, itemIndex) => (
+            {visibleEvents.map((item, itemIndex) => (
               <div
                 class={`message ${item.role === "user" ? "user" : "character"}`}
                 key={`${item.at}-${itemIndex}`}
@@ -357,7 +420,8 @@ export default function GameBoard(props: GameBoardProps) {
               </div>
             ))}
 
-            {loading && streamingCharacterName
+            {loading && streamingCharacterName &&
+                streamingCharacterId === activeCharacterId
               ? (
                 <div class="message character is-streaming">
                   <p class="message-meta">{streamingCharacterName}</p>

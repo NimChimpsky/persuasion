@@ -95,8 +95,8 @@ export default define.page<typeof handler>(function GamePage({ data, state }) {
   state.title = `Persuasion | ${data.title}`;
 
   return (
-    <main class="page-shell">
-      <div class="container stack">
+    <main class="page-shell game-page-shell">
+      <div class="container stack game-page-container">
         <section class="card game-intro">
           <h2>{data.title}</h2>
           <p>{data.introText}</p>

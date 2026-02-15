@@ -347,23 +347,25 @@ select:focus {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   gap: 10px;
-  min-height: calc(100vh - 230px);
+  min-height: 0;
 }
 
 .game-characters {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.game-characters h3 {
-  font-size: 1rem;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .character-grid {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 150px;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .character-summary {
@@ -371,23 +373,26 @@ select:focus {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-height: 132px;
+  height: 150px;
   text-align: left;
   border: 1px solid var(--border);
   background: #fff;
   cursor: pointer;
-  transition: opacity 0.2s ease, filter 0.2s ease;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .character-summary.is-active {
   border-color: #0f172a;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
-  min-height: 164px;
-  grid-column: span 2;
+  background: #f8fafc;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
 }
 
 .character-summary.is-inactive {
-  opacity: 0.92;
+  opacity: 0.62;
+}
+
+.character-summary:disabled {
+  cursor: default;
 }
 
 .character-summary h4 {
@@ -397,6 +402,10 @@ select:focus {
 .character-summary p {
   color: var(--muted);
   font-size: 0.92rem;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 
 .character-summary.is-blurred {
@@ -409,16 +418,30 @@ select:focus {
   color: var(--muted);
 }
 
+.character-placeholder {
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px;
+  color: var(--muted);
+  border-style: dashed;
+}
+
 .chat-panel {
-  min-height: 380px;
+  min-height: 0;
   padding: 0;
+  display: flex;
+  overflow: hidden;
 }
 
 .chat-shell {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100%;
   height: 100%;
-  min-height: 380px;
+  min-height: 0;
 }
 
 .chat-header {
@@ -429,6 +452,7 @@ select:focus {
 
 .messages {
   overflow-y: auto;
+  min-height: 0;
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -476,7 +500,7 @@ select:focus {
 }
 
 .composer textarea {
-  min-height: 72px;
+  min-height: 64px;
   max-height: 180px;
 }
 
@@ -511,16 +535,26 @@ select:focus {
     display: flex;
     flex-direction: column;
     min-height: auto;
+    height: auto !important;
   }
 
   .chat-panel {
     order: -1;
-    min-height: 64vh;
+    min-height: 56vh;
   }
 
-  .character-summary.is-active {
-    grid-column: auto;
-    min-height: 146px;
+  .game-characters {
+    overflow: visible;
+  }
+
+  .character-grid {
+    height: auto;
+    overflow: visible;
+    grid-auto-rows: 150px;
+  }
+
+  .character-placeholder {
+    display: none;
   }
 }
 
@@ -577,5 +611,25 @@ select:focus {
 
   .hero {
     padding-top: 52px;
+  }
+}
+
+@media (max-width: 520px) {
+  .character-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 981px) {
+  .game-page-shell {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .game-page-container {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
   }
 }
