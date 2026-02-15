@@ -78,6 +78,14 @@ function renderMessageText(text: string) {
   });
 }
 
+function toSummaryText(text: string): string {
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+  const max = 96;
+  if (cleaned.length <= max) return cleaned;
+  return `${cleaned.slice(0, max - 1)}…`;
+}
+
 function pickInitialCharacterId(
   characters: CharacterRef[],
   encounteredCharacterIds: string[],
@@ -193,6 +201,27 @@ export default function GameBoard(props: GameBoardProps) {
   const layoutStyle = desktopBoardHeight
     ? `height: ${desktopBoardHeight}px;`
     : undefined;
+  const summaryByCharacterId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const character of characters) {
+      const relatedEvents = events.filter((event) =>
+        event.characterId === character.id
+      );
+      if (relatedEvents.length === 0) {
+        map.set(character.id, "No conversation yet");
+        continue;
+      }
+
+      const latestCharacterEvent = [...relatedEvents].reverse().find((event) =>
+        event.role === "character"
+      );
+      const latestEvent = latestCharacterEvent ??
+        relatedEvents[relatedEvents.length - 1];
+      const summary = toSummaryText(latestEvent.text);
+      map.set(character.id, summary || "No conversation yet");
+    }
+    return map;
+  }, [characters, events]);
 
   useEffect(() => {
     const el = messagesRef.current;
@@ -372,7 +401,7 @@ export default function GameBoard(props: GameBoardProps) {
                 }}
               >
                 <h4>{character.name}</h4>
-                <p>{character.bio}</p>
+                <p>{summaryByCharacterId.get(character.id) ?? "No conversation yet"}</p>
               </button>
             );
           })}
