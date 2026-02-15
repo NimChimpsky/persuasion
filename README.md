@@ -72,6 +72,43 @@ MISTRAL_MODEL=mistral-small-latest
 - `app_settings/llm_provider`: active LLM provider (`deepseek`, `openai`, or
   `mistral`)
 
+## Temporary startup reset mode (early dev)
+
+The app currently runs a **destructive game-data reset** at startup via:
+
+- `/Users/sbatty/Dev/cognition/main.ts`
+- `/Users/sbatty/Dev/cognition/lib/startup_reset.ts`
+
+Behavior:
+
+- Wipes KV prefixes:
+  - `games_by_slug`
+  - `games_index`
+  - `user_progress`
+- Preserves:
+  - `sessions`
+  - `sessions_by_user`
+  - `magic_tokens`
+  - `app_settings`
+- Reseeds exactly one game from:
+  - `/Users/sbatty/Dev/cognition/murder-at-the-olive-farm.txt`
+
+Execution frequency:
+
+- If `DENO_DEPLOYMENT_ID` exists: runs once per deployment (marker key:
+  `startup_reset/olive_farm_seed_v1/<deploymentId>`)
+- If `DENO_DEPLOYMENT_ID` is missing (local): runs on every startup
+
+### How to remove later
+
+1. Remove `await resetAndSeedOliveFarmOnStartup();` from
+   `/Users/sbatty/Dev/cognition/main.ts`.
+2. Remove the import of `resetAndSeedOliveFarmOnStartup` from
+   `/Users/sbatty/Dev/cognition/main.ts`.
+3. Delete `/Users/sbatty/Dev/cognition/lib/startup_reset.ts`.
+4. (Optional) Delete or keep `/Users/sbatty/Dev/cognition/lib/local_seed_game.ts`
+   depending on whether you still want manual seeding utilities.
+
 ## Notes
 
 - User progress is stored as full transcript text (JSON lines).

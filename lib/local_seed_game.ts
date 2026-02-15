@@ -1,5 +1,3 @@
-import { env } from "./env.ts";
-import { getKv } from "./kv.ts";
 import { ensureUniqueIds, slugify } from "./slug.ts";
 import type { Character, GameConfig, GameIndexEntry } from "../shared/types.ts";
 
@@ -12,12 +10,10 @@ interface ParsedOutline {
 
 type SectionKey = "title" | "intro" | "plot" | "secret" | "characters" | "user";
 
-function shouldSeedLocalGame(): boolean {
-  // Local-only seed behavior:
-  // - never on deploy runtime
-  // - only when email auth is in local-dev mode (no Resend key)
-  return !Deno.env.get("DENO_DEPLOYMENT_ID") && !env.resendApiKey;
-}
+export const OLIVE_FARM_OUTLINE_URL = new URL(
+  "../murder-at-the-olive-farm.txt",
+  import.meta.url,
+);
 
 function mapHeadingToSection(heading: string): SectionKey | null {
   const normalized = heading
@@ -62,7 +58,7 @@ function parseCharacters(lines: string[]): Character[] {
   }));
 }
 
-function parseGameOutline(input: string): ParsedOutline | null {
+function parseGameOutline(input: string): ParsedOutline {
   const sections: Record<SectionKey, string[]> = {
     title: [],
     intro: [],
@@ -103,7 +99,7 @@ function parseGameOutline(input: string): ParsedOutline | null {
   ];
 
   if (!title || !introText || characters.length === 0) {
-    return null;
+    throw new Error("Olive Farm outline is incomplete or invalid");
   }
 
   return {
@@ -114,57 +110,50 @@ function parseGameOutline(input: string): ParsedOutline | null {
   };
 }
 
-export async function seedLocalOliveFarmGameOnStartup(): Promise<void> {
-  if (!shouldSeedLocalGame()) return;
-
-  const outlineUrl = new URL("../murder-at-the-olive-farm.txt", import.meta.url);
-
-  let outlineText: string;
-  try {
-    outlineText = await Deno.readTextFile(outlineUrl);
-  } catch {
-    console.warn(`[seed] skipped: cannot read ${outlineUrl.pathname}`);
-    return;
-  }
-
+export async function buildOliveFarmGameConfig(
+  now = new Date().toISOString(),
+): Promise<GameConfig> {
+  const outlineText = await Deno.readTextFile(OLIVE_FARM_OUTLINE_URL);
   const parsed = parseGameOutline(outlineText);
-  if (!parsed) {
-    console.warn("[seed] skipped: outline file is incomplete or invalid");
-    return;
-  }
-
-  const kv = await getKv();
   const slug = slugify(parsed.title);
-  const now = new Date().toISOString();
 
-  const existing = await kv.get<GameConfig>(["games_by_slug", slug]);
-  const createdAt = existing.value?.createdAt ?? now;
-  const createdBy = existing.value?.createdBy ?? "local-seed@persuasion.local";
-
-  const game: GameConfig = {
+  return {
     slug,
     title: parsed.title,
     introText: parsed.introText,
     plotPointsText: parsed.plotPointsText,
     characters: parsed.characters,
     active: true,
-    createdBy,
-    createdAt,
+    createdBy: "startup-reset@persuasion.system",
+    createdAt: now,
     updatedAt: now,
+  };
+}
+
+export async function upsertGameAndIndex(
+  kv: Deno.Kv,
+  game: GameConfig,
+): Promise<void> {
+  const existing = await kv.get<GameConfig>(["games_by_slug", game.slug]);
+  const createdAt = existing.value?.createdAt ?? game.createdAt;
+  const createdBy = existing.value?.createdBy ?? game.createdBy;
+
+  const persistedGame: GameConfig = {
+    ...game,
+    createdAt,
+    createdBy,
   };
 
   const index: GameIndexEntry = {
-    slug,
-    title: game.title,
-    active: true,
-    characterCount: game.characters.length,
-    updatedAt: game.updatedAt,
+    slug: persistedGame.slug,
+    title: persistedGame.title,
+    active: persistedGame.active,
+    characterCount: persistedGame.characters.length,
+    updatedAt: persistedGame.updatedAt,
   };
 
   await kv.atomic()
-    .set(["games_by_slug", slug], game)
-    .set(["games_index", slug], index)
+    .set(["games_by_slug", persistedGame.slug], persistedGame)
+    .set(["games_index", persistedGame.slug], index)
     .commit();
-
-  console.log(`[seed] local test game ready at /game/${slug}`);
 }
