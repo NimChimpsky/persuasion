@@ -4,10 +4,9 @@ Character-driven choose-your-adventure platform with:
 
 - Magic-link email login (indefinite cookie session)
 - User home with active games
-- Admin studio for creating games, characters, plot points, and a narrator
-  prompt
+- Admin studio for creating games, characters, and plot points
 - Friendly game URLs with prefix `/game/:slug`
-- 9-pane game board with narrator-first chat and optional `@character` routing
+- Two-pane game board with character roster + selected-character chat
 - Deno KV persistence for games, sessions, login tokens, and user progress
 
 ## Stack
@@ -66,7 +65,7 @@ MISTRAL_MODEL=mistral-small-latest
 - `games_by_slug/<slug>`: full game config
 - `games_index/<slug>`: list/home metadata
 - `user_progress/<email>/<slug>`: transcript text + updated timestamp + user
-  game snapshot (title/plot/narrator/characters)
+  game snapshot (title/plot/characters/encountered)
 - `magic_tokens/<nonce>`: one-time magic login nonce (token carries HMAC
   signature)
 - `sessions/<sessionId>`: login session record
@@ -76,11 +75,9 @@ MISTRAL_MODEL=mistral-small-latest
 ## Notes
 
 - User progress is stored as full transcript text (JSON lines).
-- Game chat defaults to the narrator when no `@character_id` mention is present.
+- Game chat targets the currently selected character from the roster.
 - Character-specific secrets/prize logic should be written directly in each
   character system prompt.
-- Narrator behavior is configurable per game in admin via
-  `Narrator system prompt`.
 - The UI styling imports the same `xllm` visual language (background/font/button
   system) across landing/admin/home/game pages.
 - Dev bypass login is only enabled on localhost (`localhost`, `127.0.0.1`,

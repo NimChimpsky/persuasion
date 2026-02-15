@@ -10,7 +10,6 @@ export interface GameConfig {
   title: string;
   introText: string;
   plotPointsText: string;
-  narratorPrompt?: string;
   characters: Character[];
   active: boolean;
   createdBy: string;
@@ -40,7 +39,6 @@ export interface UserGameSnapshot {
   title: string;
   introText: string;
   plotPointsText: string;
-  narratorPrompt?: string;
   characters: Character[];
   encounteredCharacterIds: string[];
 }
