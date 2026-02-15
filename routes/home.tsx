@@ -1,5 +1,5 @@
 import { page } from "fresh";
-import { getUserProgressMap, listGames } from "../lib/store.ts";
+import { listGames } from "../lib/store.ts";
 import { define } from "../utils.ts";
 
 interface HomeData {
@@ -8,7 +8,6 @@ interface HomeData {
     title: string;
     characterCount: number;
     updatedAt: string;
-    hasProgress: boolean;
   }>;
 }
 
@@ -20,18 +19,12 @@ export const handler = define.handlers<HomeData>({
     }
 
     const games = await listGames();
-    const progressMap = await getUserProgressMap(
-      userEmail,
-      games.map((game) => game.slug),
-    );
-
     return page({
       games: games.map((game) => ({
         slug: game.slug,
         title: game.title,
         characterCount: game.characterCount,
         updatedAt: game.updatedAt,
-        hasProgress: progressMap.has(game.slug),
       })),
     });
   },
@@ -64,7 +57,7 @@ export default define.page<typeof handler>(function HomePage({ data, state }) {
                     </p>
                     <div class="action-row">
                       <a class="btn primary" href={`/game/${game.slug}`}>
-                        {game.hasProgress ? "Continue" : "Start"}
+                        Open
                       </a>
                     </div>
                   </article>

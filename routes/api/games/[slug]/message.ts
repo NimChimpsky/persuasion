@@ -6,10 +6,6 @@ import {
   saveUserProgress,
 } from "../../../../lib/store.ts";
 import {
-  createNarratorCharacter,
-  NARRATOR_ID,
-} from "../../../../shared/narrator.ts";
-import {
   appendEvents,
   parseTranscript,
 } from "../../../../shared/transcript.ts";
@@ -23,7 +19,7 @@ import { define } from "../../../../utils.ts";
 
 interface MessageRequest {
   text: string;
-  targetCharacterId?: string;
+  characterId: string;
 }
 
 interface NewCharacterInput {
@@ -54,7 +50,6 @@ function buildUserGameSnapshot(game: GameConfig): UserGameSnapshot {
     title: game.title,
     introText: game.introText,
     plotPointsText: game.plotPointsText,
-    narratorPrompt: game.narratorPrompt,
     characters: game.characters.map((character) => ({
       ...character,
     })),
@@ -176,6 +171,18 @@ function mergeCharacters(
   return merged;
 }
 
+function findCharacterById(
+  characters: Character[],
+  characterId: string,
+): Character | null {
+  const target = characterId.trim().toLowerCase();
+  if (!target) return null;
+  return characters.find((character) =>
+    character.id.toLowerCase() === target
+  ) ??
+    null;
+}
+
 export const handler = define.handlers({
   async POST(ctx) {
     const userEmail = ctx.state.userEmail;
@@ -197,8 +204,7 @@ export const handler = define.handlers({
     }
 
     const text = (payload.text ?? "").trim();
-    const targetCharacterId = (payload.targetCharacterId ?? "").trim()
-      .toLowerCase();
+    const characterId = String(payload.characterId ?? "").trim().toLowerCase();
 
     if (!text) {
       return json({ ok: false, error: "Prompt cannot be empty" }, 400);
@@ -206,20 +212,21 @@ export const handler = define.handlers({
     if (text.length > 2500) {
       return json({ ok: false, error: "Prompt is too long" }, 400);
     }
+    if (!characterId) {
+      return json({ ok: false, error: "Character is required" }, 400);
+    }
 
     const progress = await getUserProgress(userEmail, slug);
     const gameSnapshot = progress?.gameSnapshot ?? buildUserGameSnapshot(game);
     const gameForUser = getGameForUser(game, gameSnapshot);
-
-    const narratorCharacter = createNarratorCharacter(
-      gameForUser.narratorPrompt,
+    const targetCharacter = findCharacterById(
+      gameForUser.characters,
+      characterId,
     );
-    const targetCharacter =
-      !targetCharacterId || targetCharacterId === NARRATOR_ID
-        ? narratorCharacter
-        : gameForUser.characters.find((character) =>
-          character.id.toLowerCase() === targetCharacterId
-        ) ?? narratorCharacter;
+    if (!targetCharacter) {
+      return json({ ok: false, error: "Unknown character" }, 400);
+    }
+
     const events = parseTranscript(progress?.transcript ?? "");
 
     const userEvent: TranscriptEvent = {
@@ -290,10 +297,7 @@ export const handler = define.handlers({
             gameForUser.encounteredCharacterIds,
           );
 
-          if (
-            targetCharacter.id !== NARRATOR_ID &&
-            validCharacterIds.has(targetCharacter.id)
-          ) {
+          if (validCharacterIds.has(targetCharacter.id)) {
             encounteredCharacterIds.add(targetCharacter.id);
           }
           for (const id of parsedUpdate.unlockCharacterIds) {
@@ -304,7 +308,6 @@ export const handler = define.handlers({
             title: gameForUser.title,
             introText: gameForUser.introText,
             plotPointsText: gameForUser.plotPointsText,
-            narratorPrompt: gameForUser.narratorPrompt,
             characters: updatedCharacters,
             encounteredCharacterIds: [...encounteredCharacterIds],
           };

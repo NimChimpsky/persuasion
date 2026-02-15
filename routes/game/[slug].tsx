@@ -14,11 +14,12 @@ interface GamePageData {
 }
 
 function detectEncounteredCharacterIds(
+  characterIds: Set<string>,
   events: ReturnType<typeof parseTranscript>,
 ): string[] {
   const ids = new Set<string>();
   for (const event of events) {
-    if (event.role === "character") {
+    if (event.role === "character" && characterIds.has(event.characterId)) {
       ids.add(event.characterId);
     }
   }
@@ -43,9 +44,12 @@ export const handler = define.handlers<GamePageData>({
     const gameForUser = progress?.gameSnapshot
       ? { ...game, ...progress.gameSnapshot }
       : game;
+    const validCharacterIds = new Set(
+      gameForUser.characters.map((character) => character.id),
+    );
     const encounteredCharacterIds = progress?.gameSnapshot
       ?.encounteredCharacterIds ??
-      detectEncounteredCharacterIds(events);
+      detectEncounteredCharacterIds(validCharacterIds, events);
 
     return page({
       slug,

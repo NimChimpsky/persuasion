@@ -85,7 +85,7 @@ body.has-app-header .page-shell > .container {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
   font-size: 1.38rem;
   font-weight: 700;
   text-decoration: none;
@@ -371,7 +371,22 @@ select:focus {
   flex-direction: column;
   gap: 6px;
   min-height: 132px;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: #fff;
+  cursor: pointer;
   transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.character-summary.is-active {
+  border-color: #0f172a;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  min-height: 164px;
+  grid-column: span 2;
+}
+
+.character-summary.is-inactive {
+  opacity: 0.92;
 }
 
 .character-summary h4 {
@@ -400,9 +415,15 @@ select:focus {
 
 .chat-shell {
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: auto 1fr auto;
   height: 100%;
   min-height: 380px;
+}
+
+.chat-header {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+  font-size: 0.9rem;
 }
 
 .messages {
@@ -462,35 +483,6 @@ select:focus {
   align-self: end;
 }
 
-.mention-list {
-  position: absolute;
-  left: 8px;
-  right: 104px;
-  bottom: calc(100% + 6px);
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 8px 30px rgba(68, 64, 60, 0.1);
-  max-height: 160px;
-  overflow: auto;
-  z-index: 20;
-}
-
-.mention-item {
-  display: block;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  padding: 7px 9px;
-  cursor: pointer;
-}
-
-.mention-item:hover,
-.mention-item.active {
-  background: #fafaf9;
-}
-
 .character-row {
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -523,6 +515,11 @@ select:focus {
   .chat-panel {
     order: -1;
     min-height: 64vh;
+  }
+
+  .character-summary.is-active {
+    grid-column: auto;
+    min-height: 146px;
   }
 }
 

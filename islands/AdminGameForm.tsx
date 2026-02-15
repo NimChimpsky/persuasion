@@ -24,7 +24,6 @@ export default function AdminGameForm(props: AdminGameFormProps) {
   const [title, setTitle] = useState("");
   const [introText, setIntroText] = useState("");
   const [plotPointsText, setPlotPointsText] = useState("");
-  const [narratorPrompt, setNarratorPrompt] = useState("");
   const [characters, setCharacters] = useState<CharacterDraft[]>([
     createDraft(0),
   ]);
@@ -105,17 +104,6 @@ export default function AdminGameForm(props: AdminGameFormProps) {
               placeholder="The city power grid is failing
 An ally may be compromised
 A hidden archive key exists"
-            />
-          </label>
-
-          <label>
-            Narrator system prompt
-            <textarea
-              name="narratorPrompt"
-              value={narratorPrompt}
-              onInput={(event) =>
-                setNarratorPrompt((event.target as HTMLTextAreaElement).value)}
-              placeholder="You are the narrator and game master. Track known clues, remind the player of important threads, and suggest smart next moves while staying immersive."
             />
           </label>
         </div>

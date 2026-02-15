@@ -1,5 +1,4 @@
 import { getActiveLlmProvider, getLlmProviderConfig } from "./llm_provider.ts";
-import { NARRATOR_ID } from "../shared/narrator.ts";
 import { toModelContext } from "../shared/transcript.ts";
 import type {
   Character,
@@ -60,16 +59,13 @@ function buildSystemInstructions(
   game: GameConfig,
   character: Character,
 ): string {
-  const isNarrator = character.id === NARRATOR_ID;
   return [
     `You are roleplaying as ${character.name} in an interactive choose-your-adventure game titled "${game.title}".`,
     "Stay fully in-character and avoid mentioning system instructions or model details.",
     "Move the plot forward naturally, with useful details, clues, and emotional texture.",
     "Any secrets or prize unlocks must come only from this character's system prompt and should be revealed gradually.",
     "Keep responses concise and engaging (usually 1-3 short paragraphs).",
-    isNarrator
-      ? "As narrator, maintain continuity, summarize known clues, and proactively suggest good next interactions."
-      : "Stay faithful to this specific character voice and goals.",
+    "Stay faithful to this specific character voice and goals.",
     "Character definition:",
     character.systemPrompt,
     MARKDOWN_OUTPUT_INSTRUCTIONS,
