@@ -2,7 +2,7 @@
 - murder at the olive farm
 
 # Intro 
-- A body is found at an olive farm on a greek island, the farm is owned Mrs Giakoumakis her son Giannis Giakoumakis lives at the farm. Carissa is the ex girlfriend of Giannis.
+- A body is found at an olive farm on a greek island, the farm is owned Mrs Giakoumakis her son Giannis Giakoumakis lives at the farm. Carissa is the ex girlfriend of Giannis. You are the Detective who must find the killer.
 
 # Plot points : 
 - an unidentified body - "John Doe" - is found at an olive farm on a greek island.
