@@ -189,6 +189,10 @@ export const handler = define.handlers({
     if (!userEmail) {
       return json({ ok: false, error: "Unauthorized" }, 401);
     }
+    const userProfile = ctx.state.userProfile;
+    if (!userProfile) {
+      return json({ ok: false, error: "Complete profile first" }, 409);
+    }
 
     const slug = ctx.params.slug;
     const game = await getGameBySlug(slug);
@@ -264,6 +268,10 @@ export const handler = define.handlers({
               character: targetCharacter,
               events: [...events, userEvent],
               userPrompt: text,
+              playerProfile: {
+                name: userProfile.name,
+                gender: userProfile.gender,
+              },
             },
             (delta) => {
               if (!delta) return;

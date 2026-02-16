@@ -5,6 +5,16 @@ export interface Character {
   systemPrompt: string;
 }
 
+export type UserGender = "male" | "female" | "non-binary";
+
+export interface UserProfile {
+  email: string;
+  name: string;
+  gender: UserGender;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface GameConfig {
   slug: string;
   title: string;

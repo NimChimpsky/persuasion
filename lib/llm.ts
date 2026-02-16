@@ -4,6 +4,7 @@ import type {
   Character,
   GameConfig,
   TranscriptEvent,
+  UserGender,
 } from "../shared/types.ts";
 
 interface GenerateCharacterReplyArgs {
@@ -11,6 +12,10 @@ interface GenerateCharacterReplyArgs {
   character: Character;
   events: TranscriptEvent[];
   userPrompt: string;
+  playerProfile: {
+    name: string;
+    gender: UserGender;
+  };
 }
 
 interface ChatCompletionStreamChunk {
@@ -58,6 +63,7 @@ function extractStreamDelta(data: ChatCompletionStreamChunk): string {
 function buildSystemInstructions(
   game: GameConfig,
   character: Character,
+  playerProfile: GenerateCharacterReplyArgs["playerProfile"],
 ): string {
   return [
     `You are roleplaying as ${character.name} in an interactive choose-your-adventure game titled "${game.title}".`,
@@ -66,6 +72,11 @@ function buildSystemInstructions(
     "Any secrets or prize unlocks must come only from this character's system prompt and should be revealed gradually.",
     "Keep responses concise and engaging (usually 1-3 short paragraphs).",
     "Stay faithful to this specific character voice and goals.",
+    "Player profile (authoritative):",
+    `- Name: ${playerProfile.name}`,
+    `- Gender: ${playerProfile.gender}`,
+    "Use this profile naturally when addressing the player.",
+    "Do not invent additional personal attributes unless the player provides them.",
     "Character definition:",
     character.systemPrompt,
     MARKDOWN_OUTPUT_INSTRUCTIONS,
@@ -104,7 +115,11 @@ export async function streamCharacterReply(
     return `(${character.name}) The game engine is unavailable because ${providerConfig.label} is not configured.`;
   }
 
-  const systemInstructions = buildSystemInstructions(game, character);
+  const systemInstructions = buildSystemInstructions(
+    game,
+    character,
+    args.playerProfile,
+  );
   const userInput = buildUserInput(character, events, userPrompt);
   const endpoint = buildChatEndpoint(providerConfig.baseUrl);
 

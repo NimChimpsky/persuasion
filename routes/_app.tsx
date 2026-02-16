@@ -39,6 +39,7 @@ export default define.page(function App({ Component, state }) {
                   <SiteHeader
                     userEmail={state.userEmail}
                     isAdmin={state.isAdmin}
+                    userProfile={state.userProfile}
                   />
                 </div>
               </div>

@@ -4,15 +4,23 @@ import type {
   GameConfig,
   GameIndexEntry,
   TranscriptEvent,
+  UserGender,
+  UserProfile,
   UserProgress,
 } from "../shared/types.ts";
 
 const USER_PROGRESS_META_PREFIX = ["user_progress_meta"] as const;
 const USER_PROGRESS_CHUNK_PREFIX = ["user_progress_chunk"] as const;
+const USER_PROFILE_PREFIX = ["user_profile"] as const;
 const PROGRESS_STORAGE_VERSION = "chunks_v1";
 const PROGRESS_CODEC = "gzip";
 const CHUNK_EVENT_SIZE = 80;
 const SAVE_RETRY_LIMIT = 3;
+const VALID_GENDERS: ReadonlySet<UserGender> = new Set([
+  "male",
+  "female",
+  "non-binary",
+]);
 
 interface UserProgressMeta {
   version: typeof PROGRESS_STORAGE_VERSION;
@@ -40,6 +48,19 @@ function chunkPrefix(email: string, slug: string): Deno.KvKey {
 
 function chunkKey(email: string, slug: string, index: number): Deno.KvKey {
   return [...USER_PROGRESS_CHUNK_PREFIX, email, slug, index];
+}
+
+function normalizeProfileEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function profileKey(email: string): Deno.KvKey {
+  return [...USER_PROFILE_PREFIX, normalizeProfileEmail(email)];
+}
+
+function parseUserGender(value: string): UserGender | null {
+  const gender = value.trim().toLowerCase();
+  return VALID_GENDERS.has(gender as UserGender) ? gender as UserGender : null;
 }
 
 function serializeEventsToJsonl(events: TranscriptEvent[]): string {
@@ -71,7 +92,8 @@ async function compressTextGzip(text: string): Promise<Uint8Array> {
 }
 
 async function decompressTextGzip(bytes: Uint8Array): Promise<string> {
-  const stream = new Response(bytes).body?.pipeThrough(
+  const normalized = new Uint8Array(bytes);
+  const stream = new Response(normalized).body?.pipeThrough(
     new DecompressionStream(PROGRESS_CODEC),
   );
   if (!stream) return "";
@@ -85,7 +107,9 @@ async function readAllChunkEntries(
 ): Promise<Array<Deno.KvEntryMaybe<UserProgressChunk>>> {
   const entries: Array<Deno.KvEntryMaybe<UserProgressChunk>> = [];
   for await (
-    const entry of kv.list<UserProgressChunk>({ prefix: chunkPrefix(email, slug) })
+    const entry of kv.list<UserProgressChunk>({
+      prefix: chunkPrefix(email, slug),
+    })
   ) {
     entries.push(entry);
   }
@@ -293,6 +317,45 @@ export async function deleteGameBySlug(slug: string): Promise<boolean> {
     .commit();
 
   return result.ok;
+}
+
+export async function getUserProfile(
+  email: string,
+): Promise<UserProfile | null> {
+  const kv = await getKv();
+  const entry = await kv.get<UserProfile>(profileKey(email));
+  return entry.value;
+}
+
+export async function upsertUserProfile(
+  email: string,
+  input: { name: string; gender: string },
+): Promise<UserProfile> {
+  const normalizedEmail = normalizeProfileEmail(email);
+  const name = input.name.trim();
+  const gender = parseUserGender(input.gender);
+
+  if (!name || name.length > 60) {
+    throw new Error("invalid_profile_name");
+  }
+  if (!gender) {
+    throw new Error("invalid_profile_gender");
+  }
+
+  const kv = await getKv();
+  const key = profileKey(normalizedEmail);
+  const existing = await kv.get<UserProfile>(key);
+  const now = new Date().toISOString();
+  const nextProfile: UserProfile = {
+    email: normalizedEmail,
+    name,
+    gender,
+    createdAt: existing.value?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  await kv.set(key, nextProfile);
+  return nextProfile;
 }
 
 export async function getUserProgress(

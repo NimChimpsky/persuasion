@@ -3,6 +3,7 @@
 Character-driven choose-your-adventure platform with:
 
 - Magic-link email login (indefinite cookie session)
+- Required user profile (name + gender) after first login
 - User home with active games
 - Admin studio for creating games, characters, and plot points
 - Friendly game URLs with prefix `/game/:slug`
@@ -71,8 +72,9 @@ MISTRAL_MODEL=mistral-small-latest
   (codec/version/chunk counts + updated timestamp + user game snapshot)
 - `user_progress_chunk/<email>/<slug>/<chunkIndex>`: gzip-compressed transcript
   chunks (JSONL events)
-- `user_progress/<email>/<slug>`: legacy format (ignored by reads, still wiped by
-  startup reset for cleanup)
+- `user_progress/<email>/<slug>`: legacy format (ignored by reads, still wiped
+  by startup reset for cleanup)
+- `user_profile/<email>`: player profile (`name`, `gender`, timestamps)
 - `magic_tokens/<nonce>`: one-time magic login nonce (token carries HMAC
   signature)
 - `sessions/<sessionId>`: login session record
@@ -102,6 +104,7 @@ Behavior:
   - No wipe is performed.
   - Olive farm is still upserted at startup (seed-only mode).
 - Preserves:
+  - `user_profile`
   - `sessions`
   - `sessions_by_user`
   - `magic_tokens`
@@ -109,8 +112,8 @@ Behavior:
 
 Execution frequency:
 
-- If `RESET_GAME_STATE_ON_STARTUP=true` and `DENO_DEPLOYMENT_ID` exists:
-  runs once per deployment (marker key:
+- If `RESET_GAME_STATE_ON_STARTUP=true` and `DENO_DEPLOYMENT_ID` exists: runs
+  once per deployment (marker key:
   `startup_reset/olive_farm_seed_v1/<deploymentId>`)
 - If `RESET_GAME_STATE_ON_STARTUP=true` and `DENO_DEPLOYMENT_ID` is missing
   (local): runs on every startup
@@ -123,12 +126,16 @@ Execution frequency:
 2. Remove the import of `resetAndSeedOliveFarmOnStartup` from
    `/Users/sbatty/Dev/cognition/main.ts`.
 3. Delete `/Users/sbatty/Dev/cognition/lib/startup_reset.ts`.
-4. (Optional) Delete or keep `/Users/sbatty/Dev/cognition/lib/local_seed_game.ts`
-   depending on whether you still want manual seeding utilities.
+4. (Optional) Delete or keep
+   `/Users/sbatty/Dev/cognition/lib/local_seed_game.ts` depending on whether you
+   still want manual seeding utilities.
 
 ## Notes
 
 - User progress is stored as chunked, gzip-compressed transcript JSONL in KV.
+- First authenticated access requires profile completion at `/profile` before
+  other pages or APIs.
+- Player profile name and gender are injected into character prompt context.
 - Game chat targets the currently selected character from the roster.
 - Character-specific secrets/prize logic should be written directly in each
   character system prompt.
