@@ -5,6 +5,24 @@ export interface Character {
   systemPrompt: string;
 }
 
+export interface AssistantConfig {
+  id: string;
+  name: string;
+  bio: string;
+  systemPrompt: string;
+}
+
+export interface PlotMilestone {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface ProgressState {
+  turn: number;
+  discoveredMilestoneIds: string[];
+}
+
 export type UserGender = "male" | "female" | "non-binary";
 
 export interface UserProfile {
@@ -20,6 +38,8 @@ export interface GameConfig {
   title: string;
   introText: string;
   plotPointsText: string;
+  assistant: AssistantConfig;
+  plotMilestones: PlotMilestone[];
   characters: Character[];
   active: boolean;
   createdBy: string;
@@ -49,8 +69,11 @@ export interface UserGameSnapshot {
   title: string;
   introText: string;
   plotPointsText: string;
+  assistantId: string;
+  plotMilestones: PlotMilestone[];
   characters: Character[];
   encounteredCharacterIds: string[];
+  progressState: ProgressState;
 }
 
 export interface UserProgress {

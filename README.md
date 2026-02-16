@@ -6,6 +6,7 @@ Character-driven choose-your-adventure platform with:
 - Required user profile (name + gender) after first login
 - User home with active games
 - Admin studio for creating games, characters, and plot points
+- Guided assistant + plot milestone authoring (no raw JSON action input)
 - Friendly game URLs with prefix `/game/:slug`
 - Two-pane game board with character roster + selected-character chat
 - Deno KV persistence for games, sessions, login tokens, and user progress
@@ -67,6 +68,7 @@ MISTRAL_MODEL=mistral-small-latest
 ## Data model (KV)
 
 - `games_by_slug/<slug>`: full game config
+  - includes `assistant` and `plotMilestones`
 - `games_index/<slug>`: list/home metadata
 - `user_progress_meta/<email>/<slug>`: chunked transcript metadata
   (codec/version/chunk counts + updated timestamp + user game snapshot)
@@ -99,7 +101,7 @@ Behavior:
     - `user_progress_meta`
     - `user_progress_chunk`
   - Reseeds exactly one game from:
-    - `/Users/sbatty/Dev/cognition/murder-at-the-olive-farm.txt`
+    - `/Users/sbatty/Dev/cognition/murder-at-the-olive-farm.v2.txt`
 - When `RESET_GAME_STATE_ON_STARTUP=false`:
   - No wipe is performed.
   - Olive farm is still upserted at startup (seed-only mode).
@@ -133,10 +135,13 @@ Execution frequency:
 ## Notes
 
 - User progress is stored as chunked, gzip-compressed transcript JSONL in KV.
+- Game snapshots include assistant id, plot milestones, and progression state
+  (`turn`, discovered milestones, latest hint).
 - First authenticated access requires profile completion at `/profile` before
   other pages or APIs.
 - Player profile name and gender are injected into character prompt context.
 - Game chat targets the currently selected character from the roster.
+- The assistant is pinned at the top of the roster and gives subtle guidance.
 - Character-specific secrets/prize logic should be written directly in each
   character system prompt.
 - The UI styling imports the same `xllm` visual language (background/font/button
@@ -147,3 +152,6 @@ Execution frequency:
   on localhost.
 - Deno KV is mandatory for this app; there is no non-persistent fallback.
 - Mistral is the default LLM provider until an admin switches it in `/admin`.
+- Local seed now loads
+  `/Users/sbatty/Dev/cognition/murder-at-the-olive-farm.v2.txt`, which includes
+  guided assistant/milestone sections for local testing.

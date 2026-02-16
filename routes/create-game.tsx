@@ -2,7 +2,12 @@ import { page } from "fresh";
 import AdminGameForm from "../islands/AdminGameForm.tsx";
 import { ensureUniqueIds, slugify } from "../lib/slug.ts";
 import { createGame, getGameBySlug, listGames } from "../lib/store.ts";
-import type { Character, GameConfig } from "../shared/types.ts";
+import type {
+  AssistantConfig,
+  Character,
+  GameConfig,
+  PlotMilestone,
+} from "../shared/types.ts";
 import { define } from "../utils.ts";
 
 interface PublishData {
@@ -55,6 +60,45 @@ function parseCharacters(form: FormData): Character[] {
   }));
 }
 
+function parseMilestones(form: FormData): PlotMilestone[] {
+  const rawCount = Number(form.get("milestoneCount") ?? 0);
+  const count = Number.isFinite(rawCount)
+    ? Math.max(0, Math.floor(rawCount))
+    : 0;
+
+  const titles: string[] = [];
+  const descriptions: string[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const title = String(form.get(`milestoneTitle_${i}`) ?? "").trim();
+    const description = String(form.get(`milestoneDescription_${i}`) ?? "")
+      .trim();
+    if (!title || !description) continue;
+    titles.push(title);
+    descriptions.push(description);
+  }
+
+  const ids = ensureUniqueIds(titles.map((title) => slugify(title)));
+  return titles.map((title, index) => ({
+    id: ids[index],
+    title,
+    description: descriptions[index],
+  }));
+}
+
+function parseAssistant(form: FormData): AssistantConfig | null {
+  const name = String(form.get("assistantName") ?? "").trim();
+  const bio = String(form.get("assistantBio") ?? "").trim();
+  const systemPrompt = String(form.get("assistantPrompt") ?? "").trim();
+  if (!name || !bio || !systemPrompt) return null;
+  return {
+    id: slugify(name),
+    name,
+    bio,
+    systemPrompt,
+  };
+}
+
 export const handler = define.handlers<PublishData>({
   async GET(ctx) {
     if (!ctx.state.userEmail) {
@@ -88,12 +132,17 @@ export const handler = define.handlers<PublishData>({
     const title = String(form.get("title") ?? "").trim();
     const introText = String(form.get("introText") ?? "").trim();
     const plotPointsText = String(form.get("plotPointsText") ?? "").trim();
+    const assistant = parseAssistant(form);
+    const plotMilestones = parseMilestones(form);
     const characters = parseCharacters(form);
 
-    if (!title || !introText || characters.length === 0) {
+    if (
+      !title || !introText || characters.length === 0 || !assistant ||
+      plotMilestones.length === 0
+    ) {
       return Response.redirect(
         new URL(
-          "/create-game?error=Provide+title,+intro,+and+at+least+one+character",
+          "/create-game?error=Provide+title,+intro,+assistant,+milestones,+and+at+least+one+character",
           ctx.req.url,
         ),
         303,
@@ -109,6 +158,8 @@ export const handler = define.handlers<PublishData>({
       title,
       introText,
       plotPointsText,
+      assistant,
+      plotMilestones,
       characters,
       active: true,
       createdBy: ctx.state.userEmail,

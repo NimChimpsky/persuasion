@@ -1,4 +1,12 @@
-import { streamCharacterReply } from "../../../../lib/llm.ts";
+import {
+  judgeMilestoneProgress,
+  streamCharacterReply,
+} from "../../../../lib/llm.ts";
+import {
+  applyProgressUpdate,
+  buildInitialProgressState,
+  sanitizeJudgeResult,
+} from "../../../../lib/game_engine.ts";
 import { slugify } from "../../../../lib/slug.ts";
 import {
   getGameBySlug,
@@ -12,6 +20,7 @@ import {
 import type {
   Character,
   GameConfig,
+  ProgressState,
   TranscriptEvent,
   UserGameSnapshot,
 } from "../../../../shared/types.ts";
@@ -36,6 +45,8 @@ interface GameUpdateDirective {
 
 interface GameForUser extends GameConfig {
   encounteredCharacterIds: string[];
+  progressState: ProgressState;
+  assistantId: string;
 }
 
 function json(data: unknown, status = 200): Response {
@@ -45,30 +56,46 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
+function assistantCharacterFromGame(game: GameConfig): Character {
+  return {
+    id: game.assistant.id,
+    name: game.assistant.name,
+    bio: game.assistant.bio,
+    systemPrompt: game.assistant.systemPrompt,
+  };
+}
+
 function buildUserGameSnapshot(game: GameConfig): UserGameSnapshot {
   return {
     title: game.title,
     introText: game.introText,
     plotPointsText: game.plotPointsText,
+    assistantId: game.assistant.id,
+    plotMilestones: game.plotMilestones,
     characters: game.characters.map((character) => ({
       ...character,
     })),
     encounteredCharacterIds: [],
+    progressState: buildInitialProgressState(),
   };
 }
 
 function getGameForUser(
   game: GameConfig,
-  snapshot: UserGameSnapshot | undefined,
+  snapshot: UserGameSnapshot,
 ): GameForUser {
-  if (!snapshot) {
-    return { ...game, encounteredCharacterIds: [] };
-  }
-
   return {
     ...game,
     ...snapshot,
+    assistantId: snapshot.assistantId || game.assistant.id,
+    plotMilestones: snapshot.plotMilestones?.length
+      ? snapshot.plotMilestones
+      : game.plotMilestones,
+    characters: snapshot.characters?.length
+      ? snapshot.characters
+      : game.characters,
     encounteredCharacterIds: snapshot.encounteredCharacterIds ?? [],
+    progressState: snapshot.progressState ?? buildInitialProgressState(),
   };
 }
 
@@ -199,6 +226,16 @@ export const handler = define.handlers({
     if (!game || !game.active) {
       return json({ ok: false, error: "Game not found" }, 404);
     }
+    if (!game.assistant || !game.plotMilestones?.length) {
+      return json(
+        {
+          ok: false,
+          error:
+            "Invalid game config: assistant and plot milestones are required",
+        },
+        500,
+      );
+    }
 
     let payload: MessageRequest;
     try {
@@ -223,16 +260,21 @@ export const handler = define.handlers({
     const progress = await getUserProgress(userEmail, slug);
     const gameSnapshot = progress?.gameSnapshot ?? buildUserGameSnapshot(game);
     const gameForUser = getGameForUser(game, gameSnapshot);
-    const targetCharacter = findCharacterById(
-      gameForUser.characters,
-      characterId,
-    );
+
+    const assistantCharacter = assistantCharacterFromGame(game);
+    const runtimeCharacters = [
+      assistantCharacter,
+      ...gameForUser.characters.filter((character) =>
+        character.id !== assistantCharacter.id
+      ),
+    ];
+
+    const targetCharacter = findCharacterById(runtimeCharacters, characterId);
     if (!targetCharacter) {
       return json({ ok: false, error: "Unknown character" }, 400);
     }
 
     const events = parseTranscript(progress?.transcript ?? "");
-
     const userEvent: TranscriptEvent = {
       role: "user",
       characterId: targetCharacter.id,
@@ -300,11 +342,14 @@ export const handler = define.handlers({
             gameForUser.characters,
             parsedUpdate.newCharacters,
           );
-          const validCharacterIds = new Set(updatedCharacters.map((c) => c.id));
+
+          const validCharacterIds = new Set([
+            assistantCharacter.id,
+            ...updatedCharacters.map((c) => c.id),
+          ]);
           const encounteredCharacterIds = new Set(
             gameForUser.encounteredCharacterIds,
           );
-
           if (validCharacterIds.has(targetCharacter.id)) {
             encounteredCharacterIds.add(targetCharacter.id);
           }
@@ -312,12 +357,46 @@ export const handler = define.handlers({
             if (validCharacterIds.has(id)) encounteredCharacterIds.add(id);
           }
 
+          let judgeResult = {
+            newlyDiscoveredIds: [] as string[],
+            reasoning: "",
+          };
+
+          try {
+            const rawJudge = await judgeMilestoneProgress({
+              milestones: gameForUser.plotMilestones,
+              discoveredMilestoneIds:
+                gameForUser.progressState.discoveredMilestoneIds,
+              recentEvents: [...events, userEvent, characterEvent].slice(-60),
+              latestUserMessage: text,
+              latestCharacterMessage: visibleReply,
+            });
+            judgeResult = sanitizeJudgeResult(
+              rawJudge,
+              gameForUser.plotMilestones,
+              gameForUser.progressState.discoveredMilestoneIds,
+            );
+          } catch (error) {
+            console.error(
+              "milestone judge failed:",
+              error instanceof Error ? error.message : String(error),
+            );
+          }
+
+          const nextProgressState = applyProgressUpdate(
+            gameForUser.progressState,
+            judgeResult,
+          );
+
           const nextSnapshot: UserGameSnapshot = {
             title: gameForUser.title,
             introText: gameForUser.introText,
             plotPointsText: gameForUser.plotPointsText,
+            assistantId: assistantCharacter.id,
+            plotMilestones: gameForUser.plotMilestones,
             characters: updatedCharacters,
             encounteredCharacterIds: [...encounteredCharacterIds],
+            progressState: nextProgressState,
           };
 
           await saveUserProgress(userEmail, slug, {
@@ -326,14 +405,28 @@ export const handler = define.handlers({
             gameSnapshot: nextSnapshot,
           });
 
+          const responseCharacters = [
+            {
+              id: assistantCharacter.id,
+              name: assistantCharacter.name,
+              bio: assistantCharacter.bio,
+            },
+            ...updatedCharacters
+              .filter((character) => character.id !== assistantCharacter.id)
+              .map((character) => ({
+                id: character.id,
+                name: character.name,
+                bio: character.bio,
+              })),
+          ];
+
           sendEvent("final", {
             characterEvent,
-            characters: updatedCharacters.map((character) => ({
-              id: character.id,
-              name: character.name,
-              bio: character.bio,
-            })),
+            characters: responseCharacters,
             encounteredCharacterIds: nextSnapshot.encounteredCharacterIds,
+            progressState: nextProgressState,
+            discoveredMilestoneIds: nextProgressState.discoveredMilestoneIds,
+            assistantId: assistantCharacter.id,
           });
         } catch (error) {
           const message = error instanceof Error

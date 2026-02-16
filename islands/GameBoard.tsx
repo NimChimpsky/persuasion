@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import type { TranscriptEvent } from "../shared/types.ts";
+import type {
+  PlotMilestone,
+  ProgressState,
+  TranscriptEvent,
+} from "../shared/types.ts";
 
 interface CharacterRef {
   id: string;
@@ -12,6 +16,9 @@ interface GameBoardProps {
   characters: CharacterRef[];
   initialEvents: TranscriptEvent[];
   initialEncounteredCharacterIds: string[];
+  initialAssistantId: string;
+  initialProgressState: ProgressState;
+  initialPlotMilestones: PlotMilestone[];
 }
 
 interface JsonErrorResponse {
@@ -32,6 +39,9 @@ interface StreamFinalPayload {
   characterEvent: TranscriptEvent;
   characters: CharacterRef[];
   encounteredCharacterIds: string[];
+  progressState?: ProgressState;
+  discoveredMilestoneIds?: string[];
+  assistantId?: string;
 }
 
 interface StreamErrorPayload {
@@ -171,6 +181,12 @@ export default function GameBoard(props: GameBoardProps) {
   const [streamingText, setStreamingText] = useState("");
   const [streamingCharacterName, setStreamingCharacterName] = useState("");
   const [streamingCharacterId, setStreamingCharacterId] = useState("");
+  const [progressState, setProgressState] = useState<ProgressState>(
+    props.initialProgressState,
+  );
+  const [plotMilestones] = useState<PlotMilestone[]>(
+    props.initialPlotMilestones,
+  );
   const [desktopBoardHeight, setDesktopBoardHeight] = useState<number | null>(
     null,
   );
@@ -182,6 +198,21 @@ export default function GameBoard(props: GameBoardProps) {
   const layoutRef = useRef<HTMLElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const discoveredSet = useMemo(
+    () =>
+      new Set(
+        progressState.discoveredMilestoneIds.map((id) => id.toLowerCase()),
+      ),
+    [progressState.discoveredMilestoneIds],
+  );
+  const discoveredCount = useMemo(
+    () =>
+      plotMilestones.filter((milestone) =>
+        discoveredSet.has(milestone.id.toLowerCase())
+      ).length,
+    [plotMilestones, discoveredSet],
+  );
 
   const encounteredSet = useMemo(
     () => new Set(encounteredCharacterIds.map((id) => id.toLowerCase())),
@@ -353,6 +384,18 @@ export default function GameBoard(props: GameBoardProps) {
           setEvents((prev) => [...prev, payload.characterEvent]);
           setCharacters(payload.characters);
           setEncounteredCharacterIds(payload.encounteredCharacterIds);
+          if (payload.progressState) {
+            setProgressState(payload.progressState);
+          }
+          if (
+            Array.isArray(payload.discoveredMilestoneIds) &&
+            payload.progressState
+          ) {
+            setProgressState({
+              ...payload.progressState,
+              discoveredMilestoneIds: payload.discoveredMilestoneIds,
+            });
+          }
           setStreamingText("");
           setStreamingCharacterName("");
           setStreamingCharacterId("");
@@ -401,7 +444,10 @@ export default function GameBoard(props: GameBoardProps) {
                 }}
               >
                 <h4>{character.name}</h4>
-                <p>{summaryByCharacterId.get(character.id) ?? "No conversation yet"}</p>
+                <p>
+                  {summaryByCharacterId.get(character.id) ??
+                    "No conversation yet"}
+                </p>
               </button>
             );
           })}
@@ -423,6 +469,9 @@ export default function GameBoard(props: GameBoardProps) {
                 ? `Talking to ${activeCharacter.name}`
                 : "Select a character"}
             </strong>
+            <span class="inline-meta">
+              {`Milestones ${discoveredCount}/${plotMilestones.length}`}
+            </span>
           </div>
 
           <div class="messages" ref={messagesRef}>

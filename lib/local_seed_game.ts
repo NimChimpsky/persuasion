@@ -1,17 +1,33 @@
 import { ensureUniqueIds, slugify } from "./slug.ts";
-import type { Character, GameConfig, GameIndexEntry } from "../shared/types.ts";
+import type {
+  AssistantConfig,
+  Character,
+  GameConfig,
+  GameIndexEntry,
+  PlotMilestone,
+} from "../shared/types.ts";
 
 interface ParsedOutline {
   title: string;
   introText: string;
   plotPointsText: string;
+  assistant: AssistantConfig;
+  plotMilestones: PlotMilestone[];
   characters: Character[];
 }
 
-type SectionKey = "title" | "intro" | "plot" | "secret" | "characters" | "user";
+type SectionKey =
+  | "title"
+  | "intro"
+  | "plot"
+  | "secret"
+  | "characters"
+  | "user"
+  | "assistant"
+  | "milestones";
 
 export const OLIVE_FARM_OUTLINE_URL = new URL(
-  "../murder-at-the-olive-farm.txt",
+  "../murder-at-the-olive-farm.v2.txt",
   import.meta.url,
 );
 
@@ -24,10 +40,12 @@ function mapHeadingToSection(heading: string): SectionKey | null {
 
   if (normalized.includes("game title")) return "title";
   if (normalized === "intro") return "intro";
+  if (normalized.startsWith("plot milestone")) return "milestones";
   if (normalized.startsWith("plot")) return "plot";
   if (normalized.startsWith("secret")) return "secret";
   if (normalized.startsWith("character")) return "characters";
   if (normalized === "user") return "user";
+  if (normalized === "assistant") return "assistant";
 
   return null;
 }
@@ -58,6 +76,60 @@ function parseCharacters(lines: string[]): Character[] {
   }));
 }
 
+function parseAssistant(lines: string[]): AssistantConfig {
+  const map = new Map<string, string>();
+
+  for (const line of lines) {
+    const separator = line.indexOf(":");
+    if (separator <= 0) continue;
+    const key = line.slice(0, separator).trim().toLowerCase();
+    const value = line.slice(separator + 1).trim();
+    if (!value) continue;
+    map.set(key, value);
+  }
+
+  const name = map.get("name") ?? "Assistant";
+  const bio = map.get("bio") ??
+    "Your investigation assistant who helps track clues and suggest next steps.";
+  const systemPrompt = map.get("system prompt") ?? map.get("prompt") ??
+    "You are the player's assistant. Offer subtle, practical investigative guidance without spoiling undiscovered outcomes.";
+
+  if (!name.trim() || !bio.trim() || !systemPrompt.trim()) {
+    throw new Error("Assistant section is incomplete or invalid");
+  }
+
+  return {
+    id: slugify(name),
+    name: name.trim(),
+    bio: bio.trim(),
+    systemPrompt: systemPrompt.trim(),
+  };
+}
+
+function parseMilestones(lines: string[]): PlotMilestone[] {
+  const parsed = lines.flatMap((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return [];
+
+    const splitPipe = trimmed.split("|");
+    if (splitPipe.length >= 2) {
+      const title = splitPipe[0].trim();
+      const description = splitPipe.slice(1).join("|").trim();
+      if (!title || !description) return [];
+      return [{ title, description }];
+    }
+
+    return [{ title: trimmed, description: trimmed }];
+  });
+
+  const ids = ensureUniqueIds(parsed.map((item) => slugify(item.title)));
+  return parsed.map((item, index) => ({
+    id: ids[index],
+    title: item.title,
+    description: item.description,
+  }));
+}
+
 function parseGameOutline(input: string): ParsedOutline {
   const sections: Record<SectionKey, string[]> = {
     title: [],
@@ -66,6 +138,8 @@ function parseGameOutline(input: string): ParsedOutline {
     secret: [],
     characters: [],
     user: [],
+    assistant: [],
+    milestones: [],
   };
 
   let currentSection: SectionKey | null = null;
@@ -80,8 +154,8 @@ function parseGameOutline(input: string): ParsedOutline {
       continue;
     }
 
-    if (!line.startsWith("-")) continue;
     if (!currentSection) continue;
+    if (!line.startsWith("-")) continue;
 
     const value = line.slice(1).trim();
     if (!value) continue;
@@ -91,6 +165,8 @@ function parseGameOutline(input: string): ParsedOutline {
   const title = sections.title[0] ?? "";
   const introText = sections.intro.join("\n");
   const characters = parseCharacters(sections.characters);
+  const assistant = parseAssistant(sections.assistant);
+  const plotMilestones = parseMilestones(sections.milestones);
 
   const plotLines = [
     ...sections.plot,
@@ -98,7 +174,10 @@ function parseGameOutline(input: string): ParsedOutline {
     ...sections.user.map((line) => `Player character: ${line}`),
   ];
 
-  if (!title || !introText || characters.length === 0) {
+  if (
+    !title || !introText || characters.length === 0 ||
+    plotMilestones.length === 0
+  ) {
     throw new Error("Olive Farm outline is incomplete or invalid");
   }
 
@@ -106,6 +185,8 @@ function parseGameOutline(input: string): ParsedOutline {
     title,
     introText,
     plotPointsText: plotLines.join("\n"),
+    assistant,
+    plotMilestones,
     characters,
   };
 }
@@ -122,6 +203,8 @@ export async function buildOliveFarmGameConfig(
     title: parsed.title,
     introText: parsed.introText,
     plotPointsText: parsed.plotPointsText,
+    assistant: parsed.assistant,
+    plotMilestones: parsed.plotMilestones,
     characters: parsed.characters,
     active: true,
     createdBy: "startup-reset@persuasion.system",

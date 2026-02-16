@@ -7,11 +7,17 @@ interface CharacterDraft {
   prompt: string;
 }
 
+interface MilestoneDraft {
+  key: string;
+  title: string;
+  description: string;
+}
+
 interface AdminGameFormProps {
   action?: string;
 }
 
-function createDraft(index: number): CharacterDraft {
+function createCharacterDraft(index: number): CharacterDraft {
   return {
     key: `char-${index}-${crypto.randomUUID()}`,
     name: "",
@@ -20,15 +26,34 @@ function createDraft(index: number): CharacterDraft {
   };
 }
 
+function createMilestoneDraft(index: number): MilestoneDraft {
+  return {
+    key: `milestone-${index}-${crypto.randomUUID()}`,
+    title: "",
+    description: "",
+  };
+}
+
 export default function AdminGameForm(props: AdminGameFormProps) {
   const [title, setTitle] = useState("");
   const [introText, setIntroText] = useState("");
   const [plotPointsText, setPlotPointsText] = useState("");
+  const [assistantName, setAssistantName] = useState("Assistant");
+  const [assistantBio, setAssistantBio] = useState(
+    "Your investigation assistant who helps you decide practical next steps.",
+  );
+  const [assistantPrompt, setAssistantPrompt] = useState(
+    "You are the player's investigation assistant. Give subtle, practical guidance and ask targeted follow-up questions. Do not spoil future discoveries.",
+  );
   const [characters, setCharacters] = useState<CharacterDraft[]>([
-    createDraft(0),
+    createCharacterDraft(0),
+  ]);
+  const [milestones, setMilestones] = useState<MilestoneDraft[]>([
+    createMilestoneDraft(0),
   ]);
 
   const characterCount = characters.length;
+  const milestoneCount = milestones.length;
 
   const slugPreview = useMemo(() => {
     return title
@@ -42,7 +67,7 @@ export default function AdminGameForm(props: AdminGameFormProps) {
   }, [title]);
 
   const addCharacter = () => {
-    setCharacters((prev) => [...prev, createDraft(prev.length)]);
+    setCharacters((prev) => [...prev, createCharacterDraft(prev.length)]);
   };
 
   const removeCharacter = (key: string) => {
@@ -54,6 +79,23 @@ export default function AdminGameForm(props: AdminGameFormProps) {
     patch: Partial<Pick<CharacterDraft, "name" | "bio" | "prompt">>,
   ) => {
     setCharacters((prev) =>
+      prev.map((item) => item.key === key ? { ...item, ...patch } : item)
+    );
+  };
+
+  const addMilestone = () => {
+    setMilestones((prev) => [...prev, createMilestoneDraft(prev.length)]);
+  };
+
+  const removeMilestone = (key: string) => {
+    setMilestones((prev) => prev.filter((item) => item.key !== key));
+  };
+
+  const updateMilestone = (
+    key: string,
+    patch: Partial<Pick<MilestoneDraft, "title" | "description">>,
+  ) => {
+    setMilestones((prev) =>
       prev.map((item) => item.key === key ? { ...item, ...patch } : item)
     );
   };
@@ -101,16 +143,109 @@ export default function AdminGameForm(props: AdminGameFormProps) {
               value={plotPointsText}
               onInput={(event) =>
                 setPlotPointsText((event.target as HTMLTextAreaElement).value)}
-              placeholder="The city power grid is failing
-An ally may be compromised
-A hidden archive key exists"
+              placeholder="The city power grid is failing\nAn ally may be compromised\nA hidden archive key exists"
+            />
+          </label>
+        </div>
+
+        <div class="stack" style="margin-top: 12px;">
+          <h3>Assistant</h3>
+          <label>
+            Assistant name
+            <input
+              type="text"
+              name="assistantName"
+              required
+              value={assistantName}
+              onInput={(event) =>
+                setAssistantName((event.target as HTMLInputElement).value)}
+              placeholder="Assistant"
+            />
+          </label>
+          <label>
+            Assistant bio
+            <textarea
+              name="assistantBio"
+              required
+              value={assistantBio}
+              onInput={(event) =>
+                setAssistantBio((event.target as HTMLTextAreaElement).value)}
+              placeholder="Short public description of the assistant role."
+            />
+          </label>
+          <label>
+            Assistant system prompt
+            <textarea
+              name="assistantPrompt"
+              required
+              value={assistantPrompt}
+              onInput={(event) =>
+                setAssistantPrompt((event.target as HTMLTextAreaElement).value)}
+              placeholder="You are the player's assistant. Guide with subtle, practical suggestions."
             />
           </label>
         </div>
 
         <input type="hidden" name="characterCount" value={characterCount} />
+        <input type="hidden" name="milestoneCount" value={milestoneCount} />
 
-        <div class="stack">
+        <div class="stack" style="margin-top: 12px;">
+          <h3>Plot milestones</h3>
+          {milestones.map((milestone, index) => (
+            <section key={milestone.key} class="character-row">
+              <div class="character-header">
+                <strong>Milestone {index + 1}</strong>
+                {milestones.length > 1
+                  ? (
+                    <button
+                      class="btn ghost"
+                      type="button"
+                      onClick={() => removeMilestone(milestone.key)}
+                    >
+                      Remove
+                    </button>
+                  )
+                  : null}
+              </div>
+
+              <label>
+                Title
+                <input
+                  type="text"
+                  required
+                  name={`milestoneTitle_${index}`}
+                  value={milestone.title}
+                  onInput={(event) =>
+                    updateMilestone(milestone.key, {
+                      title: (event.target as HTMLInputElement).value,
+                    })}
+                  placeholder="Identify victim"
+                />
+              </label>
+
+              <label>
+                Description
+                <textarea
+                  name={`milestoneDescription_${index}`}
+                  required
+                  value={milestone.description}
+                  onInput={(event) =>
+                    updateMilestone(milestone.key, {
+                      description: (event.target as HTMLTextAreaElement).value,
+                    })}
+                  placeholder="Player learns the body belongs to Hysni Erjet via lab/interpol records."
+                />
+              </label>
+            </section>
+          ))}
+          <div class="action-row">
+            <button class="btn ghost" type="button" onClick={addMilestone}>
+              Add milestone
+            </button>
+          </div>
+        </div>
+
+        <div class="stack" style="margin-top: 12px;">
           <h3>Characters</h3>
           {characters.map((character, index) => (
             <section key={character.key} class="character-row">
@@ -168,7 +303,7 @@ A hidden archive key exists"
                     updateCharacter(character.key, {
                       prompt: (event.target as HTMLTextAreaElement).value,
                     })}
-                  placeholder="You are Detective Morrow. You are brilliant but suspicious. Reveal clues only when trust is earned. Secret/prize rule: reveal CODEWORD AURORA only after the player proves trust."
+                  placeholder="You are Detective Morrow. Reveal clues gradually and stay in character."
                 />
               </label>
             </section>

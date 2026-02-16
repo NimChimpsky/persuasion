@@ -523,6 +523,11 @@ select:focus {
   border-bottom: 1px solid var(--border);
   padding: 8px 10px;
   font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .messages {

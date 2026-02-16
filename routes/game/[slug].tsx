@@ -1,8 +1,14 @@
 import { page } from "fresh";
 import GameBoard from "../../islands/GameBoard.tsx";
 import ResetGameButton from "../../islands/ResetGameButton.tsx";
+import { buildInitialProgressState } from "../../lib/game_engine.ts";
 import { getGameBySlug, getUserProgress } from "../../lib/store.ts";
 import { parseTranscript } from "../../shared/transcript.ts";
+import type {
+  PlotMilestone,
+  ProgressState,
+  UserGameSnapshot,
+} from "../../shared/types.ts";
 import { define } from "../../utils.ts";
 
 interface GamePageData {
@@ -12,6 +18,20 @@ interface GamePageData {
   characters: Array<{ id: string; name: string; bio: string }>;
   events: ReturnType<typeof parseTranscript>;
   encounteredCharacterIds: string[];
+  assistantId: string;
+  progressState: ProgressState;
+  plotMilestones: PlotMilestone[];
+}
+
+interface GameForUser {
+  title: string;
+  introText: string;
+  plotPointsText: string;
+  assistantId: string;
+  plotMilestones: PlotMilestone[];
+  characters: UserGameSnapshot["characters"];
+  encounteredCharacterIds: string[];
+  progressState: ProgressState;
 }
 
 function detectEncounteredCharacterIds(
@@ -45,6 +65,26 @@ function ensureFirstCharacterEncountered(
   return [...encounteredCharacterIds, firstCharacterId];
 }
 
+function buildDefaultGameForUser(game: {
+  title: string;
+  introText: string;
+  plotPointsText: string;
+  assistant: { id: string };
+  plotMilestones: PlotMilestone[];
+  characters: UserGameSnapshot["characters"];
+}): GameForUser {
+  return {
+    title: game.title,
+    introText: game.introText,
+    plotPointsText: game.plotPointsText,
+    assistantId: game.assistant.id,
+    plotMilestones: game.plotMilestones,
+    characters: game.characters,
+    encounteredCharacterIds: [],
+    progressState: buildInitialProgressState(),
+  };
+}
+
 export const handler = define.handlers<GamePageData>({
   async GET(ctx) {
     const userEmail = ctx.state.userEmail;
@@ -57,34 +97,72 @@ export const handler = define.handlers<GamePageData>({
     if (!game || !game.active) {
       return new Response("Game not found", { status: 404 });
     }
+    if (!game.assistant || !game.plotMilestones?.length) {
+      return new Response(
+        "Game configuration is invalid: assistant and plot milestones are required.",
+        { status: 500 },
+      );
+    }
 
     const progress = await getUserProgress(userEmail, slug);
     const events = parseTranscript(progress?.transcript ?? "");
-    const gameForUser = progress?.gameSnapshot
-      ? { ...game, ...progress.gameSnapshot }
-      : game;
+
+    const fallback = buildDefaultGameForUser(game);
+    const snapshot = progress?.gameSnapshot;
+    const gameForUser: GameForUser = snapshot
+      ? {
+        ...fallback,
+        ...snapshot,
+        assistantId: snapshot.assistantId || fallback.assistantId,
+        progressState: snapshot.progressState ?? fallback.progressState,
+        plotMilestones: snapshot.plotMilestones?.length
+          ? snapshot.plotMilestones
+          : fallback.plotMilestones,
+        characters: snapshot.characters?.length
+          ? snapshot.characters
+          : fallback.characters,
+      }
+      : fallback;
+
+    const assistantCard = {
+      id: game.assistant.id,
+      name: game.assistant.name,
+      bio: game.assistant.bio,
+    };
+    const displayCharacters = [
+      assistantCard,
+      ...gameForUser.characters
+        .filter((character) => character.id !== assistantCard.id)
+        .map((character) => ({
+          id: character.id,
+          name: character.name,
+          bio: character.bio,
+        })),
+    ];
+
     const validCharacterIds = new Set(
-      gameForUser.characters.map((character) => character.id),
+      displayCharacters.map((character) => character.id),
     );
-    const encounteredCharacterIdsRaw = progress?.gameSnapshot
-      ?.encounteredCharacterIds ??
-      detectEncounteredCharacterIds(validCharacterIds, events);
+    const encounteredCharacterIdsRaw = gameForUser.encounteredCharacterIds
+        ?.length
+      ? gameForUser.encounteredCharacterIds
+      : detectEncounteredCharacterIds(validCharacterIds, events);
+
     const encounteredCharacterIds = ensureFirstCharacterEncountered(
       encounteredCharacterIdsRaw,
-      gameForUser.characters,
+      displayCharacters,
     );
 
     return page({
       slug,
       title: gameForUser.title,
       introText: gameForUser.introText,
-      characters: gameForUser.characters.map((character) => ({
-        id: character.id,
-        name: character.name,
-        bio: character.bio,
-      })),
+      characters: displayCharacters,
       events,
       encounteredCharacterIds,
+      assistantId: gameForUser.assistantId,
+      progressState: gameForUser.progressState,
+      plotMilestones: gameForUser.plotMilestones,
     });
   },
 });
@@ -112,6 +190,9 @@ export default define.page<typeof handler>(function GamePage({ data, state }) {
           characters={data.characters}
           initialEvents={data.events}
           initialEncounteredCharacterIds={data.encounteredCharacterIds}
+          initialAssistantId={data.assistantId}
+          initialProgressState={data.progressState}
+          initialPlotMilestones={data.plotMilestones}
         />
       </div>
     </main>
