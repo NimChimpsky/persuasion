@@ -151,10 +151,16 @@ body.has-app-header .page-shell > .container {
 
 .header-game-title {
   font-family: var(--font-sans);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.08rem;
+  font-weight: 600;
   line-height: 1.1;
   text-align: center;
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.04);
+  border-left: 3px solid var(--accent);
+  padding: 6px 6px 6px 12px;
+  border-radius: 4px;
+  letter-spacing: 0.01em;
 }
 
 .header-subnav-section-end .game-intro-actions {
@@ -189,7 +195,7 @@ body.has-app-header .page-shell > .container {
   text-align: center;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 150px);
+  min-height: calc(100vh - 100px);
 }
 
 .landing-title {
@@ -530,9 +536,9 @@ select:focus {
 }
 
 .character-summary.is-active {
-  border-color: #0f172a;
-  background: #f8fafc;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
+  border-color: var(--accent);
+  background: var(--accent-subtle, #eef2ff);
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.12);
 }
 
 .character-summary.is-inactive {
@@ -593,7 +599,7 @@ select:focus {
 }
 
 .chat-header {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--accent);
   padding: 8px 10px;
   font-size: 0.9rem;
   display: flex;
@@ -623,13 +629,13 @@ select:focus {
 .message.user {
   align-self: flex-end;
   background: #fff7ed;
-  border-color: #fed7aa;
+  border-color: #fdba74;
 }
 
 .message.character {
   align-self: flex-start;
-  background: #faf5ff;
-  border-color: #e9d5ff;
+  background: #f5f3ff;
+  border-color: #c4b5fd;
 }
 
 .message.is-streaming {
