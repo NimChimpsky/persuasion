@@ -94,9 +94,10 @@ body.has-app-header .page-shell > .container {
 }
 
 .header-brand-logo {
-  width: 24px;
-  height: 24px;
+  width: 56px;
+  height: 56px;
   flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .header-spacer {
@@ -161,9 +162,10 @@ body.has-app-header .page-shell > .container {
 }
 
 .landing-title-logo {
-  width: 34px;
-  height: 34px;
+  width: 84px;
+  height: 84px;
   flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .landing-login-form {

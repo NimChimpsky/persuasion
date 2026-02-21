@@ -37,10 +37,10 @@ export default define.page<typeof handler>(
           <div class="landing-title">
             <img
               class="landing-title-logo"
-              src="/robot-book-yellow-64.png"
-              width="40"
-              height="40"
-              alt=""
+              src="/logo/transparent_logo_only.png"
+              width="44"
+              height="44"
+              alt="Persuasion logo"
             />
             <h1>PERSUASION</h1>
           </div>

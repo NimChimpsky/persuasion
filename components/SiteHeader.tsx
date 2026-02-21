@@ -13,10 +13,10 @@ export default function SiteHeader(props: SiteHeaderProps) {
         <a class="header-brand" href="/home">
           <img
             class="header-brand-logo"
-            src="/robot-book-yellow-32.png"
-            width="24"
-            height="24"
-            alt=""
+            src="/logo/transparent_logo_only.png"
+            width="28"
+            height="28"
+            alt="Persuasion logo"
           />
           <span>PERSUASION</span>
         </a>

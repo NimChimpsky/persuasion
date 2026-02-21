@@ -11,20 +11,21 @@ export default define.page(function App({ Component, state }) {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{state.title ?? "Persuasion"}</title>
-        <link rel="icon" href="/favicon-robot-book-yellow.ico" sizes="any" />
+        <link rel="icon" href="/logo/favicon.ico" sizes="any" />
         <link
           rel="icon"
           type="image/png"
           sizes="32x32"
-          href="/robot-book-yellow-32.png"
+          href="/logo/favicon-32x32.png"
         />
         <link
           rel="icon"
           type="image/png"
           sizes="16x16"
-          href="/robot-book-yellow-16.png"
+          href="/logo/favicon-16x16.png"
         />
-        <link rel="apple-touch-icon" href="/robot-book-yellow-128.png" />
+        <link rel="apple-touch-icon" href="/logo/apple-touch-icon.png" />
+        <link rel="manifest" href="/logo/site.webmanifest" />
         <link rel="stylesheet" href="/fonts.css" />
         <link rel="stylesheet" href="/fonts-local.css" />
         <link rel="stylesheet" href="/styles.css" />
