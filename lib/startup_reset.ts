@@ -4,6 +4,8 @@ import {
   buildOliveFarmGameConfig,
   upsertGameAndIndex,
 } from "./local_seed_game.ts";
+import { setGlobalAssistantConfig } from "./store.ts";
+import type { AssistantConfig } from "../shared/types.ts";
 
 // TEMPORARY EARLY-DEV BOOTSTRAP
 // This module intentionally wipes game data and reseeds one test game at app startup.
@@ -31,7 +33,16 @@ const WIPE_PREFIXES: Deno.KvKey[] = [
   ["user_progress"],
   ["user_progress_meta"],
   ["user_progress_chunk"],
+  ["global_assistant_config"],
 ];
+
+const DEFAULT_ASSISTANT_CONFIG: AssistantConfig = {
+  id: "assistant",
+  name: "Assistant",
+  bio: "Your investigation assistant who helps you decide practical next steps.",
+  systemPrompt:
+    "You are the player's investigation assistant. Stay supportive, practical, and grounded in observable evidence. Ask useful follow-up questions, suggest sensible next steps, and avoid spoilers.",
+};
 
 interface ResetMarker {
   version: string;
@@ -83,6 +94,7 @@ async function seedOliveFarmOnly(
 ): Promise<string> {
   const game = await buildOliveFarmGameConfig(now);
   await upsertGameAndIndex(kv, game);
+  await setGlobalAssistantConfig(DEFAULT_ASSISTANT_CONFIG);
   return game.slug;
 }
 
@@ -100,6 +112,7 @@ async function wipeGameDataAndSeed(
   }
 
   await upsertGameAndIndex(kv, game);
+  await setGlobalAssistantConfig(DEFAULT_ASSISTANT_CONFIG);
 
   return {
     gameSlug: game.slug,

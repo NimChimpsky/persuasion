@@ -1,10 +1,13 @@
 import { page } from "fresh";
 import AdminGameForm from "../islands/AdminGameForm.tsx";
-import { GLOBAL_ASSISTANT_SYSTEM_PROMPT } from "../lib/assistant_system_prompt.ts";
 import { ensureUniqueIds, slugify } from "../lib/slug.ts";
-import { createGame, getGameBySlug, listGames } from "../lib/store.ts";
+import {
+  createGame,
+  getGameBySlug,
+  getGlobalAssistantConfig,
+  listGames,
+} from "../lib/store.ts";
 import type {
-  AssistantConfig,
   Character,
   GameConfig,
   PlotMilestone,
@@ -87,18 +90,6 @@ function parseMilestones(form: FormData): PlotMilestone[] {
   }));
 }
 
-function parseAssistant(form: FormData): AssistantConfig | null {
-  const name = String(form.get("assistantName") ?? "").trim();
-  const bio = String(form.get("assistantBio") ?? "").trim();
-  if (!name || !bio) return null;
-  return {
-    id: slugify(name),
-    name,
-    bio,
-    systemPrompt: GLOBAL_ASSISTANT_SYSTEM_PROMPT,
-  };
-}
-
 export const handler = define.handlers<PublishData>({
   async GET(ctx) {
     if (!ctx.state.userEmail) {
@@ -132,17 +123,24 @@ export const handler = define.handlers<PublishData>({
     const title = String(form.get("title") ?? "").trim();
     const introText = String(form.get("introText") ?? "").trim();
     const plotPointsText = String(form.get("plotPointsText") ?? "").trim();
-    const assistant = parseAssistant(form);
     const plotMilestones = parseMilestones(form);
     const characters = parseCharacters(form);
+    const assistant = await getGlobalAssistantConfig();
 
-    if (
-      !title || !introText || characters.length === 0 || !assistant ||
-      plotMilestones.length === 0
-    ) {
+    if (!title || !introText || characters.length === 0 || plotMilestones.length === 0) {
       return Response.redirect(
         new URL(
-          "/create-game?error=Provide+title,+intro,+assistant,+milestones,+and+at+least+one+character",
+          "/create-game?error=Provide+title,+intro,+milestones,+and+at+least+one+character",
+          ctx.req.url,
+        ),
+        303,
+      );
+    }
+
+    if (!assistant) {
+      return Response.redirect(
+        new URL(
+          "/create-game?error=Global+assistant+not+configured.+Contact+admin.",
           ctx.req.url,
         ),
         303,

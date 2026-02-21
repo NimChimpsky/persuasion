@@ -1,6 +1,7 @@
 import { getKv } from "./kv.ts";
 import { parseTranscript } from "../shared/transcript.ts";
 import type {
+  AssistantConfig,
   GameConfig,
   GameIndexEntry,
   TranscriptEvent,
@@ -12,6 +13,7 @@ import type {
 const USER_PROGRESS_META_PREFIX = ["user_progress_meta"] as const;
 const USER_PROGRESS_CHUNK_PREFIX = ["user_progress_chunk"] as const;
 const USER_PROFILE_PREFIX = ["user_profile"] as const;
+const GLOBAL_ASSISTANT_KEY = ["global_assistant_config"] as const;
 const PROGRESS_STORAGE_VERSION = "chunks_v1";
 const PROGRESS_CODEC = "gzip";
 const CHUNK_EVENT_SIZE = 80;
@@ -317,6 +319,17 @@ export async function deleteGameBySlug(slug: string): Promise<boolean> {
     .commit();
 
   return result.ok;
+}
+
+export async function getGlobalAssistantConfig(): Promise<AssistantConfig | null> {
+  const kv = await getKv();
+  const entry = await kv.get<AssistantConfig>(GLOBAL_ASSISTANT_KEY);
+  return entry.value;
+}
+
+export async function setGlobalAssistantConfig(config: AssistantConfig): Promise<void> {
+  const kv = await getKv();
+  await kv.set(GLOBAL_ASSISTANT_KEY, config);
 }
 
 export async function getUserProfile(

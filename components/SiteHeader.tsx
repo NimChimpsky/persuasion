@@ -26,6 +26,9 @@ export default function SiteHeader(props: SiteHeaderProps) {
           <span>PERSUASION</span>
         </a>
         <div class="header-spacer" />
+        {props.isAdmin
+          ? <a class="btn primary" href="/admin">admin</a>
+          : null}
         <span class="header-email">{props.userEmail}</span>
         <a class="btn ghost" href="/profile">
           {props.userProfile ? "Profile" : "Complete profile"}
@@ -36,9 +39,6 @@ export default function SiteHeader(props: SiteHeaderProps) {
       <div class="header-subnav">
         <div class="header-subnav-section header-subnav-section-nav">
           <nav class="header-subnav-links">
-            {props.isAdmin
-              ? <a class="btn primary" href="/admin">admin</a>
-              : null}
             <a class="btn ghost" href="/create-game">create game</a>
             <a class="btn ghost" href="/home">active games</a>
             <a class="btn ghost" href="/find">find</a>

@@ -1,5 +1,4 @@
 import { ensureUniqueIds, slugify } from "./slug.ts";
-import { GLOBAL_ASSISTANT_SYSTEM_PROMPT } from "./assistant_system_prompt.ts";
 import type {
   AssistantConfig,
   Character,
@@ -7,6 +6,9 @@ import type {
   GameIndexEntry,
   PlotMilestone,
 } from "../shared/types.ts";
+
+const DEFAULT_ASSISTANT_SYSTEM_PROMPT =
+  "You are the player's investigation assistant. Stay supportive, practical, and grounded in observable evidence. Ask useful follow-up questions, suggest sensible next steps, and avoid spoilers.";
 
 interface ParsedOutline {
   title: string;
@@ -100,7 +102,7 @@ function parseAssistant(lines: string[]): AssistantConfig {
     id: slugify(name),
     name: name.trim(),
     bio: bio.trim(),
-    systemPrompt: GLOBAL_ASSISTANT_SYSTEM_PROMPT,
+    systemPrompt: DEFAULT_ASSISTANT_SYSTEM_PROMPT,
   };
 }
 

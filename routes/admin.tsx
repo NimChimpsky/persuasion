@@ -8,7 +8,14 @@ import {
   type LlmProviderOption,
   setActiveLlmProvider,
 } from "../lib/llm_provider.ts";
-import { deleteGameBySlug, listGames } from "../lib/store.ts";
+import {
+  deleteGameBySlug,
+  getGlobalAssistantConfig,
+  listGames,
+  setGlobalAssistantConfig,
+} from "../lib/store.ts";
+import { slugify } from "../lib/slug.ts";
+import type { AssistantConfig } from "../shared/types.ts";
 import { define } from "../utils.ts";
 
 interface AdminData {
@@ -17,6 +24,7 @@ interface AdminData {
   >;
   currentLlmProvider: LlmProvider;
   llmProviderOptions: LlmProviderOption[];
+  assistantConfig: AssistantConfig | null;
   message: string;
   error: string;
   forbidden: boolean;
@@ -42,6 +50,7 @@ export const handler = define.handlers<AdminData>({
         {
           currentLlmProvider: "mistral",
           llmProviderOptions: listLlmProviderOptions(),
+          assistantConfig: null,
           message: "",
           error: "",
           forbidden: true,
@@ -55,11 +64,13 @@ export const handler = define.handlers<AdminData>({
     const message = url.searchParams.get("message") ?? "";
     const error = url.searchParams.get("error") ?? "";
     const currentLlmProvider = await getActiveLlmProvider();
+    const assistantConfig = await getGlobalAssistantConfig();
     const games = await listGames();
 
     return page({
       currentLlmProvider,
       llmProviderOptions: listLlmProviderOptions(),
+      assistantConfig,
       message,
       error,
       forbidden: false,
@@ -110,6 +121,30 @@ export const handler = define.handlers<AdminData>({
       const providerLabel = getLlmProviderConfig(provider).label;
       return adminRedirect(ctx, {
         message: `LLM provider switched to ${providerLabel}.`,
+      });
+    }
+
+    if (intent === "set_assistant_config") {
+      const name = String(form.get("assistantName") ?? "").trim();
+      const bio = String(form.get("assistantBio") ?? "").trim();
+      const systemPrompt = String(form.get("assistantPrompt") ?? "").trim();
+
+      if (!name || !bio || !systemPrompt) {
+        return adminRedirect(ctx, {
+          error: "Assistant name, bio, and prompt are required.",
+        });
+      }
+
+      const config: AssistantConfig = {
+        id: slugify(name),
+        name,
+        bio,
+        systemPrompt,
+      };
+
+      await setGlobalAssistantConfig(config);
+      return adminRedirect(ctx, {
+        message: "Global assistant configuration updated.",
       });
     }
 
@@ -209,6 +244,61 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
                   ).join(" · ")}
                 </p>
               </div>
+            </section>
+          )
+          : null}
+
+        {!data.forbidden
+          ? (
+            <section class="stack">
+              <h2 class="display">Global Assistant Configuration</h2>
+              <form
+                method="POST"
+                action="/admin"
+                class="form-grid card"
+                style="padding: 16px;"
+              >
+                <input type="hidden" name="intent" value="set_assistant_config" />
+                <label>
+                  Assistant name
+                  <input
+                    type="text"
+                    name="assistantName"
+                    value={data.assistantConfig?.name ?? "Assistant"}
+                    placeholder="Assistant"
+                    required
+                  />
+                </label>
+                <label>
+                  Assistant bio
+                  <textarea
+                    name="assistantBio"
+                    value={data.assistantConfig?.bio ??
+                      "Your investigation assistant who helps you decide practical next steps."}
+                    placeholder="Short public description of the assistant role."
+                    required
+                  />
+                </label>
+                <label>
+                  System prompt
+                  <textarea
+                    name="assistantPrompt"
+                    value={data.assistantConfig?.systemPrompt ??
+                      "You are the player's investigation assistant. Stay supportive, practical, and grounded in observable evidence. Ask useful follow-up questions, suggest sensible next steps, and avoid spoilers."}
+                    placeholder="System prompt for the assistant."
+                    required
+                    style="min-height: 120px;"
+                  />
+                </label>
+                <p class="muted">
+                  This assistant configuration is shared across all games.
+                </p>
+                <div class="action-row">
+                  <button class="btn primary" type="submit">
+                    Save assistant config
+                  </button>
+                </div>
+              </form>
             </section>
           )
           : null}
