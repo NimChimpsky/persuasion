@@ -1,7 +1,11 @@
 import { page } from "fresh";
 import GameBoard from "../../islands/GameBoard.tsx";
 import { buildInitialProgressState } from "../../lib/game_engine.ts";
-import { getGameBySlug, getUserProgress } from "../../lib/store.ts";
+import {
+  getGameBySlug,
+  getGlobalAssistantConfig,
+  getUserProgress,
+} from "../../lib/store.ts";
 import { parseTranscript } from "../../shared/transcript.ts";
 import type {
   PlotMilestone,
@@ -64,19 +68,21 @@ function ensureFirstCharacterEncountered(
   return [...encounteredCharacterIds, firstCharacterId];
 }
 
-function buildDefaultGameForUser(game: {
-  title: string;
-  introText: string;
-  plotPointsText: string;
-  assistant: { id: string };
-  plotMilestones: PlotMilestone[];
-  characters: UserGameSnapshot["characters"];
-}): GameForUser {
+function buildDefaultGameForUser(
+  game: {
+    title: string;
+    introText: string;
+    plotPointsText: string;
+    plotMilestones: PlotMilestone[];
+    characters: UserGameSnapshot["characters"];
+  },
+  assistantId: string,
+): GameForUser {
   return {
     title: game.title,
     introText: game.introText,
     plotPointsText: game.plotPointsText,
-    assistantId: game.assistant.id,
+    assistantId,
     plotMilestones: game.plotMilestones,
     characters: game.characters,
     encounteredCharacterIds: [],
@@ -96,9 +102,17 @@ export const handler = define.handlers<GamePageData>({
     if (!game || !game.active) {
       return new Response("Game not found", { status: 404 });
     }
-    if (!game.assistant || !game.plotMilestones?.length) {
+    if (!game.plotMilestones?.length) {
       return new Response(
-        "Game configuration is invalid: assistant and plot milestones are required.",
+        "Game configuration is invalid: plot milestones are required.",
+        { status: 500 },
+      );
+    }
+
+    const globalAssistant = await getGlobalAssistantConfig();
+    if (!globalAssistant) {
+      return new Response(
+        "Global assistant configuration not found. Contact admin.",
         { status: 500 },
       );
     }
@@ -106,7 +120,7 @@ export const handler = define.handlers<GamePageData>({
     const progress = await getUserProgress(userEmail, slug);
     const events = parseTranscript(progress?.transcript ?? "");
 
-    const fallback = buildDefaultGameForUser(game);
+    const fallback = buildDefaultGameForUser(game, globalAssistant.id);
     const snapshot = progress?.gameSnapshot;
     const gameForUser: GameForUser = snapshot
       ? {
@@ -124,9 +138,9 @@ export const handler = define.handlers<GamePageData>({
       : fallback;
 
     const assistantCard = {
-      id: game.assistant.id,
-      name: game.assistant.name,
-      bio: game.assistant.bio,
+      id: globalAssistant.id,
+      name: globalAssistant.name,
+      bio: globalAssistant.bio,
     };
     const displayCharacters = [
       assistantCard,

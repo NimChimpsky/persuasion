@@ -10,6 +10,7 @@ import {
 import { slugify } from "../../../../lib/slug.ts";
 import {
   getGameBySlug,
+  getGlobalAssistantConfig,
   getUserProgress,
   saveUserProgress,
 } from "../../../../lib/store.ts";
@@ -56,12 +57,16 @@ function json(data: unknown, status = 200): Response {
   });
 }
 
-function assistantCharacterFromGame(game: GameConfig): Character {
+async function getAssistantCharacter(): Promise<Character> {
+  const globalAssistant = await getGlobalAssistantConfig();
+  if (!globalAssistant) {
+    throw new Error("Global assistant configuration not found");
+  }
   return {
-    id: game.assistant.id,
-    name: game.assistant.name,
-    bio: game.assistant.bio,
-    systemPrompt: game.assistant.systemPrompt,
+    id: globalAssistant.id,
+    name: globalAssistant.name,
+    bio: globalAssistant.bio,
+    systemPrompt: globalAssistant.systemPrompt,
   };
 }
 
@@ -261,7 +266,7 @@ export const handler = define.handlers({
     const gameSnapshot = progress?.gameSnapshot ?? buildUserGameSnapshot(game);
     const gameForUser = getGameForUser(game, gameSnapshot);
 
-    const assistantCharacter = assistantCharacterFromGame(game);
+    const assistantCharacter = await getAssistantCharacter();
     const runtimeCharacters = [
       assistantCharacter,
       ...gameForUser.characters.filter((character) =>
