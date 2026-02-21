@@ -13,6 +13,7 @@ interface CharacterRef {
 
 interface GameBoardProps {
   slug: string;
+  introText: string;
   characters: CharacterRef[];
   initialEvents: TranscriptEvent[];
   initialEncounteredCharacterIds: string[];
@@ -425,39 +426,45 @@ export default function GameBoard(props: GameBoardProps) {
   return (
     <section class="game-layout" ref={layoutRef} style={layoutStyle}>
       <aside class="game-characters">
-        <div class="character-grid">
-          {characters.map((character) => {
-            const encountered = encounteredSet.has(character.id.toLowerCase());
-            const isActive = character.id === activeCharacterId;
-            return (
-              <button
-                key={character.id}
-                type="button"
-                class={`card character-summary ${
-                  isActive ? "is-active" : "is-inactive"
-                }`}
-                data-encountered={encountered ? "true" : "false"}
-                disabled={loading}
-                onClick={() => {
-                  if (loading) return;
-                  setActiveCharacterId(character.id);
-                }}
-              >
-                <h4>{character.name}</h4>
-                <p>
-                  {summaryByCharacterId.get(character.id) ??
-                    "No conversation yet"}
-                </p>
-              </button>
-            );
-          })}
-          {hasPlaceholderSlot
-            ? (
-              <div class="card character-placeholder">
-                Select a character to chat
-              </div>
-            )
-            : null}
+        <div class="character-panel">
+          <section class="card character-intro">
+            <p>{props.introText}</p>
+          </section>
+          <p class="character-panel-title">Select character to talk to</p>
+          <div class="character-grid">
+            {characters.map((character) => {
+              const encountered = encounteredSet.has(character.id.toLowerCase());
+              const isActive = character.id === activeCharacterId;
+              return (
+                <button
+                  key={character.id}
+                  type="button"
+                  class={`card character-summary ${
+                    isActive ? "is-active" : "is-inactive"
+                  }`}
+                  data-encountered={encountered ? "true" : "false"}
+                  disabled={loading}
+                  onClick={() => {
+                    if (loading) return;
+                    setActiveCharacterId(character.id);
+                  }}
+                >
+                  <h4>{character.name}</h4>
+                  <p>
+                    {summaryByCharacterId.get(character.id) ??
+                      "No conversation yet"}
+                  </p>
+                </button>
+              );
+            })}
+            {hasPlaceholderSlot
+              ? (
+                <div class="card character-placeholder">
+                  Select a character to chat
+                </div>
+              )
+              : null}
+          </div>
         </div>
       </aside>
 

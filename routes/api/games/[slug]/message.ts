@@ -274,7 +274,8 @@ export const handler = define.handlers({
       return json({ ok: false, error: "Unknown character" }, 400);
     }
 
-    const events = parseTranscript(progress?.transcript ?? "");
+    const transcriptBase = progress?.transcript ?? "";
+    const events = parseTranscript(transcriptBase);
     const userEvent: TranscriptEvent = {
       role: "user",
       characterId: targetCharacter.id,
@@ -333,7 +334,7 @@ export const handler = define.handlers({
             at: new Date().toISOString(),
           };
 
-          const appended = appendEvents(progress?.transcript ?? "", [
+          const appended = appendEvents(transcriptBase, [
             userEvent,
             characterEvent,
           ]);

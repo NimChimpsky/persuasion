@@ -1,9 +1,14 @@
+import ResetGameButton from "../islands/ResetGameButton.tsx";
 import type { UserProfile } from "../shared/types.ts";
 
 interface SiteHeaderProps {
   userEmail: string;
   isAdmin: boolean;
   userProfile: UserProfile | null;
+  activeGameHeader?: {
+    slug: string;
+    title: string;
+  };
 }
 
 export default function SiteHeader(props: SiteHeaderProps) {
@@ -28,12 +33,28 @@ export default function SiteHeader(props: SiteHeaderProps) {
         <a class="btn ghost" href="/auth/logout-all">Log out all devices</a>
         <a class="btn ghost" href="/auth/logout">Log out</a>
       </div>
-      <nav class="header-subnav">
-        {props.isAdmin ? <a class="btn primary" href="/admin">admin</a> : null}
-        <a class="btn ghost" href="/create-game">create game</a>
-        <a class="btn ghost" href="/home">active games</a>
-        <a class="btn ghost" href="/find">find</a>
-      </nav>
+      <div class="header-subnav">
+        <div class="header-subnav-section header-subnav-section-nav">
+          <nav class="header-subnav-links">
+            {props.isAdmin
+              ? <a class="btn primary" href="/admin">admin</a>
+              : null}
+            <a class="btn ghost" href="/create-game">create game</a>
+            <a class="btn ghost" href="/home">active games</a>
+            <a class="btn ghost" href="/find">find</a>
+          </nav>
+        </div>
+        <div class="header-subnav-section header-subnav-section-center">
+          {props.activeGameHeader
+            ? <span class="header-game-title">{props.activeGameHeader.title}</span>
+            : null}
+        </div>
+        <div class="header-subnav-section header-subnav-section-end">
+          {props.activeGameHeader
+            ? <ResetGameButton slug={props.activeGameHeader.slug} />
+            : null}
+        </div>
+      </div>
     </header>
   );
 }

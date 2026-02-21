@@ -1,6 +1,5 @@
 import { page } from "fresh";
 import GameBoard from "../../islands/GameBoard.tsx";
-import ResetGameButton from "../../islands/ResetGameButton.tsx";
 import { buildInitialProgressState } from "../../lib/game_engine.ts";
 import { getGameBySlug, getUserProgress } from "../../lib/store.ts";
 import { parseTranscript } from "../../shared/transcript.ts";
@@ -153,6 +152,11 @@ export const handler = define.handlers<GamePageData>({
       displayCharacters,
     );
 
+    ctx.state.activeGameHeader = {
+      slug,
+      title: gameForUser.title,
+    };
+
     return page({
       slug,
       title: gameForUser.title,
@@ -176,17 +180,9 @@ export default define.page<typeof handler>(function GamePage({ data, state }) {
   return (
     <main class="page-shell game-page-shell">
       <div class="container stack game-page-container">
-        <section class="card game-intro">
-          <div class="game-intro-row">
-            <div class="game-intro-copy">
-              <h2>{data.title}</h2>
-              <p>{data.introText}</p>
-            </div>
-            <ResetGameButton slug={data.slug} />
-          </div>
-        </section>
         <GameBoard
           slug={data.slug}
+          introText={data.introText}
           characters={data.characters}
           initialEvents={data.events}
           initialEncounteredCharacterIds={data.encounteredCharacterIds}

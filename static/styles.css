@@ -110,14 +110,56 @@ body.has-app-header .page-shell > .container {
 }
 
 .header-subnav {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
   margin-top: 0;
   padding-top: 6px;
   border-top: 1px solid rgba(15, 23, 42, 0.14);
+}
+
+.header-subnav-section {
+  min-height: 36px;
+}
+
+.header-subnav-section-nav {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.header-subnav-section-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.header-subnav-section-end {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.header-subnav-links {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.header-game-title {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.header-subnav-section-end .game-intro-actions {
+  margin-left: 0;
+  justify-content: flex-end;
 }
 
 .muted {
@@ -429,8 +471,35 @@ select:focus {
 
 .game-characters {
   display: flex;
+  align-items: stretch;
   min-height: 0;
   overflow: hidden;
+}
+
+.character-panel {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.character-intro {
+  padding: 8px 10px;
+}
+
+.character-intro p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.character-panel-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0;
 }
 
 .character-grid {
@@ -439,10 +508,12 @@ select:focus {
   width: 100%;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: 150px;
+  flex: 1 1 auto;
   min-height: 0;
   height: 100%;
   overflow-y: auto;
   padding-right: 2px;
+  align-content: start;
 }
 
 .character-summary {
@@ -627,12 +698,18 @@ select:focus {
 
   .game-characters {
     overflow: visible;
+    align-items: stretch;
+  }
+
+  .character-panel {
+    height: auto;
   }
 
   .character-grid {
     height: auto;
     overflow: visible;
     grid-auto-rows: 150px;
+    align-content: start;
   }
 
   .character-placeholder {
@@ -661,9 +738,13 @@ select:focus {
   }
 
   .header-subnav {
-    justify-content: flex-start;
+    grid-template-columns: 1fr;
     margin-top: 2px;
     padding-top: 8px;
+  }
+
+  .header-subnav-section {
+    min-height: 0;
   }
 
   .provider-toolbar {
@@ -716,7 +797,7 @@ select:focus {
   .game-page-container {
     min-height: 0;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 8px;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
   }
 }

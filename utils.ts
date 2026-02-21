@@ -6,6 +6,10 @@ export interface State {
   userEmail: string | null;
   isAdmin: boolean;
   userProfile: UserProfile | null;
+  activeGameHeader?: {
+    slug: string;
+    title: string;
+  };
 }
 
 export const define = createDefine<State>();
