@@ -30,7 +30,7 @@
 | `routes/api/games/[slug]/message.ts` | Main game message API (SSE streaming) |
 | `routes/game/[slug].tsx` | Game page handler + render |
 | `islands/GameBoard.tsx` | Interactive chat UI and client-side state |
-| `murder-at-the-olive-farm.v2.txt` | Current test game definition |
+| `seed-games/murder-at-the-olive-farm.v2.txt` | Current test game definition |
 
 ### Message Flow
 

@@ -101,7 +101,7 @@ Behavior:
     - `user_progress_meta`
     - `user_progress_chunk`
   - Reseeds exactly one game from:
-    - `/Users/sbatty/Dev/cognition/murder-at-the-olive-farm.v2.txt`
+    - `/Users/sbatty/Dev/cognition/seed-games/murder-at-the-olive-farm.v2.txt`
 - When `RESET_GAME_STATE_ON_STARTUP=false`:
   - No wipe is performed.
   - Olive farm is still upserted at startup (seed-only mode).
@@ -153,5 +153,5 @@ Execution frequency:
 - Deno KV is mandatory for this app; there is no non-persistent fallback.
 - Mistral is the default LLM provider until an admin switches it in `/admin`.
 - Local seed now loads
-  `/Users/sbatty/Dev/cognition/murder-at-the-olive-farm.v2.txt`, which includes
+  `/Users/sbatty/Dev/cognition/seed-games/murder-at-the-olive-farm.v2.txt`, which includes
   guided assistant/milestone sections for local testing.

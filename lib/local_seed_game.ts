@@ -30,12 +30,12 @@ type SectionKey =
   | "milestones";
 
 export const OLIVE_FARM_OUTLINE_URL = new URL(
-  "../murder-at-the-olive-farm.v2.txt",
+  "../seed-games/murder-at-the-olive-farm.v2.txt",
   import.meta.url,
 );
 
 export const CHIANTI_OUTLINE_URL = new URL(
-  "../a-nice-glass-of-chianti.txt",
+  "../seed-games/a-nice-glass-of-chianti.txt",
   import.meta.url,
 );
 
