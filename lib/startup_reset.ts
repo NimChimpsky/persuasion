@@ -4,7 +4,10 @@ import {
   buildOliveFarmGameConfig,
   upsertGameAndIndex,
 } from "./local_seed_game.ts";
-import { setGlobalAssistantConfig } from "./store.ts";
+import {
+  getGlobalAssistantConfig,
+  setGlobalAssistantConfig,
+} from "./store.ts";
 import type { AssistantConfig } from "../shared/types.ts";
 
 // TEMPORARY EARLY-DEV BOOTSTRAP
@@ -33,7 +36,6 @@ const WIPE_PREFIXES: Deno.KvKey[] = [
   ["user_progress"],
   ["user_progress_meta"],
   ["user_progress_chunk"],
-  ["global_assistant_config"],
 ];
 
 const DEFAULT_ASSISTANT_CONFIG: AssistantConfig = {
@@ -88,13 +90,20 @@ function markerKey(deploymentId: string): Deno.KvKey {
   return ["startup_reset", RESET_VERSION, deploymentId];
 }
 
+async function ensureGlobalAssistantConfigExists(): Promise<void> {
+  const existing = await getGlobalAssistantConfig();
+  if (!existing) {
+    await setGlobalAssistantConfig(DEFAULT_ASSISTANT_CONFIG);
+  }
+}
+
 async function seedOliveFarmOnly(
   kv: Deno.Kv,
   now: string,
 ): Promise<string> {
   const game = await buildOliveFarmGameConfig(now);
   await upsertGameAndIndex(kv, game);
-  await setGlobalAssistantConfig(DEFAULT_ASSISTANT_CONFIG);
+  await ensureGlobalAssistantConfigExists();
   return game.slug;
 }
 
@@ -112,7 +121,7 @@ async function wipeGameDataAndSeed(
   }
 
   await upsertGameAndIndex(kv, game);
-  await setGlobalAssistantConfig(DEFAULT_ASSISTANT_CONFIG);
+  await ensureGlobalAssistantConfigExists();
 
   return {
     gameSlug: game.slug,
