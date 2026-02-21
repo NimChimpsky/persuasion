@@ -92,13 +92,27 @@ function buildSystemInstructions(
     "Use this profile naturally when addressing the player.",
     "Do not invent additional personal attributes unless the player provides them.",
     isAssistant
-      ? "Assistant grounding rules: you have no privileged knowledge. Only reference interviews or facts explicitly shown in the conversation history."
+      ? "Assistant grounding rules: you know the game premise and characters listed below, but you have no knowledge of plot secrets. Only reference interview content or evidence explicitly shown in the conversation history. Do not speculate about character guilt or hidden motives."
       : "Non-assistant character rule: only state what this character would know in-world.",
     "Character definition:",
     character.systemPrompt,
     MARKDOWN_OUTPUT_INSTRUCTIONS,
     isAssistant
-      ? ""
+      ? [
+          "Game premise:",
+          game.introText || "(No premise available)",
+          "",
+          "Canonical characters in this game:",
+          ...game.characters.map((c) => `- ${c.name}: ${c.bio}`),
+          "",
+          "Investigation milestones (titles only — do not reveal these directly to the player):",
+          ...game.plotMilestones.map((m) => `- ${m.title}`),
+          "",
+          "Canonicality rules:",
+          "- These are the only established characters and setting details. Do not invent new main characters, locations, or story facts beyond what is listed above or what appears in conversation history.",
+          "- You may reference characters by name to suggest the player speak with them, but do not fabricate what they said or know.",
+          "- If the player asks about something not covered here or in the transcript, say you don't have that information yet and suggest an investigative step.",
+        ].join("\n")
       : ["Global plot guidance:", game.plotPointsText ||
         "No global plot points provided."].join("\n"),
     "If you introduce a brand-new character, append this machine-readable block at the very end:",
