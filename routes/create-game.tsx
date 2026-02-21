@@ -1,5 +1,6 @@
 import { page } from "fresh";
 import AdminGameForm from "../islands/AdminGameForm.tsx";
+import { GLOBAL_ASSISTANT_SYSTEM_PROMPT } from "../lib/assistant_system_prompt.ts";
 import { ensureUniqueIds, slugify } from "../lib/slug.ts";
 import { createGame, getGameBySlug, listGames } from "../lib/store.ts";
 import type {
@@ -89,13 +90,12 @@ function parseMilestones(form: FormData): PlotMilestone[] {
 function parseAssistant(form: FormData): AssistantConfig | null {
   const name = String(form.get("assistantName") ?? "").trim();
   const bio = String(form.get("assistantBio") ?? "").trim();
-  const systemPrompt = String(form.get("assistantPrompt") ?? "").trim();
-  if (!name || !bio || !systemPrompt) return null;
+  if (!name || !bio) return null;
   return {
     id: slugify(name),
     name,
     bio,
-    systemPrompt,
+    systemPrompt: GLOBAL_ASSISTANT_SYSTEM_PROMPT,
   };
 }
 

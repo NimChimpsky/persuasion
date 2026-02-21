@@ -1,4 +1,5 @@
 import { ensureUniqueIds, slugify } from "./slug.ts";
+import { GLOBAL_ASSISTANT_SYSTEM_PROMPT } from "./assistant_system_prompt.ts";
 import type {
   AssistantConfig,
   Character,
@@ -91,10 +92,7 @@ function parseAssistant(lines: string[]): AssistantConfig {
   const name = map.get("name") ?? "Assistant";
   const bio = map.get("bio") ??
     "Your investigation assistant who helps track clues and suggest next steps.";
-  const systemPrompt = map.get("system prompt") ?? map.get("prompt") ??
-    "You are the player's assistant. Offer subtle, practical investigative guidance without spoiling undiscovered outcomes.";
-
-  if (!name.trim() || !bio.trim() || !systemPrompt.trim()) {
+  if (!name.trim() || !bio.trim()) {
     throw new Error("Assistant section is incomplete or invalid");
   }
 
@@ -102,7 +100,7 @@ function parseAssistant(lines: string[]): AssistantConfig {
     id: slugify(name),
     name: name.trim(),
     bio: bio.trim(),
-    systemPrompt: systemPrompt.trim(),
+    systemPrompt: GLOBAL_ASSISTANT_SYSTEM_PROMPT,
   };
 }
 

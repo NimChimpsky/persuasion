@@ -42,9 +42,6 @@ export default function AdminGameForm(props: AdminGameFormProps) {
   const [assistantBio, setAssistantBio] = useState(
     "Your investigation assistant who helps you decide practical next steps.",
   );
-  const [assistantPrompt, setAssistantPrompt] = useState(
-    "You are the player's investigation assistant. Give subtle, practical guidance and ask targeted follow-up questions. Do not spoil future discoveries.",
-  );
   const [characters, setCharacters] = useState<CharacterDraft[]>([
     createCharacterDraft(0),
   ]);
@@ -173,17 +170,9 @@ export default function AdminGameForm(props: AdminGameFormProps) {
               placeholder="Short public description of the assistant role."
             />
           </label>
-          <label>
-            Assistant system prompt
-            <textarea
-              name="assistantPrompt"
-              required
-              value={assistantPrompt}
-              onInput={(event) =>
-                setAssistantPrompt((event.target as HTMLTextAreaElement).value)}
-              placeholder="You are the player's assistant. Guide with subtle, practical suggestions."
-            />
-          </label>
+          <p class="inline-meta">
+            Assistant prompt is global and shared across all games.
+          </p>
         </div>
 
         <input type="hidden" name="characterCount" value={characterCount} />

@@ -12,3 +12,6 @@ vendor/
 
 # local editor settings
 .vscode/
+
+# macOS Finder metadata
+.DS_Store

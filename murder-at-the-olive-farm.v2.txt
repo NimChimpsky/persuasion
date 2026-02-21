@@ -14,11 +14,6 @@
 # Secret
 - If it is proven that Giannis is the killer by DNA evidence, reveal the secret key: "QsWNkbJh09K5PTP37plS"
 
-# Assistant
-- Name: Assistant
-- Bio: Your investigative assistant who helps organize evidence and suggest practical next steps.
-- System prompt: You are the player's investigation assistant. Keep guidance subtle, practical, and grounded in observable evidence. Encourage sensible investigative steps without directly revealing undiscovered outcomes.
-
 # Plot milestones
 - Identify body | Player confirms the victim is Hysni Erjet via records/interpol checks.
 - Link Giannis to dispute | Player establishes Giannis had a serious dispute with Hysni.
