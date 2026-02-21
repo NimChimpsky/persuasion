@@ -1,6 +1,7 @@
 import { env } from "./env.ts";
 import { getKv } from "./kv.ts";
 import {
+  buildChiantiGameConfig,
   buildOliveFarmGameConfig,
   upsertGameAndIndex,
 } from "./local_seed_game.ts";
@@ -97,22 +98,31 @@ async function ensureGlobalAssistantConfigExists(): Promise<void> {
   }
 }
 
-async function seedOliveFarmOnly(
+async function buildAllSeedGames(now: string) {
+  return [
+    await buildOliveFarmGameConfig(now),
+    await buildChiantiGameConfig(now),
+  ];
+}
+
+async function seedOnly(
   kv: Deno.Kv,
   now: string,
-): Promise<string> {
-  const game = await buildOliveFarmGameConfig(now);
-  await upsertGameAndIndex(kv, game);
+): Promise<string[]> {
+  const games = await buildAllSeedGames(now);
+  for (const game of games) {
+    await upsertGameAndIndex(kv, game);
+  }
   await ensureGlobalAssistantConfigExists();
-  return game.slug;
+  return games.map((g) => g.slug);
 }
 
 async function wipeGameDataAndSeed(
   kv: Deno.Kv,
   now: string,
-): Promise<{ gameSlug: string; wipeSummary: string }> {
-  // Fail before destructive wipe if source game file is invalid.
-  const game = await buildOliveFarmGameConfig(now);
+): Promise<{ gameSlugs: string[]; wipeSummary: string }> {
+  // Fail before destructive wipe if source game files are invalid.
+  const games = await buildAllSeedGames(now);
 
   const wipeResults: Array<{ prefix: string; deleted: number }> = [];
   for (const prefix of WIPE_PREFIXES) {
@@ -120,11 +130,13 @@ async function wipeGameDataAndSeed(
     wipeResults.push({ prefix: prefix.join("/"), deleted });
   }
 
-  await upsertGameAndIndex(kv, game);
+  for (const game of games) {
+    await upsertGameAndIndex(kv, game);
+  }
   await ensureGlobalAssistantConfigExists();
 
   return {
-    gameSlug: game.slug,
+    gameSlugs: games.map((g) => g.slug),
     wipeSummary: wipeResults.map((item) => `${item.prefix}:${item.deleted}`)
       .join(", "),
   };
@@ -136,9 +148,9 @@ export async function resetAndSeedOliveFarmOnStartup(): Promise<void> {
   const now = new Date().toISOString();
 
   if (!env.resetGameStateOnStartup) {
-    const slug = await seedOliveFarmOnly(kv, now);
+    const slugs = await seedOnly(kv, now);
     console.log(
-      `[startup-reset] flag off (RESET_GAME_STATE_ON_STARTUP=false): seed-only upsert /game/${slug}`,
+      `[startup-reset] flag off (RESET_GAME_STATE_ON_STARTUP=false): seed-only upsert ${slugs.map((s) => `/game/${s}`).join(", ")}`,
     );
     return;
   }
@@ -153,16 +165,16 @@ export async function resetAndSeedOliveFarmOnStartup(): Promise<void> {
     }
   }
 
-  const { gameSlug, wipeSummary } = await wipeGameDataAndSeed(kv, now);
+  const { gameSlugs, wipeSummary } = await wipeGameDataAndSeed(kv, now);
 
   if (deploymentId) {
     await kv.set(markerKey(deploymentId), {
       version: RESET_VERSION,
       deploymentId,
-      gameSlug,
+      gameSlug: gameSlugs.join(","),
       appliedAt: now,
     } as ResetMarker);
   }
 
-  console.log(`[startup-reset] applied (${wipeSummary}); seeded /game/${gameSlug}`);
+  console.log(`[startup-reset] applied (${wipeSummary}); seeded ${gameSlugs.map((s) => `/game/${s}`).join(", ")}`);
 }

@@ -34,6 +34,11 @@ export const OLIVE_FARM_OUTLINE_URL = new URL(
   import.meta.url,
 );
 
+export const CHIANTI_OUTLINE_URL = new URL(
+  "../a-nice-glass-of-chianti.txt",
+  import.meta.url,
+);
+
 function mapHeadingToSection(heading: string): SectionKey | null {
   const normalized = heading
     .toLowerCase()
@@ -178,7 +183,7 @@ function parseGameOutline(input: string): ParsedOutline {
     !title || !introText || characters.length === 0 ||
     plotMilestones.length === 0
   ) {
-    throw new Error("Olive Farm outline is incomplete or invalid");
+    throw new Error(`Game outline is incomplete or invalid: "${title || "(no title)"}"`);
   }
 
   return {
@@ -211,6 +216,35 @@ export async function buildOliveFarmGameConfig(
     createdAt: now,
     updatedAt: now,
   };
+}
+
+export async function buildGameConfigFromFile(
+  fileUrl: URL,
+  now = new Date().toISOString(),
+): Promise<GameConfig> {
+  const outlineText = await Deno.readTextFile(fileUrl);
+  const parsed = parseGameOutline(outlineText);
+  const slug = slugify(parsed.title);
+
+  return {
+    slug,
+    title: parsed.title,
+    introText: parsed.introText,
+    plotPointsText: parsed.plotPointsText,
+    assistant: parsed.assistant,
+    plotMilestones: parsed.plotMilestones,
+    characters: parsed.characters,
+    active: true,
+    createdBy: "startup-reset@persuasion.system",
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export async function buildChiantiGameConfig(
+  now = new Date().toISOString(),
+): Promise<GameConfig> {
+  return buildGameConfigFromFile(CHIANTI_OUTLINE_URL, now);
 }
 
 export async function upsertGameAndIndex(
