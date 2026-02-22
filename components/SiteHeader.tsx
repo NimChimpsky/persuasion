@@ -39,9 +39,8 @@ export default function SiteHeader(props: SiteHeaderProps) {
       <div class="header-subnav">
         <div class="header-subnav-section header-subnav-section-nav">
           <nav class="header-subnav-links">
-            <a class="btn ghost" href="/create-game">create game</a>
-            <a class="btn ghost" href="/home">active games</a>
-            <a class="btn ghost" href="/find">find</a>
+            <a class="btn ghost" href="/create-game">Create</a>
+            <a class="btn ghost" href="/home">Play</a>
           </nav>
         </div>
         <div class="header-subnav-section header-subnav-section-center">

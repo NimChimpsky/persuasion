@@ -76,7 +76,8 @@ async function hardenCharacter(
       };
     }
 
-    const hardened = result.text.trim();
+    const MAX_PROMPT_CHARS = 6000;
+    const hardened = result.text.trim().slice(0, MAX_PROMPT_CHARS);
     if (!hardened) {
       return {
         systemPrompt: character.definition,

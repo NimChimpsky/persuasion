@@ -79,50 +79,13 @@ async function ensureGlobalAssistantConfigExists(): Promise<void> {
   }
 }
 
-async function initializeAndPersist(
-  kv: Deno.Kv,
-  game: GameConfig,
-): Promise<GameConfig> {
-  console.log(`[startup-reset] Initializing game: ${game.title}`);
-  const result = await initializeGame(game);
-
-  if (result.errors.length > 0) {
-    for (const err of result.errors) {
-      console.warn(`[startup-reset] Initializer warning: ${err}`);
-    }
-  }
-
-  const initializedGame: GameConfig = {
-    ...game,
-    characters: result.characters,
-    initialized: true,
-  };
-
-  await upsertGameAndIndex(kv, initializedGame);
-  return initializedGame;
-}
-
-async function buildAllSeedGames(now: string) {
-  return await buildAllSeedGameConfigs(now);
-}
-
-async function seedOnly(
+// Phase 1 (sync): wipe KV and upsert basic game configs from seed files.
+// Fast — no LLM calls. Games are immediately visible after this completes.
+async function wipeAndBasicSeed(
   kv: Deno.Kv,
   now: string,
-): Promise<string[]> {
-  const games = await buildAllSeedGames(now);
-  for (const game of games) {
-    await initializeAndPersist(kv, game);
-  }
-  await ensureGlobalAssistantConfigExists();
-  return games.map((g) => g.slug);
-}
-
-async function wipeGameDataAndSeed(
-  kv: Deno.Kv,
-  now: string,
-): Promise<{ gameSlugs: string[]; wipeSummary: string }> {
-  const games = await buildAllSeedGames(now);
+): Promise<{ games: GameConfig[]; wipeSummary: string }> {
+  const games = await buildAllSeedGameConfigs(now);
 
   const wipeResults: Array<{ prefix: string; deleted: number }> = [];
   for (const prefix of WIPE_PREFIXES) {
@@ -131,27 +94,56 @@ async function wipeGameDataAndSeed(
   }
 
   for (const game of games) {
-    await initializeAndPersist(kv, game);
+    await upsertGameAndIndex(kv, game);
+    console.log(`[startup-reset] Seeded basic config: ${game.title}`);
   }
+
   await ensureGlobalAssistantConfigExists();
 
   return {
-    gameSlugs: games.map((g) => g.slug),
-    wipeSummary: wipeResults.map((item) => `${item.prefix}:${item.deleted}`)
-      .join(", "),
+    games,
+    wipeSummary: wipeResults.map((r) => `${r.prefix}:${r.deleted}`).join(", "),
   };
 }
 
-export async function resetAndSeedOliveFarmOnStartup(): Promise<void> {
+// Phase 2 (async): run LLM hardening on all seed games and update KV.
+// Runs in the background after the server is already accepting requests.
+async function hardenSeedGames(kv: Deno.Kv, games: GameConfig[]): Promise<void> {
+  for (const game of games) {
+    console.log(`[startup-harden] Hardening: ${game.title}`);
+    const result = await initializeGame(game);
+
+    if (result.errors.length > 0) {
+      for (const err of result.errors) {
+        console.warn(`[startup-harden] Warning: ${err}`);
+      }
+    }
+
+    const hardenedGame: GameConfig = {
+      ...game,
+      characters: result.characters,
+      initialized: true,
+    };
+
+    await upsertGameAndIndex(kv, hardenedGame);
+    console.log(`[startup-harden] Done: ${game.title}`);
+  }
+}
+
+// Sync startup: wipe + basic seed. Awaited in main.ts so games are in KV
+// before the server starts accepting requests.
+export async function startupSync(): Promise<void> {
   const kv = await getKv();
   const deploymentId = Deno.env.get("DENO_DEPLOYMENT_ID")?.trim() ?? "";
   const now = new Date().toISOString();
 
   if (!env.resetGameStateOnStartup) {
-    const slugs = await seedOnly(kv, now);
-    console.log(
-      `[startup-reset] flag off (RESET_GAME_STATE_ON_STARTUP=false): seed-only upsert ${slugs.map((s) => `/game/${s}`).join(", ")}`,
-    );
+    const games = await buildAllSeedGameConfigs(now);
+    for (const game of games) {
+      await upsertGameAndIndex(kv, game);
+    }
+    await ensureGlobalAssistantConfigExists();
+    console.log(`[startup-reset] flag off: seed-only upsert complete`);
     return;
   }
 
@@ -174,15 +166,22 @@ export async function resetAndSeedOliveFarmOnStartup(): Promise<void> {
     }
   }
 
-  const { gameSlugs, wipeSummary } = await wipeGameDataAndSeed(kv, now);
+  const { games, wipeSummary } = await wipeAndBasicSeed(kv, now);
 
   if (deploymentId) {
     await kv.set(markerKey(deploymentId), {
       deploymentId,
-      gameSlug: gameSlugs.join(","),
+      gameSlug: games.map((g) => g.slug).join(","),
       appliedAt: now,
     } as ResetMarker);
   }
 
-  console.log(`[startup-reset] applied (${wipeSummary}); seeded ${gameSlugs.map((s) => `/game/${s}`).join(", ")}`);
+  console.log(
+    `[startup-reset] wiped (${wipeSummary}); seeded ${games.map((g) => `/game/${g.slug}`).join(", ")}`,
+  );
+
+  // Kick off background hardening
+  hardenSeedGames(kv, games).catch((err) => {
+    console.error("[startup-harden] fatal:", err);
+  });
 }

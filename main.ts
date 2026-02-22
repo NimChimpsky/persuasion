@@ -3,21 +3,16 @@ import { getSessionEmail } from "./lib/auth.ts";
 import { isAdminEmail } from "./lib/env.ts";
 import { getKv } from "./lib/kv.ts";
 import { getUserProfile } from "./lib/store.ts";
-import { resetAndSeedOliveFarmOnStartup } from "./lib/startup_reset.ts";
+import { startupSync } from "./lib/startup_reset.ts";
 import { define, type State } from "./utils.ts";
 
 export const app = new App<State>();
 
 // Fail fast: this app requires persistent Deno KV.
 await getKv();
-// TEMPORARY EARLY-DEV RESET/SEED STARTUP FLOW.
-// Controlled by RESET_GAME_STATE_ON_STARTUP in env.ts:
-// - true  => wipe game data + reseed
-// - false => seed-only upsert
-// Runs in the background so the server starts immediately.
-resetAndSeedOliveFarmOnStartup().catch((err) => {
-  console.error("[startup-reset] fatal:", err);
-});
+// Phase 1 (awaited): wipe + basic seed from txt files. Fast — no LLM calls.
+// Phase 2 (background): LLM hardening of character prompts, kicked off inside startupSync.
+await startupSync();
 
 app.use(staticFiles());
 

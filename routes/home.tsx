@@ -42,7 +42,7 @@ export default define.page<typeof handler>(function HomePage({ data, state }) {
     <main class="page-shell">
       <div class="container stack">
         <section class="stack">
-          <h2 class="display">Active Games</h2>
+          <h2 class="display">Play</h2>
           {data.games.length === 0
             ? <p class="notice">No games published yet.</p>
             : (
