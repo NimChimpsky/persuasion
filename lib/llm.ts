@@ -78,6 +78,9 @@ function buildSystemInstructions(
     `- Gender: ${playerProfile.gender}`,
     "Use this profile naturally when addressing the player.",
     "Do not invent additional personal attributes unless the player provides them.",
+    "Scene setting (authoritative — this is where and when this scene takes place):",
+    game.introText,
+    "Ground all responses in this scene. Do not contradict or ignore the location, situation, or framing described above.",
     isAssistant
       ? "Assistant grounding rules: you know the game premise and characters listed below, but you have no knowledge of plot secrets. Only reference interview content or evidence explicitly shown in the conversation history. Do not speculate about character guilt or hidden motives."
       : "Non-assistant character rule: only state what this character would know in-world.",
