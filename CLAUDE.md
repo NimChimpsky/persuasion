@@ -55,10 +55,10 @@
 
 ### Core Data Models
 
-- **GameConfig**: slug, title, introText, isAdult, initialized, assistant, characters[], active
+- **GameConfig**: slug, title, introText, isAdult, initialized, characters[], active — no assistant field; assistant is system-wide
 - **Character**: id (kebab-case slug), name, bio (auto-derived, max 140 chars), definition (raw text), systemPrompt (hardened by initializer), secretKey? (optional)
 - **ProgressState**: turn count only (`{ turn: number }`)
-- **UserGameSnapshot**: per-user copy of game state (characters can diverge via dynamic additions), encounteredCharacterIds[], progressState
+- **UserGameSnapshot**: per-user copy of game state (characters can diverge via dynamic additions), encounteredCharacterIds[], progressState — no assistantId (always global)
 - **TranscriptEvent**: role (user|character), characterId, characterName, text, timestamp
 
 ### Game Definition Format (`.txt`)
@@ -73,10 +73,6 @@
 # Uncensored
 - yes (optional, enables adult content routing)
 
-# Assistant
-- Name: Assistant
-- Bio: Your investigation assistant...
-
 # Characters
 - Character Name, definition text describing who they are, what they know, how they behave...
   key: optional-secret-key-value
@@ -84,6 +80,8 @@
 # User
 - Player character description (folded into character definitions as context)
 ```
+
+The assistant is not defined in game files — it is a single system-wide config managed via `/admin`.
 
 ### Validation Systems
 

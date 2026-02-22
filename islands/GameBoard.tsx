@@ -16,7 +16,6 @@ interface GameBoardProps {
   characters: CharacterRef[];
   initialEvents: TranscriptEvent[];
   initialEncounteredCharacterIds: string[];
-  initialAssistantId: string;
   initialProgressState: ProgressState;
 }
 
@@ -39,7 +38,6 @@ interface StreamFinalPayload {
   characters: CharacterRef[];
   encounteredCharacterIds: string[];
   progressState?: ProgressState;
-  assistantId?: string;
 }
 
 interface StreamErrorPayload {

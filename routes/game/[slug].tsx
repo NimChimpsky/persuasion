@@ -26,14 +26,12 @@ interface GamePageData {
   characters: CharacterForClient[];
   events: ReturnType<typeof parseTranscript>;
   encounteredCharacterIds: string[];
-  assistantId: string;
   progressState: ProgressState;
 }
 
 interface GameForUser {
   title: string;
   introText: string;
-  assistantId: string;
   characters: UserGameSnapshot["characters"];
   encounteredCharacterIds: string[];
   progressState: ProgressState;
@@ -76,12 +74,10 @@ function buildDefaultGameForUser(
     introText: string;
     characters: UserGameSnapshot["characters"];
   },
-  assistantId: string,
 ): GameForUser {
   return {
     title: game.title,
     introText: game.introText,
-    assistantId,
     characters: game.characters,
     encounteredCharacterIds: [],
     progressState: buildInitialProgressState(),
@@ -112,13 +108,12 @@ export const handler = define.handlers<GamePageData>({
     const progress = await getUserProgress(userEmail, slug);
     const events = parseTranscript(progress?.transcript ?? "");
 
-    const fallback = buildDefaultGameForUser(game, globalAssistant.id);
+    const fallback = buildDefaultGameForUser(game);
     const snapshot = progress?.gameSnapshot;
     const gameForUser: GameForUser = snapshot
       ? {
         ...fallback,
         ...snapshot,
-        assistantId: snapshot.assistantId || fallback.assistantId,
         progressState: snapshot.progressState ?? fallback.progressState,
         characters: snapshot.characters?.length
           ? snapshot.characters
@@ -167,7 +162,6 @@ export const handler = define.handlers<GamePageData>({
       characters: displayCharacters,
       events,
       encounteredCharacterIds,
-      assistantId: gameForUser.assistantId,
       progressState: gameForUser.progressState,
     });
   },
@@ -188,7 +182,6 @@ export default define.page<typeof handler>(function GamePage({ data, state }) {
           characters={data.characters}
           initialEvents={data.events}
           initialEncounteredCharacterIds={data.encounteredCharacterIds}
-          initialAssistantId={data.assistantId}
           initialProgressState={data.progressState}
         />
       </div>

@@ -43,7 +43,6 @@ interface GameUpdateDirective {
 interface GameForUser extends GameConfig {
   encounteredCharacterIds: string[];
   progressState: ProgressState;
-  assistantId: string;
 }
 
 function json(data: unknown, status = 200): Response {
@@ -71,7 +70,6 @@ function buildUserGameSnapshot(game: GameConfig): UserGameSnapshot {
   return {
     title: game.title,
     introText: game.introText,
-    assistantId: game.assistant.id,
     characters: game.characters.map((character) => ({
       ...character,
     })),
@@ -87,7 +85,6 @@ function getGameForUser(
   return {
     ...game,
     ...snapshot,
-    assistantId: snapshot.assistantId || game.assistant.id,
     characters: snapshot.characters?.length
       ? snapshot.characters
       : game.characters,
@@ -225,16 +222,6 @@ export const handler = define.handlers({
     if (!game || !game.active) {
       return json({ ok: false, error: "Game not found" }, 404);
     }
-    if (!game.assistant) {
-      return json(
-        {
-          ok: false,
-          error: "Invalid game config: assistant is required",
-        },
-        500,
-      );
-    }
-
     let payload: MessageRequest;
     try {
       payload = await ctx.req.json() as MessageRequest;
@@ -307,6 +294,7 @@ export const handler = define.handlers({
             {
               game: gameForUser,
               character: targetCharacter,
+              assistantId: assistantCharacter.id,
               events: [...events, userEvent],
               userPrompt: text,
               playerProfile: {
@@ -364,7 +352,6 @@ export const handler = define.handlers({
           const nextSnapshot: UserGameSnapshot = {
             title: gameForUser.title,
             introText: gameForUser.introText,
-            assistantId: assistantCharacter.id,
             characters: updatedCharacters,
             encounteredCharacterIds: [...encounteredCharacterIds],
             progressState: nextProgressState,
@@ -396,7 +383,6 @@ export const handler = define.handlers({
             characters: responseCharacters,
             encounteredCharacterIds: nextSnapshot.encounteredCharacterIds,
             progressState: nextProgressState,
-            assistantId: assistantCharacter.id,
           });
         } catch (error) {
           const message = error instanceof Error

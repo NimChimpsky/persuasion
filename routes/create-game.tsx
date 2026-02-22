@@ -5,7 +5,6 @@ import { ensureUniqueIds, slugify } from "../lib/slug.ts";
 import {
   createGame,
   getGameBySlug,
-  getGlobalAssistantConfig,
   listGames,
 } from "../lib/store.ts";
 import type {
@@ -110,22 +109,11 @@ export const handler = define.handlers<PublishData>({
     const introText = String(form.get("introText") ?? "").trim();
     const isAdult = String(form.get("isAdult") ?? "") === "on";
     const characters = parseCharacters(form);
-    const assistant = await getGlobalAssistantConfig();
 
     if (!title || !introText || characters.length === 0) {
       return Response.redirect(
         new URL(
           "/create-game?error=Provide+title,+intro,+and+at+least+one+character",
-          ctx.req.url,
-        ),
-        303,
-      );
-    }
-
-    if (!assistant) {
-      return Response.redirect(
-        new URL(
-          "/create-game?error=Global+assistant+not+configured.+Contact+admin.",
           ctx.req.url,
         ),
         303,
@@ -142,7 +130,6 @@ export const handler = define.handlers<PublishData>({
       introText,
       isAdult,
       initialized: false,
-      assistant,
       characters,
       active: true,
       createdBy: ctx.state.userEmail,

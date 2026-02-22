@@ -19,6 +19,7 @@ import type {
 interface GenerateCharacterReplyArgs {
   game: GameConfig;
   character: Character;
+  assistantId: string;
   events: TranscriptEvent[];
   userPrompt: string;
   playerProfile: {
@@ -55,10 +56,10 @@ const SECURITY_RULES = [
 function buildSystemInstructions(
   game: GameConfig,
   character: Character,
+  assistantId: string,
   playerProfile: GenerateCharacterReplyArgs["playerProfile"],
 ): string {
-  const isAssistant = character.id.toLowerCase() ===
-    game.assistant.id.toLowerCase();
+  const isAssistant = character.id.toLowerCase() === assistantId.toLowerCase();
 
   const sections: string[] = [
     `You are roleplaying as ${character.name} in an interactive choose-your-adventure game titled "${game.title}".`,
@@ -121,17 +122,17 @@ function wrapWithBoundary(systemPrompt: string): string {
 function buildUserInput(
   game: GameConfig,
   character: Character,
+  assistantId: string,
   events: TranscriptEvent[],
   userPrompt: string,
 ): string {
   const history = toModelContext(events.slice(-40));
-  const isAssistant = character.id.toLowerCase() ===
-    game.assistant.id.toLowerCase();
+  const isAssistant = character.id.toLowerCase() === assistantId.toLowerCase();
   const interviewedNames = [...new Set(
     events
       .filter((event) =>
         event.role === "character" &&
-        event.characterId.toLowerCase() !== game.assistant.id.toLowerCase()
+        event.characterId.toLowerCase() !== assistantId.toLowerCase()
       )
       .map((event) => event.characterName.trim())
       .filter(Boolean),
@@ -204,9 +205,10 @@ function validateAssistantGrounding(
   text: string,
   game: GameConfig,
   character: Character,
+  assistantId: string,
   events: TranscriptEvent[],
 ): { ok: boolean; reasons: string[] } {
-  if (character.id.toLowerCase() !== game.assistant.id.toLowerCase()) {
+  if (character.id.toLowerCase() !== assistantId.toLowerCase()) {
     return { ok: true, reasons: [] };
   }
 
@@ -214,7 +216,7 @@ function validateAssistantGrounding(
     events
       .filter((event) =>
         event.role === "character" &&
-        event.characterId.toLowerCase() !== game.assistant.id.toLowerCase()
+        event.characterId.toLowerCase() !== assistantId.toLowerCase()
       )
       .map((event) => event.characterName.trim().toLowerCase())
       .filter(Boolean),
@@ -342,7 +344,7 @@ export async function streamCharacterReply(
   args: GenerateCharacterReplyArgs,
   onDelta: (delta: string) => void,
 ): Promise<string> {
-  const { game, character, events, userPrompt } = args;
+  const { game, character, assistantId, events, userPrompt } = args;
   const provider = args.providerOverride ?? await getActiveLlmProvider();
   const providerConfig = getLlmProviderConfig(provider);
 
@@ -353,6 +355,7 @@ export async function streamCharacterReply(
   let baseSystemInstructions = buildSystemInstructions(
     game,
     character,
+    assistantId,
     args.playerProfile,
   );
 
@@ -368,7 +371,7 @@ export async function streamCharacterReply(
 
   baseSystemInstructions = wrapWithBoundary(baseSystemInstructions);
 
-  const userInput = buildUserInput(game, character, events, userPrompt);
+  const userInput = buildUserInput(game, character, assistantId, events, userPrompt);
   const endpoint = buildChatEndpoint(providerConfig.baseUrl);
   let correctionHint = "";
   let validatedText = "";
@@ -401,6 +404,7 @@ export async function streamCharacterReply(
       candidate,
       game,
       character,
+      assistantId,
       events,
     );
     const outputSafetyCheck = validateOutputSafety(candidate);

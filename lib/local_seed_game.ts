@@ -1,19 +1,14 @@
 import { ensureUniqueIds, slugify } from "./slug.ts";
 import type {
-  AssistantConfig,
   Character,
   GameConfig,
   GameIndexEntry,
 } from "../shared/types.ts";
 
-const DEFAULT_ASSISTANT_SYSTEM_PROMPT =
-  "You are the player's investigation assistant. Stay supportive, practical, and grounded in observable evidence. Ask useful follow-up questions, suggest sensible next steps, and avoid spoilers.";
-
 interface ParsedOutline {
   title: string;
   introText: string;
   isAdult: boolean;
-  assistant: AssistantConfig;
   characters: Character[];
 }
 
@@ -22,8 +17,7 @@ type SectionKey =
   | "intro"
   | "uncensored"
   | "characters"
-  | "user"
-  | "assistant";
+  | "user";
 
 export const OLIVE_FARM_OUTLINE_URL = new URL(
   "../seed-games/murder-at-the-olive-farm.v2.txt",
@@ -47,7 +41,6 @@ function mapHeadingToSection(heading: string): SectionKey | null {
   if (normalized === "uncensored") return "uncensored";
   if (normalized.startsWith("character")) return "characters";
   if (normalized === "user") return "user";
-  if (normalized === "assistant") return "assistant";
 
   return null;
 }
@@ -57,33 +50,6 @@ function deriveBioFromPrompt(prompt: string): string {
   const source = firstSentence || prompt.trim();
   const maxLen = 140;
   return source.length <= maxLen ? source : `${source.slice(0, maxLen - 3)}...`;
-}
-
-function parseAssistant(lines: string[]): AssistantConfig {
-  const map = new Map<string, string>();
-
-  for (const line of lines) {
-    const separator = line.indexOf(":");
-    if (separator <= 0) continue;
-    const key = line.slice(0, separator).trim().toLowerCase();
-    const value = line.slice(separator + 1).trim();
-    if (!value) continue;
-    map.set(key, value);
-  }
-
-  const name = map.get("name") ?? "Assistant";
-  const bio = map.get("bio") ??
-    "Your investigation assistant who helps track clues and suggest next steps.";
-  if (!name.trim() || !bio.trim()) {
-    throw new Error("Assistant section is incomplete or invalid");
-  }
-
-  return {
-    id: slugify(name),
-    name: name.trim(),
-    bio: bio.trim(),
-    systemPrompt: DEFAULT_ASSISTANT_SYSTEM_PROMPT,
-  };
 }
 
 function parseCharacterBlocks(rawLines: string[]): Character[] {
@@ -137,7 +103,6 @@ function parseGameOutline(input: string): ParsedOutline {
     uncensored: [],
     characters: [],
     user: [],
-    assistant: [],
   };
 
   let currentSection: SectionKey | null = null;
@@ -174,7 +139,6 @@ function parseGameOutline(input: string): ParsedOutline {
   const title = sections.title[0] ?? "";
   const introText = sections.intro.join("\n");
   const characters = parseCharacterBlocks(sections.characters);
-  const assistant = parseAssistant(sections.assistant);
   const isAdult = sections.uncensored.some(
     (line) => line.toLowerCase() === "yes" || line.toLowerCase() === "true",
   );
@@ -191,13 +155,7 @@ function parseGameOutline(input: string): ParsedOutline {
     throw new Error(`Game outline is incomplete or invalid: "${title || "(no title)"}"`);
   }
 
-  return {
-    title,
-    introText,
-    isAdult,
-    assistant,
-    characters,
-  };
+  return { title, introText, isAdult, characters };
 }
 
 export async function buildGameConfigFromFile(
@@ -214,7 +172,6 @@ export async function buildGameConfigFromFile(
     introText: parsed.introText,
     isAdult: parsed.isAdult,
     initialized: false,
-    assistant: parsed.assistant,
     characters: parsed.characters,
     active: true,
     createdBy: "startup-reset@persuasion.system",

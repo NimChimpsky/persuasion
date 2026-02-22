@@ -34,7 +34,6 @@ export interface GameConfig {
   introText: string;
   isAdult: boolean;
   initialized: boolean;
-  assistant: AssistantConfig;
   characters: Character[];
   active: boolean;
   createdBy: string;
@@ -63,7 +62,6 @@ export interface TranscriptEvent {
 export interface UserGameSnapshot {
   title: string;
   introText: string;
-  assistantId: string;
   characters: Character[];
   encounteredCharacterIds: string[];
   progressState: ProgressState;
