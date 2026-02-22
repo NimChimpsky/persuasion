@@ -11,8 +11,6 @@ import {
 } from "./store.ts";
 import type { AssistantConfig, GameConfig } from "../shared/types.ts";
 
-// Bump this string to force a re-seed on the next startup even if the deployment ID hasn't changed.
-const RESET_VERSION = "seed_v1";
 const DELETE_BATCH_SIZE = 10;
 
 const WIPE_PREFIXES: Deno.KvKey[] = [
@@ -32,7 +30,6 @@ const DEFAULT_ASSISTANT_CONFIG: AssistantConfig = {
 };
 
 interface ResetMarker {
-  version: string;
   deploymentId: string;
   gameSlug: string;
   appliedAt: string;
@@ -72,7 +69,7 @@ async function wipePrefix(kv: Deno.Kv, prefix: Deno.KvKey): Promise<number> {
 }
 
 function markerKey(deploymentId: string): Deno.KvKey {
-  return ["startup_reset", RESET_VERSION, deploymentId];
+  return ["startup_reset", deploymentId];
 }
 
 async function ensureGlobalAssistantConfigExists(): Promise<void> {
@@ -163,7 +160,6 @@ export async function resetAndSeedOliveFarmOnStartup(): Promise<void> {
     const claimed = await kv.atomic()
       .check({ key, versionstamp: null })
       .set(key, {
-        version: RESET_VERSION,
         deploymentId,
         gameSlug: "",
         appliedAt: now,
@@ -182,7 +178,6 @@ export async function resetAndSeedOliveFarmOnStartup(): Promise<void> {
 
   if (deploymentId) {
     await kv.set(markerKey(deploymentId), {
-      version: RESET_VERSION,
       deploymentId,
       gameSlug: gameSlugs.join(","),
       appliedAt: now,
