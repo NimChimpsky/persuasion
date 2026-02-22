@@ -1,8 +1,17 @@
+export type CharacterVisibility = "hidden" | "locked" | "available";
+
+export interface MilestonePromptOverride {
+  milestoneId: string;
+  promptAddition: string;
+}
+
 export interface Character {
   id: string;
   name: string;
   bio: string;
   systemPrompt: string;
+  initialVisibility: CharacterVisibility;
+  milestonePrompts?: MilestonePromptOverride[];
 }
 
 export interface AssistantConfig {
@@ -16,6 +25,15 @@ export interface PlotMilestone {
   id: string;
   title: string;
   description: string;
+  prerequisiteIds: string[];
+  unlocksCharacterIds: string[];
+}
+
+export interface PrizeCondition {
+  requiredMilestoneIds: string[];
+  targetCharacterId: string;
+  secretKey: string;
+  revelationPrompt: string;
 }
 
 export interface ProgressState {
@@ -41,6 +59,7 @@ export interface GameConfig {
   assistant: AssistantConfig;
   plotMilestones: PlotMilestone[];
   characters: Character[];
+  prizeConditions: PrizeCondition[];
   active: boolean;
   createdBy: string;
   createdAt: string;

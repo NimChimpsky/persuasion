@@ -1,6 +1,9 @@
 import { page } from "fresh";
 import GameBoard from "../../islands/GameBoard.tsx";
-import { buildInitialProgressState } from "../../lib/game_engine.ts";
+import {
+  buildInitialProgressState,
+  resolveCharacterVisibility,
+} from "../../lib/game_engine.ts";
 import {
   getGameBySlug,
   getGlobalAssistantConfig,
@@ -14,11 +17,18 @@ import type {
 } from "../../shared/types.ts";
 import { define } from "../../utils.ts";
 
+interface CharacterForClient {
+  id: string;
+  name: string;
+  bio: string;
+  state: "hidden" | "locked" | "available" | "encountered";
+}
+
 interface GamePageData {
   slug: string;
   title: string;
   introText: string;
-  characters: Array<{ id: string; name: string; bio: string }>;
+  characters: CharacterForClient[];
   events: ReturnType<typeof parseTranscript>;
   encounteredCharacterIds: string[];
   assistantId: string;
@@ -137,24 +147,8 @@ export const handler = define.handlers<GamePageData>({
       }
       : fallback;
 
-    const assistantCard = {
-      id: globalAssistant.id,
-      name: globalAssistant.name,
-      bio: globalAssistant.bio,
-    };
-    const displayCharacters = [
-      assistantCard,
-      ...gameForUser.characters
-        .filter((character) => character.id !== assistantCard.id)
-        .map((character) => ({
-          id: character.id,
-          name: character.name,
-          bio: character.bio,
-        })),
-    ];
-
     const validCharacterIds = new Set(
-      displayCharacters.map((character) => character.id),
+      gameForUser.characters.map((character) => character.id),
     );
     const encounteredCharacterIdsRaw = gameForUser.encounteredCharacterIds
         ?.length
@@ -163,8 +157,54 @@ export const handler = define.handlers<GamePageData>({
 
     const encounteredCharacterIds = ensureFirstCharacterEncountered(
       encounteredCharacterIdsRaw,
-      displayCharacters,
+      gameForUser.characters.filter((c) => {
+        const vis = resolveCharacterVisibility(
+          c,
+          gameForUser.progressState,
+          encounteredCharacterIdsRaw,
+          gameForUser.plotMilestones,
+        );
+        return vis === "available" || vis === "encountered";
+      }),
     );
+
+    // Build display characters with visibility states
+    const assistantCard: CharacterForClient = {
+      id: globalAssistant.id,
+      name: globalAssistant.name,
+      bio: globalAssistant.bio,
+      state: "available",
+    };
+
+    const displayCharacters: CharacterForClient[] = [assistantCard];
+    for (const character of gameForUser.characters) {
+      if (character.id === assistantCard.id) continue;
+
+      const visibility = resolveCharacterVisibility(
+        character,
+        gameForUser.progressState,
+        encounteredCharacterIds,
+        gameForUser.plotMilestones,
+      );
+
+      if (visibility === "hidden") continue;
+
+      if (visibility === "locked") {
+        displayCharacters.push({
+          id: character.id,
+          name: "???",
+          bio: "This person may become available as you investigate.",
+          state: "locked",
+        });
+      } else {
+        displayCharacters.push({
+          id: character.id,
+          name: character.name,
+          bio: character.bio,
+          state: visibility,
+        });
+      }
+    }
 
     ctx.state.activeGameHeader = {
       slug,

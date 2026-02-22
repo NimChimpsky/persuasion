@@ -61,6 +61,7 @@ function parseCharacters(form: FormData): Character[] {
     name,
     bio: bios[index],
     systemPrompt: prompts[index],
+    initialVisibility: "available" as const,
   }));
 }
 
@@ -87,6 +88,8 @@ function parseMilestones(form: FormData): PlotMilestone[] {
     id: ids[index],
     title,
     description: descriptions[index],
+    prerequisiteIds: [],
+    unlocksCharacterIds: [],
   }));
 }
 
@@ -159,6 +162,7 @@ export const handler = define.handlers<PublishData>({
       assistant,
       plotMilestones,
       characters,
+      prizeConditions: [],
       active: true,
       createdBy: ctx.state.userEmail,
       createdAt: now,

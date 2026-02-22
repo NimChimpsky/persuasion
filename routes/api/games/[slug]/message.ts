@@ -5,6 +5,7 @@ import {
 import {
   applyProgressUpdate,
   buildInitialProgressState,
+  resolveCharacterVisibility,
   sanitizeJudgeResult,
 } from "../../../../lib/game_engine.ts";
 import { slugify } from "../../../../lib/slug.ts";
@@ -67,6 +68,7 @@ async function getAssistantCharacter(): Promise<Character> {
     name: globalAssistant.name,
     bio: globalAssistant.bio,
     systemPrompt: globalAssistant.systemPrompt,
+    initialVisibility: "available" as const,
   };
 }
 
@@ -196,6 +198,7 @@ function mergeCharacters(
       name: item.name,
       bio: item.bio,
       systemPrompt: item.systemPrompt,
+      initialVisibility: "available",
     });
     existingByName.add(normalizedName);
   }
@@ -279,6 +282,19 @@ export const handler = define.handlers({
       return json({ ok: false, error: "Unknown character" }, 400);
     }
 
+    // Enforce character visibility gating
+    if (targetCharacter.id !== assistantCharacter.id) {
+      const visibility = resolveCharacterVisibility(
+        targetCharacter,
+        gameForUser.progressState,
+        gameForUser.encounteredCharacterIds,
+        gameForUser.plotMilestones,
+      );
+      if (visibility === "hidden" || visibility === "locked") {
+        return json({ ok: false, error: "This character is not available yet" }, 403);
+      }
+    }
+
     const transcriptBase = progress?.transcript ?? "";
     const events = parseTranscript(transcriptBase);
     const userEvent: TranscriptEvent = {
@@ -320,6 +336,8 @@ export const handler = define.handlers({
                 name: userProfile.name,
                 gender: userProfile.gender,
               },
+              progressState: gameForUser.progressState,
+              prizeConditions: game.prizeConditions ?? [],
             },
             (delta) => {
               if (!delta) return;
@@ -411,6 +429,17 @@ export const handler = define.handlers({
             gameSnapshot: nextSnapshot,
           });
 
+          // Compute character visibility states for the client
+          const characterStates: Record<string, string> = {};
+          for (const c of updatedCharacters) {
+            characterStates[c.id] = resolveCharacterVisibility(
+              c,
+              nextProgressState,
+              [...encounteredCharacterIds],
+              gameForUser.plotMilestones,
+            );
+          }
+
           const responseCharacters = [
             {
               id: assistantCharacter.id,
@@ -419,11 +448,23 @@ export const handler = define.handlers({
             },
             ...updatedCharacters
               .filter((character) => character.id !== assistantCharacter.id)
-              .map((character) => ({
-                id: character.id,
-                name: character.name,
-                bio: character.bio,
-              })),
+              .map((character) => {
+                const state = characterStates[character.id];
+                if (state === "hidden") return null;
+                if (state === "locked") {
+                  return {
+                    id: character.id,
+                    name: "???",
+                    bio: "This person may become available as you investigate.",
+                  };
+                }
+                return {
+                  id: character.id,
+                  name: character.name,
+                  bio: character.bio,
+                };
+              })
+              .filter(Boolean) as Array<{ id: string; name: string; bio: string }>,
           ];
 
           sendEvent("final", {
@@ -433,6 +474,7 @@ export const handler = define.handlers({
             progressState: nextProgressState,
             discoveredMilestoneIds: nextProgressState.discoveredMilestoneIds,
             assistantId: assistantCharacter.id,
+            characterStates,
           });
         } catch (error) {
           const message = error instanceof Error

@@ -2,9 +2,12 @@ import { ensureUniqueIds, slugify } from "./slug.ts";
 import type {
   AssistantConfig,
   Character,
+  CharacterVisibility,
   GameConfig,
   GameIndexEntry,
+  MilestonePromptOverride,
   PlotMilestone,
+  PrizeCondition,
 } from "../shared/types.ts";
 
 const DEFAULT_ASSISTANT_SYSTEM_PROMPT =
@@ -17,13 +20,14 @@ interface ParsedOutline {
   assistant: AssistantConfig;
   plotMilestones: PlotMilestone[];
   characters: Character[];
+  prizeConditions: PrizeCondition[];
 }
 
 type SectionKey =
   | "title"
   | "intro"
   | "plot"
-  | "secret"
+  | "prize"
   | "characters"
   | "user"
   | "assistant"
@@ -50,7 +54,8 @@ function mapHeadingToSection(heading: string): SectionKey | null {
   if (normalized === "intro") return "intro";
   if (normalized.startsWith("plot milestone")) return "milestones";
   if (normalized.startsWith("plot")) return "plot";
-  if (normalized.startsWith("secret")) return "secret";
+  if (normalized.startsWith("prize")) return "prize";
+  if (normalized.startsWith("secret")) return "prize";
   if (normalized.startsWith("character")) return "characters";
   if (normalized === "user") return "user";
   if (normalized === "assistant") return "assistant";
@@ -63,25 +68,6 @@ function deriveBioFromPrompt(prompt: string): string {
   const source = firstSentence || prompt.trim();
   const maxLen = 140;
   return source.length <= maxLen ? source : `${source.slice(0, maxLen - 3)}...`;
-}
-
-function parseCharacters(lines: string[]): Character[] {
-  const parsed = lines.flatMap((line) => {
-    const commaIndex = line.indexOf(",");
-    if (commaIndex <= 0) return [];
-    const name = line.slice(0, commaIndex).trim();
-    const systemPrompt = line.slice(commaIndex + 1).trim();
-    if (!name || !systemPrompt) return [];
-    return [{ name, systemPrompt }];
-  });
-
-  const ids = ensureUniqueIds(parsed.map((item) => slugify(item.name)));
-  return parsed.map((item, index) => ({
-    id: ids[index],
-    name: item.name,
-    bio: deriveBioFromPrompt(item.systemPrompt),
-    systemPrompt: item.systemPrompt,
-  }));
 }
 
 function parseAssistant(lines: string[]): AssistantConfig {
@@ -116,15 +102,30 @@ function parseMilestones(lines: string[]): PlotMilestone[] {
     const trimmed = line.trim();
     if (!trimmed) return [];
 
-    const splitPipe = trimmed.split("|");
-    if (splitPipe.length >= 2) {
-      const title = splitPipe[0].trim();
-      const description = splitPipe.slice(1).join("|").trim();
-      if (!title || !description) return [];
-      return [{ title, description }];
+    const segments = trimmed.split("|").map((s) => s.trim());
+    if (segments.length < 2) {
+      return [{ title: trimmed, description: trimmed, prerequisiteIds: [] as string[], unlocksCharacterIds: [] as string[] }];
     }
 
-    return [{ title: trimmed, description: trimmed }];
+    const title = segments[0];
+    const description = segments[1];
+    if (!title || !description) return [];
+
+    let prerequisiteIds: string[] = [];
+    let unlocksCharacterIds: string[] = [];
+
+    for (let i = 2; i < segments.length; i++) {
+      const seg = segments[i];
+      if (seg.startsWith("requires:")) {
+        const val = seg.slice("requires:".length).trim();
+        prerequisiteIds = val.split(",").map((id) => slugify(id.trim())).filter(Boolean);
+      } else if (seg.startsWith("unlocks:")) {
+        const val = seg.slice("unlocks:".length).trim();
+        unlocksCharacterIds = val.split(",").map((id) => slugify(id.trim())).filter(Boolean);
+      }
+    }
+
+    return [{ title, description, prerequisiteIds, unlocksCharacterIds }];
   });
 
   const ids = ensureUniqueIds(parsed.map((item) => slugify(item.title)));
@@ -132,6 +133,119 @@ function parseMilestones(lines: string[]): PlotMilestone[] {
     id: ids[index],
     title: item.title,
     description: item.description,
+    prerequisiteIds: item.prerequisiteIds,
+    unlocksCharacterIds: item.unlocksCharacterIds,
+  }));
+}
+
+function parsePrizeConditions(lines: string[]): PrizeCondition[] {
+  return lines.flatMap((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return [];
+
+    // New format: requires: milestone-id | character: char-id | key: secretkey | revelation prompt text
+    const segments = trimmed.split("|").map((s) => s.trim());
+
+    let requiredMilestoneIds: string[] = [];
+    let targetCharacterId = "";
+    let secretKey = "";
+    let revelationPrompt = "";
+
+    for (const seg of segments) {
+      if (seg.startsWith("requires:")) {
+        const val = seg.slice("requires:".length).trim();
+        requiredMilestoneIds = val.split(",").map((id) => slugify(id.trim())).filter(Boolean);
+      } else if (seg.startsWith("character:")) {
+        targetCharacterId = slugify(seg.slice("character:".length).trim());
+      } else if (seg.startsWith("key:")) {
+        secretKey = seg.slice("key:".length).trim();
+      } else if (requiredMilestoneIds.length > 0 && targetCharacterId && secretKey) {
+        // Remaining segment after all key fields is the revelation prompt
+        revelationPrompt = seg;
+      }
+    }
+
+    if (!requiredMilestoneIds.length || !targetCharacterId || !secretKey || !revelationPrompt) {
+      return [];
+    }
+
+    return [{ requiredMilestoneIds, targetCharacterId, secretKey, revelationPrompt }];
+  });
+}
+
+interface CharacterBlock {
+  name: string;
+  systemPrompt: string;
+  visibility: CharacterVisibility;
+  milestonePrompts: MilestonePromptOverride[];
+}
+
+function parseCharacterBlocks(rawLines: string[]): Character[] {
+  // Rejoin all lines to handle multi-line character definitions.
+  // Block starts with "Name, prompt text..." and continues with @-prefixed directive lines
+  // or continuation lines until the next "- " character line.
+  const blocks: CharacterBlock[] = [];
+  let currentBlock: CharacterBlock | null = null;
+
+  for (const rawLine of rawLines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    // Check for @-prefixed directives (belong to current block)
+    if (line.startsWith("@") && currentBlock) {
+      if (line.startsWith("@visibility:")) {
+        const val = line.slice("@visibility:".length).trim().toLowerCase();
+        if (val === "hidden" || val === "locked" || val === "available") {
+          currentBlock.visibility = val;
+        }
+      } else if (line.startsWith("@when ")) {
+        const rest = line.slice("@when ".length);
+        const colonIdx = rest.indexOf(":");
+        if (colonIdx > 0) {
+          const milestoneId = slugify(rest.slice(0, colonIdx).trim());
+          const promptAddition = rest.slice(colonIdx + 1).trim();
+          if (milestoneId && promptAddition) {
+            currentBlock.milestonePrompts.push({ milestoneId, promptAddition });
+          }
+        }
+      }
+      continue;
+    }
+
+    // New character block: "Name, system prompt text..."
+    const commaIndex = line.indexOf(",");
+    if (commaIndex <= 0) continue;
+
+    const name = line.slice(0, commaIndex).trim();
+    const systemPrompt = line.slice(commaIndex + 1).trim();
+    if (!name || !systemPrompt) continue;
+
+    // Save previous block
+    if (currentBlock) {
+      blocks.push(currentBlock);
+    }
+
+    currentBlock = {
+      name,
+      systemPrompt,
+      visibility: "available",
+      milestonePrompts: [],
+    };
+  }
+
+  // Push final block
+  if (currentBlock) {
+    blocks.push(currentBlock);
+  }
+
+  const ids = ensureUniqueIds(blocks.map((b) => slugify(b.name)));
+  return blocks.map((block, index) => ({
+    id: ids[index],
+    name: block.name,
+    bio: deriveBioFromPrompt(block.systemPrompt),
+    systemPrompt: block.systemPrompt,
+    initialVisibility: block.visibility,
+    milestonePrompts: block.milestonePrompts.length > 0 ? block.milestonePrompts : undefined,
   }));
 }
 
@@ -140,7 +254,7 @@ function parseGameOutline(input: string): ParsedOutline {
     title: [],
     intro: [],
     plot: [],
-    secret: [],
+    prize: [],
     characters: [],
     user: [],
     assistant: [],
@@ -160,6 +274,19 @@ function parseGameOutline(input: string): ParsedOutline {
     }
 
     if (!currentSection) continue;
+
+    // Character section supports multi-line blocks with @-prefixed directives
+    if (currentSection === "characters") {
+      if (line.startsWith("-")) {
+        const value = line.slice(1).trim();
+        if (value) sections.characters.push(value);
+      } else if (line.startsWith("@")) {
+        // Directive line for the current character block
+        sections.characters.push(line);
+      }
+      continue;
+    }
+
     if (!line.startsWith("-")) continue;
 
     const value = line.slice(1).trim();
@@ -169,13 +296,13 @@ function parseGameOutline(input: string): ParsedOutline {
 
   const title = sections.title[0] ?? "";
   const introText = sections.intro.join("\n");
-  const characters = parseCharacters(sections.characters);
+  const characters = parseCharacterBlocks(sections.characters);
   const assistant = parseAssistant(sections.assistant);
   const plotMilestones = parseMilestones(sections.milestones);
+  const prizeConditions = parsePrizeConditions(sections.prize);
 
   const plotLines = [
     ...sections.plot,
-    ...sections.secret.map((line) => `Prize secret: ${line}`),
     ...sections.user.map((line) => `Player character: ${line}`),
   ];
 
@@ -193,6 +320,7 @@ function parseGameOutline(input: string): ParsedOutline {
     assistant,
     plotMilestones,
     characters,
+    prizeConditions,
   };
 }
 
@@ -211,6 +339,7 @@ export async function buildOliveFarmGameConfig(
     assistant: parsed.assistant,
     plotMilestones: parsed.plotMilestones,
     characters: parsed.characters,
+    prizeConditions: parsed.prizeConditions,
     active: true,
     createdBy: "startup-reset@persuasion.system",
     createdAt: now,
@@ -234,6 +363,7 @@ export async function buildGameConfigFromFile(
     assistant: parsed.assistant,
     plotMilestones: parsed.plotMilestones,
     characters: parsed.characters,
+    prizeConditions: parsed.prizeConditions,
     active: true,
     createdBy: "startup-reset@persuasion.system",
     createdAt: now,
