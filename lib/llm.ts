@@ -39,8 +39,12 @@ const MARKDOWN_OUTPUT_INSTRUCTIONS = [
 
 const OBSERVABLE_PERSPECTIVE_RULES = [
   "Perspective rules (strict):",
-  "- Describe only what the player can directly observe: speech, behavior, physical evidence, environment changes.",
+  "- Write in third-person narrative style. Describe the character's actions, expressions, and environment as the player observes them.",
+  "- Example format: 'Josef glanced away. \"I don't know what you mean,\" he muttered, hands clasped tightly on the table.'",
+  "- Use third person (he, she, they) for all actions and descriptions. First person is only acceptable inside quoted dialogue.",
+  "- Never write a response in pure first person. Always frame with observable narration.",
   "- Do not reveal hidden thoughts, internal monologue, private intentions, or omniscient narration.",
+  "- Describe only what the player can directly observe: speech, behaviour, physical evidence, environment changes.",
   "- Do not claim knowledge that has not been visibly disclosed in the scene.",
 ].join("\n");
 
@@ -182,6 +186,7 @@ const POV_BLOCKLIST: RegExp[] = [
   /\bunbeknownst to you\b/i,
   /\bwithout you knowing\b/i,
   /\binner monologue\b/i,
+  /^I\s+(feel|think|believe|know|want|need|am|was)\b/im,
 ];
 
 export function validateObservablePerspective(
