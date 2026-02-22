@@ -1,5 +1,6 @@
 import { page } from "fresh";
 import AdminGameForm from "../islands/AdminGameForm.tsx";
+import { initializeGame } from "../lib/game_initializer.ts";
 import { ensureUniqueIds, slugify } from "../lib/slug.ts";
 import {
   createGame,
@@ -10,7 +11,6 @@ import {
 import type {
   Character,
   GameConfig,
-  PlotMilestone,
 } from "../shared/types.ts";
 import { define } from "../utils.ts";
 
@@ -34,6 +34,13 @@ async function findAvailableSlug(baseSlug: string): Promise<string> {
   return attempt;
 }
 
+function deriveBioFromDefinition(definition: string): string {
+  const firstSentence = definition.split(/[.!?]/)[0]?.trim() ?? "";
+  const source = firstSentence || definition.trim();
+  const maxLen = 140;
+  return source.length <= maxLen ? source : `${source.slice(0, maxLen - 3)}...`;
+}
+
 function parseCharacters(form: FormData): Character[] {
   const rawCount = Number(form.get("characterCount") ?? 0);
   const count = Number.isFinite(rawCount)
@@ -41,17 +48,20 @@ function parseCharacters(form: FormData): Character[] {
     : 0;
 
   const names: string[] = [];
-  const bios: string[] = [];
-  const prompts: string[] = [];
+  const definitions: string[] = [];
+  const secretKeys: string[] = [];
 
   for (let i = 0; i < count; i++) {
     const name = String(form.get(`characterName_${i}`) ?? "").trim();
-    const bio = String(form.get(`characterBio_${i}`) ?? "").trim();
-    const prompt = String(form.get(`characterPrompt_${i}`) ?? "").trim();
-    if (!name || !bio || !prompt) continue;
+    const definition = String(form.get(`characterDefinition_${i}`) ?? "").trim();
+    const secretKey = String(form.get(`characterSecretKey_${i}`) ?? "").trim();
+    if (!name || !definition) continue;
+
+    if (secretKey && !definition.includes(secretKey)) continue;
+
     names.push(name);
-    bios.push(bio);
-    prompts.push(prompt);
+    definitions.push(definition);
+    secretKeys.push(secretKey);
   }
 
   const ids = ensureUniqueIds(names.map((name) => slugify(name)));
@@ -59,37 +69,10 @@ function parseCharacters(form: FormData): Character[] {
   return names.map((name, index) => ({
     id: ids[index],
     name,
-    bio: bios[index],
-    systemPrompt: prompts[index],
-    initialVisibility: "available" as const,
-  }));
-}
-
-function parseMilestones(form: FormData): PlotMilestone[] {
-  const rawCount = Number(form.get("milestoneCount") ?? 0);
-  const count = Number.isFinite(rawCount)
-    ? Math.max(0, Math.floor(rawCount))
-    : 0;
-
-  const titles: string[] = [];
-  const descriptions: string[] = [];
-
-  for (let i = 0; i < count; i++) {
-    const title = String(form.get(`milestoneTitle_${i}`) ?? "").trim();
-    const description = String(form.get(`milestoneDescription_${i}`) ?? "")
-      .trim();
-    if (!title || !description) continue;
-    titles.push(title);
-    descriptions.push(description);
-  }
-
-  const ids = ensureUniqueIds(titles.map((title) => slugify(title)));
-  return titles.map((title, index) => ({
-    id: ids[index],
-    title,
-    description: descriptions[index],
-    prerequisiteIds: [],
-    unlocksCharacterIds: [],
+    bio: deriveBioFromDefinition(definitions[index]),
+    definition: definitions[index],
+    systemPrompt: "",
+    secretKey: secretKeys[index] || undefined,
   }));
 }
 
@@ -125,16 +108,14 @@ export const handler = define.handlers<PublishData>({
     const form = await ctx.req.formData();
     const title = String(form.get("title") ?? "").trim();
     const introText = String(form.get("introText") ?? "").trim();
-    const plotPointsText = String(form.get("plotPointsText") ?? "").trim();
     const isAdult = String(form.get("isAdult") ?? "") === "on";
-    const plotMilestones = parseMilestones(form);
     const characters = parseCharacters(form);
     const assistant = await getGlobalAssistantConfig();
 
-    if (!title || !introText || characters.length === 0 || plotMilestones.length === 0) {
+    if (!title || !introText || characters.length === 0) {
       return Response.redirect(
         new URL(
-          "/create-game?error=Provide+title,+intro,+milestones,+and+at+least+one+character",
+          "/create-game?error=Provide+title,+intro,+and+at+least+one+character",
           ctx.req.url,
         ),
         303,
@@ -159,12 +140,10 @@ export const handler = define.handlers<PublishData>({
       slug,
       title,
       introText,
-      plotPointsText,
       isAdult,
+      initialized: false,
       assistant,
-      plotMilestones,
       characters,
-      prizeConditions: [],
       active: true,
       createdBy: ctx.state.userEmail,
       createdAt: now,
@@ -173,6 +152,15 @@ export const handler = define.handlers<PublishData>({
 
     try {
       await createGame(gameConfig);
+
+      // Initialize game with hardened prompts
+      const result = await initializeGame(gameConfig);
+      const initializedGame: GameConfig = {
+        ...gameConfig,
+        characters: result.characters,
+        initialized: true,
+      };
+      await createGame(initializedGame);
     } catch {
       return Response.redirect(
         new URL("/create-game?error=Unable+to+create+game", ctx.req.url),

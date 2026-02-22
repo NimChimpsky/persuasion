@@ -1,17 +1,10 @@
-export type CharacterVisibility = "hidden" | "locked" | "available";
-
-export interface MilestonePromptOverride {
-  milestoneId: string;
-  promptAddition: string;
-}
-
 export interface Character {
   id: string;
   name: string;
   bio: string;
+  definition: string;
   systemPrompt: string;
-  initialVisibility: CharacterVisibility;
-  milestonePrompts?: MilestonePromptOverride[];
+  secretKey?: string;
 }
 
 export interface AssistantConfig {
@@ -21,24 +14,8 @@ export interface AssistantConfig {
   systemPrompt: string;
 }
 
-export interface PlotMilestone {
-  id: string;
-  title: string;
-  description: string;
-  prerequisiteIds: string[];
-  unlocksCharacterIds: string[];
-}
-
-export interface PrizeCondition {
-  requiredMilestoneIds: string[];
-  targetCharacterId: string;
-  secretKey: string;
-  revelationPrompt: string;
-}
-
 export interface ProgressState {
   turn: number;
-  discoveredMilestoneIds: string[];
 }
 
 export type UserGender = "male" | "female" | "non-binary";
@@ -55,12 +32,10 @@ export interface GameConfig {
   slug: string;
   title: string;
   introText: string;
-  plotPointsText: string;
   isAdult: boolean;
+  initialized: boolean;
   assistant: AssistantConfig;
-  plotMilestones: PlotMilestone[];
   characters: Character[];
-  prizeConditions: PrizeCondition[];
   active: boolean;
   createdBy: string;
   createdAt: string;
@@ -88,9 +63,7 @@ export interface TranscriptEvent {
 export interface UserGameSnapshot {
   title: string;
   introText: string;
-  plotPointsText: string;
   assistantId: string;
-  plotMilestones: PlotMilestone[];
   characters: Character[];
   encounteredCharacterIds: string[];
   progressState: ProgressState;

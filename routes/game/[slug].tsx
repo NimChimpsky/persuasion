@@ -1,9 +1,6 @@
 import { page } from "fresh";
 import GameBoard from "../../islands/GameBoard.tsx";
-import {
-  buildInitialProgressState,
-  resolveCharacterVisibility,
-} from "../../lib/game_engine.ts";
+import { buildInitialProgressState } from "../../lib/game_engine.ts";
 import {
   getGameBySlug,
   getGlobalAssistantConfig,
@@ -11,7 +8,6 @@ import {
 } from "../../lib/store.ts";
 import { parseTranscript } from "../../shared/transcript.ts";
 import type {
-  PlotMilestone,
   ProgressState,
   UserGameSnapshot,
 } from "../../shared/types.ts";
@@ -21,7 +17,6 @@ interface CharacterForClient {
   id: string;
   name: string;
   bio: string;
-  state: "hidden" | "locked" | "available" | "encountered";
 }
 
 interface GamePageData {
@@ -33,15 +28,12 @@ interface GamePageData {
   encounteredCharacterIds: string[];
   assistantId: string;
   progressState: ProgressState;
-  plotMilestones: PlotMilestone[];
 }
 
 interface GameForUser {
   title: string;
   introText: string;
-  plotPointsText: string;
   assistantId: string;
-  plotMilestones: PlotMilestone[];
   characters: UserGameSnapshot["characters"];
   encounteredCharacterIds: string[];
   progressState: ProgressState;
@@ -82,8 +74,6 @@ function buildDefaultGameForUser(
   game: {
     title: string;
     introText: string;
-    plotPointsText: string;
-    plotMilestones: PlotMilestone[];
     characters: UserGameSnapshot["characters"];
   },
   assistantId: string,
@@ -91,9 +81,7 @@ function buildDefaultGameForUser(
   return {
     title: game.title,
     introText: game.introText,
-    plotPointsText: game.plotPointsText,
     assistantId,
-    plotMilestones: game.plotMilestones,
     characters: game.characters,
     encounteredCharacterIds: [],
     progressState: buildInitialProgressState(),
@@ -111,12 +99,6 @@ export const handler = define.handlers<GamePageData>({
     const game = await getGameBySlug(slug);
     if (!game || !game.active) {
       return new Response("Game not found", { status: 404 });
-    }
-    if (!game.plotMilestones?.length) {
-      return new Response(
-        "Game configuration is invalid: plot milestones are required.",
-        { status: 500 },
-      );
     }
 
     const globalAssistant = await getGlobalAssistantConfig();
@@ -138,9 +120,6 @@ export const handler = define.handlers<GamePageData>({
         ...snapshot,
         assistantId: snapshot.assistantId || fallback.assistantId,
         progressState: snapshot.progressState ?? fallback.progressState,
-        plotMilestones: snapshot.plotMilestones?.length
-          ? snapshot.plotMilestones
-          : fallback.plotMilestones,
         characters: snapshot.characters?.length
           ? snapshot.characters
           : fallback.characters,
@@ -157,53 +136,23 @@ export const handler = define.handlers<GamePageData>({
 
     const encounteredCharacterIds = ensureFirstCharacterEncountered(
       encounteredCharacterIdsRaw,
-      gameForUser.characters.filter((c) => {
-        const vis = resolveCharacterVisibility(
-          c,
-          gameForUser.progressState,
-          encounteredCharacterIdsRaw,
-          gameForUser.plotMilestones,
-        );
-        return vis === "available" || vis === "encountered";
-      }),
+      gameForUser.characters,
     );
 
-    // Build display characters with visibility states
     const assistantCard: CharacterForClient = {
       id: globalAssistant.id,
       name: globalAssistant.name,
       bio: globalAssistant.bio,
-      state: "available",
     };
 
     const displayCharacters: CharacterForClient[] = [assistantCard];
     for (const character of gameForUser.characters) {
       if (character.id === assistantCard.id) continue;
-
-      const visibility = resolveCharacterVisibility(
-        character,
-        gameForUser.progressState,
-        encounteredCharacterIds,
-        gameForUser.plotMilestones,
-      );
-
-      if (visibility === "hidden") continue;
-
-      if (visibility === "locked") {
-        displayCharacters.push({
-          id: character.id,
-          name: "???",
-          bio: "This person may become available as you investigate.",
-          state: "locked",
-        });
-      } else {
-        displayCharacters.push({
-          id: character.id,
-          name: character.name,
-          bio: character.bio,
-          state: visibility,
-        });
-      }
+      displayCharacters.push({
+        id: character.id,
+        name: character.name,
+        bio: character.bio,
+      });
     }
 
     ctx.state.activeGameHeader = {
@@ -220,7 +169,6 @@ export const handler = define.handlers<GamePageData>({
       encounteredCharacterIds,
       assistantId: gameForUser.assistantId,
       progressState: gameForUser.progressState,
-      plotMilestones: gameForUser.plotMilestones,
     });
   },
 });
@@ -242,7 +190,6 @@ export default define.page<typeof handler>(function GamePage({ data, state }) {
           initialEncounteredCharacterIds={data.encounteredCharacterIds}
           initialAssistantId={data.assistantId}
           initialProgressState={data.progressState}
-          initialPlotMilestones={data.plotMilestones}
         />
       </div>
     </main>

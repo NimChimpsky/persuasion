@@ -3,14 +3,8 @@ import { useMemo, useState } from "preact/hooks";
 interface CharacterDraft {
   key: string;
   name: string;
-  bio: string;
-  prompt: string;
-}
-
-interface MilestoneDraft {
-  key: string;
-  title: string;
-  description: string;
+  definition: string;
+  secretKey: string;
 }
 
 interface AdminGameFormProps {
@@ -21,33 +15,20 @@ function createCharacterDraft(index: number): CharacterDraft {
   return {
     key: `char-${index}-${crypto.randomUUID()}`,
     name: "",
-    bio: "",
-    prompt: "",
-  };
-}
-
-function createMilestoneDraft(index: number): MilestoneDraft {
-  return {
-    key: `milestone-${index}-${crypto.randomUUID()}`,
-    title: "",
-    description: "",
+    definition: "",
+    secretKey: "",
   };
 }
 
 export default function AdminGameForm(props: AdminGameFormProps) {
   const [title, setTitle] = useState("");
   const [introText, setIntroText] = useState("");
-  const [plotPointsText, setPlotPointsText] = useState("");
   const [isAdult, setIsAdult] = useState(false);
   const [characters, setCharacters] = useState<CharacterDraft[]>([
     createCharacterDraft(0),
   ]);
-  const [milestones, setMilestones] = useState<MilestoneDraft[]>([
-    createMilestoneDraft(0),
-  ]);
 
   const characterCount = characters.length;
-  const milestoneCount = milestones.length;
 
   const slugPreview = useMemo(() => {
     return title
@@ -70,29 +51,22 @@ export default function AdminGameForm(props: AdminGameFormProps) {
 
   const updateCharacter = (
     key: string,
-    patch: Partial<Pick<CharacterDraft, "name" | "bio" | "prompt">>,
+    patch: Partial<Pick<CharacterDraft, "name" | "definition" | "secretKey">>,
   ) => {
     setCharacters((prev) =>
       prev.map((item) => item.key === key ? { ...item, ...patch } : item)
     );
   };
 
-  const addMilestone = () => {
-    setMilestones((prev) => [...prev, createMilestoneDraft(prev.length)]);
-  };
-
-  const removeMilestone = (key: string) => {
-    setMilestones((prev) => prev.filter((item) => item.key !== key));
-  };
-
-  const updateMilestone = (
-    key: string,
-    patch: Partial<Pick<MilestoneDraft, "title" | "description">>,
-  ) => {
-    setMilestones((prev) =>
-      prev.map((item) => item.key === key ? { ...item, ...patch } : item)
-    );
-  };
+  const secretKeyErrors = useMemo(() => {
+    const errors = new Map<string, string>();
+    for (const character of characters) {
+      if (character.secretKey && !character.definition.includes(character.secretKey)) {
+        errors.set(character.key, "Secret key must appear in the definition text");
+      }
+    }
+    return errors;
+  }, [characters]);
 
   return (
     <section class="stack">
@@ -100,10 +74,20 @@ export default function AdminGameForm(props: AdminGameFormProps) {
       <form
         method="POST"
         action={props.action ?? "/create-game"}
-        class="card"
-        style="padding: 18px;"
+        class="card create-game-form"
       >
-        <div class="form-grid">
+        <div class="form-grid create-game-initial-grid">
+          <label class="checkbox-row create-game-span-2">
+            <input
+              type="checkbox"
+              name="isAdult"
+              checked={isAdult}
+              onChange={(event) =>
+                setIsAdult((event.target as HTMLInputElement).checked)}
+            />
+            Uncensored (anything goes)
+          </label>
+
           <label>
             Game title
             <input
@@ -116,9 +100,11 @@ export default function AdminGameForm(props: AdminGameFormProps) {
               placeholder="The Last Cipher"
             />
           </label>
-          <p class="inline-meta">URL preview: /game/{slugPreview}</p>
+          <p class="inline-meta create-game-slug-preview">
+            URL preview: /game/{slugPreview}
+          </p>
 
-          <label>
+          <label class="create-game-span-2">
             Intro text
             <textarea
               name="introText"
@@ -129,93 +115,17 @@ export default function AdminGameForm(props: AdminGameFormProps) {
               placeholder="You arrive at the estate moments before midnight. Five witnesses are present, each hiding something that could change the outcome."
             />
           </label>
-
-          <label>
-            Plot points (one per line)
-            <textarea
-              name="plotPointsText"
-              value={plotPointsText}
-              onInput={(event) =>
-                setPlotPointsText((event.target as HTMLTextAreaElement).value)}
-              placeholder="The city power grid is failing\nAn ally may be compromised\nA hidden archive key exists"
-            />
-          </label>
-
-          <label class="checkbox-row">
-            <input
-              type="checkbox"
-              name="isAdult"
-              checked={isAdult}
-              onChange={(event) =>
-                setIsAdult((event.target as HTMLInputElement).checked)}
-            />
-            Adult (uses Venice provider for character replies)
-          </label>
         </div>
 
         <input type="hidden" name="characterCount" value={characterCount} />
-        <input type="hidden" name="milestoneCount" value={milestoneCount} />
 
-        <div class="stack" style="margin-top: 12px;">
-          <h3>Plot milestones</h3>
-          {milestones.map((milestone, index) => (
-            <section key={milestone.key} class="character-row">
-              <div class="character-header">
-                <strong>Milestone {index + 1}</strong>
-                {milestones.length > 1
-                  ? (
-                    <button
-                      class="btn ghost"
-                      type="button"
-                      onClick={() => removeMilestone(milestone.key)}
-                    >
-                      Remove
-                    </button>
-                  )
-                  : null}
-              </div>
-
-              <label>
-                Title
-                <input
-                  type="text"
-                  required
-                  name={`milestoneTitle_${index}`}
-                  value={milestone.title}
-                  onInput={(event) =>
-                    updateMilestone(milestone.key, {
-                      title: (event.target as HTMLInputElement).value,
-                    })}
-                  placeholder="Identify victim"
-                />
-              </label>
-
-              <label>
-                Description
-                <textarea
-                  name={`milestoneDescription_${index}`}
-                  required
-                  value={milestone.description}
-                  onInput={(event) =>
-                    updateMilestone(milestone.key, {
-                      description: (event.target as HTMLTextAreaElement).value,
-                    })}
-                  placeholder="Player learns the body belongs to Hysni Erjet via lab/interpol records."
-                />
-              </label>
-            </section>
-          ))}
-          <div class="action-row">
-            <button class="btn ghost" type="button" onClick={addMilestone}>
-              Add milestone
-            </button>
-          </div>
-        </div>
-
-        <div class="stack" style="margin-top: 12px;">
+        <div class="stack create-game-section">
           <h3>Characters</h3>
           {characters.map((character, index) => (
-            <section key={character.key} class="character-row">
+            <section
+              key={character.key}
+              class="character-row create-game-item create-game-character-item"
+            >
               <div class="character-header">
                 <strong>Character {index + 1}</strong>
                 {characters.length > 1
@@ -247,30 +157,37 @@ export default function AdminGameForm(props: AdminGameFormProps) {
               </label>
 
               <label>
-                Bio
-                <textarea
-                  name={`characterBio_${index}`}
-                  required
-                  value={character.bio}
+                Secret key (optional)
+                <input
+                  type="text"
+                  name={`characterSecretKey_${index}`}
+                  value={character.secretKey}
                   onInput={(event) =>
                     updateCharacter(character.key, {
-                      bio: (event.target as HTMLTextAreaElement).value,
+                      secretKey: (event.target as HTMLInputElement).value,
                     })}
-                  placeholder="A sharp and composed investigator with a habit of testing every claim."
+                  placeholder="MySecretKey123"
                 />
+                {secretKeyErrors.has(character.key)
+                  ? (
+                    <p class="notice bad" style="margin-top: 4px; font-size: 0.85rem;">
+                      {secretKeyErrors.get(character.key)}
+                    </p>
+                  )
+                  : null}
               </label>
 
-              <label>
-                System prompt
+              <label class="create-game-span-2">
+                Definition
                 <textarea
-                  name={`characterPrompt_${index}`}
+                  name={`characterDefinition_${index}`}
                   required
-                  value={character.prompt}
+                  value={character.definition}
                   onInput={(event) =>
                     updateCharacter(character.key, {
-                      prompt: (event.target as HTMLTextAreaElement).value,
+                      definition: (event.target as HTMLTextAreaElement).value,
                     })}
-                  placeholder="You are Detective Morrow. Reveal clues gradually and stay in character."
+                  placeholder="You are Detective Morrow. You know who committed the crime but you will only reveal clues gradually as the player earns your trust. You are sharp, composed, and test every claim."
                 />
               </label>
             </section>

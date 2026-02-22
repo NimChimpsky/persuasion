@@ -2,12 +2,8 @@ import { ensureUniqueIds, slugify } from "./slug.ts";
 import type {
   AssistantConfig,
   Character,
-  CharacterVisibility,
   GameConfig,
   GameIndexEntry,
-  MilestonePromptOverride,
-  PlotMilestone,
-  PrizeCondition,
 } from "../shared/types.ts";
 
 const DEFAULT_ASSISTANT_SYSTEM_PROMPT =
@@ -16,22 +12,18 @@ const DEFAULT_ASSISTANT_SYSTEM_PROMPT =
 interface ParsedOutline {
   title: string;
   introText: string;
-  plotPointsText: string;
+  isAdult: boolean;
   assistant: AssistantConfig;
-  plotMilestones: PlotMilestone[];
   characters: Character[];
-  prizeConditions: PrizeCondition[];
 }
 
 type SectionKey =
   | "title"
   | "intro"
-  | "plot"
-  | "prize"
+  | "uncensored"
   | "characters"
   | "user"
-  | "assistant"
-  | "milestones";
+  | "assistant";
 
 export const OLIVE_FARM_OUTLINE_URL = new URL(
   "../seed-games/murder-at-the-olive-farm.v2.txt",
@@ -52,10 +44,7 @@ function mapHeadingToSection(heading: string): SectionKey | null {
 
   if (normalized.includes("game title")) return "title";
   if (normalized === "intro") return "intro";
-  if (normalized.startsWith("plot milestone")) return "milestones";
-  if (normalized.startsWith("plot")) return "plot";
-  if (normalized.startsWith("prize")) return "prize";
-  if (normalized.startsWith("secret")) return "prize";
+  if (normalized === "uncensored") return "uncensored";
   if (normalized.startsWith("character")) return "characters";
   if (normalized === "user") return "user";
   if (normalized === "assistant") return "assistant";
@@ -97,143 +86,35 @@ function parseAssistant(lines: string[]): AssistantConfig {
   };
 }
 
-function parseMilestones(lines: string[]): PlotMilestone[] {
-  const parsed = lines.flatMap((line) => {
-    const trimmed = line.trim();
-    if (!trimmed) return [];
-
-    const segments = trimmed.split("|").map((s) => s.trim());
-    if (segments.length < 2) {
-      return [{ title: trimmed, description: trimmed, prerequisiteIds: [] as string[], unlocksCharacterIds: [] as string[] }];
-    }
-
-    const title = segments[0];
-    const description = segments[1];
-    if (!title || !description) return [];
-
-    let prerequisiteIds: string[] = [];
-    let unlocksCharacterIds: string[] = [];
-
-    for (let i = 2; i < segments.length; i++) {
-      const seg = segments[i];
-      if (seg.startsWith("requires:")) {
-        const val = seg.slice("requires:".length).trim();
-        prerequisiteIds = val.split(",").map((id) => slugify(id.trim())).filter(Boolean);
-      } else if (seg.startsWith("unlocks:")) {
-        const val = seg.slice("unlocks:".length).trim();
-        unlocksCharacterIds = val.split(",").map((id) => slugify(id.trim())).filter(Boolean);
-      }
-    }
-
-    return [{ title, description, prerequisiteIds, unlocksCharacterIds }];
-  });
-
-  const ids = ensureUniqueIds(parsed.map((item) => slugify(item.title)));
-  return parsed.map((item, index) => ({
-    id: ids[index],
-    title: item.title,
-    description: item.description,
-    prerequisiteIds: item.prerequisiteIds,
-    unlocksCharacterIds: item.unlocksCharacterIds,
-  }));
-}
-
-function parsePrizeConditions(lines: string[]): PrizeCondition[] {
-  return lines.flatMap((line) => {
-    const trimmed = line.trim();
-    if (!trimmed) return [];
-
-    // New format: requires: milestone-id | character: char-id | key: secretkey | revelation prompt text
-    const segments = trimmed.split("|").map((s) => s.trim());
-
-    let requiredMilestoneIds: string[] = [];
-    let targetCharacterId = "";
-    let secretKey = "";
-    let revelationPrompt = "";
-
-    for (const seg of segments) {
-      if (seg.startsWith("requires:")) {
-        const val = seg.slice("requires:".length).trim();
-        requiredMilestoneIds = val.split(",").map((id) => slugify(id.trim())).filter(Boolean);
-      } else if (seg.startsWith("character:")) {
-        targetCharacterId = slugify(seg.slice("character:".length).trim());
-      } else if (seg.startsWith("key:")) {
-        secretKey = seg.slice("key:".length).trim();
-      } else if (requiredMilestoneIds.length > 0 && targetCharacterId && secretKey) {
-        // Remaining segment after all key fields is the revelation prompt
-        revelationPrompt = seg;
-      }
-    }
-
-    if (!requiredMilestoneIds.length || !targetCharacterId || !secretKey || !revelationPrompt) {
-      return [];
-    }
-
-    return [{ requiredMilestoneIds, targetCharacterId, secretKey, revelationPrompt }];
-  });
-}
-
-interface CharacterBlock {
-  name: string;
-  systemPrompt: string;
-  visibility: CharacterVisibility;
-  milestonePrompts: MilestonePromptOverride[];
-}
-
 function parseCharacterBlocks(rawLines: string[]): Character[] {
-  // Rejoin all lines to handle multi-line character definitions.
-  // Block starts with "Name, prompt text..." and continues with @-prefixed directive lines
-  // or continuation lines until the next "- " character line.
-  const blocks: CharacterBlock[] = [];
-  let currentBlock: CharacterBlock | null = null;
+  const blocks: Array<{ name: string; definition: string; secretKey?: string }> = [];
+  let currentBlock: { name: string; definition: string; secretKey?: string } | null = null;
 
   for (const rawLine of rawLines) {
     const line = rawLine.trim();
     if (!line) continue;
 
-    // Check for @-prefixed directives (belong to current block)
-    if (line.startsWith("@") && currentBlock) {
-      if (line.startsWith("@visibility:")) {
-        const val = line.slice("@visibility:".length).trim().toLowerCase();
-        if (val === "hidden" || val === "locked" || val === "available") {
-          currentBlock.visibility = val;
-        }
-      } else if (line.startsWith("@when ")) {
-        const rest = line.slice("@when ".length);
-        const colonIdx = rest.indexOf(":");
-        if (colonIdx > 0) {
-          const milestoneId = slugify(rest.slice(0, colonIdx).trim());
-          const promptAddition = rest.slice(colonIdx + 1).trim();
-          if (milestoneId && promptAddition) {
-            currentBlock.milestonePrompts.push({ milestoneId, promptAddition });
-          }
-        }
-      }
+    // Check for key: line (belongs to current block)
+    if (line.toLowerCase().startsWith("key:") && currentBlock) {
+      currentBlock.secretKey = line.slice("key:".length).trim();
       continue;
     }
 
-    // New character block: "Name, system prompt text..."
+    // New character block: "Name, definition text..."
     const commaIndex = line.indexOf(",");
     if (commaIndex <= 0) continue;
 
     const name = line.slice(0, commaIndex).trim();
-    const systemPrompt = line.slice(commaIndex + 1).trim();
-    if (!name || !systemPrompt) continue;
+    const definition = line.slice(commaIndex + 1).trim();
+    if (!name || !definition) continue;
 
-    // Save previous block
     if (currentBlock) {
       blocks.push(currentBlock);
     }
 
-    currentBlock = {
-      name,
-      systemPrompt,
-      visibility: "available",
-      milestonePrompts: [],
-    };
+    currentBlock = { name, definition };
   }
 
-  // Push final block
   if (currentBlock) {
     blocks.push(currentBlock);
   }
@@ -242,10 +123,10 @@ function parseCharacterBlocks(rawLines: string[]): Character[] {
   return blocks.map((block, index) => ({
     id: ids[index],
     name: block.name,
-    bio: deriveBioFromPrompt(block.systemPrompt),
-    systemPrompt: block.systemPrompt,
-    initialVisibility: block.visibility,
-    milestonePrompts: block.milestonePrompts.length > 0 ? block.milestonePrompts : undefined,
+    bio: deriveBioFromPrompt(block.definition),
+    definition: block.definition,
+    systemPrompt: "",
+    secretKey: block.secretKey,
   }));
 }
 
@@ -253,12 +134,10 @@ function parseGameOutline(input: string): ParsedOutline {
   const sections: Record<SectionKey, string[]> = {
     title: [],
     intro: [],
-    plot: [],
-    prize: [],
+    uncensored: [],
     characters: [],
     user: [],
     assistant: [],
-    milestones: [],
   };
 
   let currentSection: SectionKey | null = null;
@@ -275,13 +154,11 @@ function parseGameOutline(input: string): ParsedOutline {
 
     if (!currentSection) continue;
 
-    // Character section supports multi-line blocks with @-prefixed directives
     if (currentSection === "characters") {
       if (line.startsWith("-")) {
         const value = line.slice(1).trim();
         if (value) sections.characters.push(value);
-      } else if (line.startsWith("@")) {
-        // Directive line for the current character block
+      } else if (line.toLowerCase().startsWith("key:")) {
         sections.characters.push(line);
       }
       continue;
@@ -298,53 +175,28 @@ function parseGameOutline(input: string): ParsedOutline {
   const introText = sections.intro.join("\n");
   const characters = parseCharacterBlocks(sections.characters);
   const assistant = parseAssistant(sections.assistant);
-  const plotMilestones = parseMilestones(sections.milestones);
-  const prizeConditions = parsePrizeConditions(sections.prize);
+  const isAdult = sections.uncensored.some(
+    (line) => line.toLowerCase() === "yes" || line.toLowerCase() === "true",
+  );
 
-  const plotLines = [
-    ...sections.plot,
-    ...sections.user.map((line) => `Player character: ${line}`),
-  ];
+  // Fold user description into character definitions as world context
+  if (sections.user.length > 0) {
+    const userDescription = sections.user.join(" ");
+    for (const character of characters) {
+      character.definition += ` The player character is: ${userDescription}`;
+    }
+  }
 
-  if (
-    !title || !introText || characters.length === 0 ||
-    plotMilestones.length === 0
-  ) {
+  if (!title || !introText || characters.length === 0) {
     throw new Error(`Game outline is incomplete or invalid: "${title || "(no title)"}"`);
   }
 
   return {
     title,
     introText,
-    plotPointsText: plotLines.join("\n"),
+    isAdult,
     assistant,
-    plotMilestones,
     characters,
-    prizeConditions,
-  };
-}
-
-export async function buildOliveFarmGameConfig(
-  now = new Date().toISOString(),
-): Promise<GameConfig> {
-  const outlineText = await Deno.readTextFile(OLIVE_FARM_OUTLINE_URL);
-  const parsed = parseGameOutline(outlineText);
-  const slug = slugify(parsed.title);
-
-  return {
-    slug,
-    title: parsed.title,
-    introText: parsed.introText,
-    plotPointsText: parsed.plotPointsText,
-    isAdult: false,
-    assistant: parsed.assistant,
-    plotMilestones: parsed.plotMilestones,
-    characters: parsed.characters,
-    prizeConditions: parsed.prizeConditions,
-    active: true,
-    createdBy: "startup-reset@persuasion.system",
-    createdAt: now,
-    updatedAt: now,
   };
 }
 
@@ -360,17 +212,21 @@ export async function buildGameConfigFromFile(
     slug,
     title: parsed.title,
     introText: parsed.introText,
-    plotPointsText: parsed.plotPointsText,
-    isAdult: false,
+    isAdult: parsed.isAdult,
+    initialized: false,
     assistant: parsed.assistant,
-    plotMilestones: parsed.plotMilestones,
     characters: parsed.characters,
-    prizeConditions: parsed.prizeConditions,
     active: true,
     createdBy: "startup-reset@persuasion.system",
     createdAt: now,
     updatedAt: now,
   };
+}
+
+export async function buildOliveFarmGameConfig(
+  now = new Date().toISOString(),
+): Promise<GameConfig> {
+  return await buildGameConfigFromFile(OLIVE_FARM_OUTLINE_URL, now);
 }
 
 export async function buildChiantiGameConfig(

@@ -1,4 +1,5 @@
 import { env } from "./env.ts";
+import { initializeGame } from "./game_initializer.ts";
 import { getKv } from "./kv.ts";
 import {
   buildChiantiGameConfig,
@@ -9,24 +10,7 @@ import {
   getGlobalAssistantConfig,
   setGlobalAssistantConfig,
 } from "./store.ts";
-import type { AssistantConfig } from "../shared/types.ts";
-
-// TEMPORARY EARLY-DEV BOOTSTRAP
-// This module intentionally wipes game data and reseeds one test game at app startup.
-// Remove this file + main.ts startup call when moving to non-destructive environments.
-//
-// Current behavior:
-// - Controlled by RESET_GAME_STATE_ON_STARTUP (default true)
-// - If true:
-//   - Wipes prefixes:
-//     games_by_slug, games_index, user_progress, user_progress_meta, user_progress_chunk
-//   - Seeds: murder-at-the-olive-farm.txt
-//   - Frequency:
-//     - Once per deployment when DENO_DEPLOYMENT_ID is present
-//     - Every startup when DENO_DEPLOYMENT_ID is absent (local)
-// - If false:
-//   - No wipe
-//   - Seed-only upsert for murder-at-the-olive-farm.txt
+import type { AssistantConfig, GameConfig } from "../shared/types.ts";
 
 const RESET_VERSION = "olive_farm_seed_v1";
 const DELETE_BATCH_SIZE = 10;
@@ -98,6 +82,29 @@ async function ensureGlobalAssistantConfigExists(): Promise<void> {
   }
 }
 
+async function initializeAndPersist(
+  kv: Deno.Kv,
+  game: GameConfig,
+): Promise<GameConfig> {
+  console.log(`[startup-reset] Initializing game: ${game.title}`);
+  const result = await initializeGame(game);
+
+  if (result.errors.length > 0) {
+    for (const err of result.errors) {
+      console.warn(`[startup-reset] Initializer warning: ${err}`);
+    }
+  }
+
+  const initializedGame: GameConfig = {
+    ...game,
+    characters: result.characters,
+    initialized: true,
+  };
+
+  await upsertGameAndIndex(kv, initializedGame);
+  return initializedGame;
+}
+
 async function buildAllSeedGames(now: string) {
   return [
     await buildOliveFarmGameConfig(now),
@@ -111,7 +118,7 @@ async function seedOnly(
 ): Promise<string[]> {
   const games = await buildAllSeedGames(now);
   for (const game of games) {
-    await upsertGameAndIndex(kv, game);
+    await initializeAndPersist(kv, game);
   }
   await ensureGlobalAssistantConfigExists();
   return games.map((g) => g.slug);
@@ -121,7 +128,6 @@ async function wipeGameDataAndSeed(
   kv: Deno.Kv,
   now: string,
 ): Promise<{ gameSlugs: string[]; wipeSummary: string }> {
-  // Fail before destructive wipe if source game files are invalid.
   const games = await buildAllSeedGames(now);
 
   const wipeResults: Array<{ prefix: string; deleted: number }> = [];
@@ -131,7 +137,7 @@ async function wipeGameDataAndSeed(
   }
 
   for (const game of games) {
-    await upsertGameAndIndex(kv, game);
+    await initializeAndPersist(kv, game);
   }
   await ensureGlobalAssistantConfigExists();
 

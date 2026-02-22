@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type {
-  PlotMilestone,
   ProgressState,
   TranscriptEvent,
 } from "../shared/types.ts";
@@ -9,7 +8,6 @@ interface CharacterRef {
   id: string;
   name: string;
   bio: string;
-  state?: "hidden" | "locked" | "available" | "encountered";
 }
 
 interface GameBoardProps {
@@ -20,7 +18,6 @@ interface GameBoardProps {
   initialEncounteredCharacterIds: string[];
   initialAssistantId: string;
   initialProgressState: ProgressState;
-  initialPlotMilestones: PlotMilestone[];
 }
 
 interface JsonErrorResponse {
@@ -42,9 +39,7 @@ interface StreamFinalPayload {
   characters: CharacterRef[];
   encounteredCharacterIds: string[];
   progressState?: ProgressState;
-  discoveredMilestoneIds?: string[];
   assistantId?: string;
-  characterStates?: Record<string, string>;
 }
 
 interface StreamErrorPayload {
@@ -107,14 +102,10 @@ function pickInitialCharacterId(
   const encountered = new Set(
     encounteredCharacterIds.map((id) => id.toLowerCase()),
   );
-  // Only pick from non-locked characters
-  const available = characters.filter(
-    (c) => c.state !== "locked" && c.state !== "hidden",
-  );
-  const firstEncountered = available.find((character) =>
+  const firstEncountered = characters.find((character) =>
     encountered.has(character.id.toLowerCase())
   );
-  return firstEncountered?.id ?? available[0]?.id ?? characters[0].id;
+  return firstEncountered?.id ?? characters[0]?.id ?? "";
 }
 
 async function consumeSseStream(
@@ -191,9 +182,6 @@ export default function GameBoard(props: GameBoardProps) {
   const [progressState, setProgressState] = useState<ProgressState>(
     props.initialProgressState,
   );
-  const [plotMilestones] = useState<PlotMilestone[]>(
-    props.initialPlotMilestones,
-  );
   const [desktopBoardHeight, setDesktopBoardHeight] = useState<number | null>(
     null,
   );
@@ -201,26 +189,10 @@ export default function GameBoard(props: GameBoardProps) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [unlockNotification, setUnlockNotification] = useState("");
 
   const layoutRef = useRef<HTMLElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const discoveredSet = useMemo(
-    () =>
-      new Set(
-        progressState.discoveredMilestoneIds.map((id) => id.toLowerCase()),
-      ),
-    [progressState.discoveredMilestoneIds],
-  );
-  const discoveredCount = useMemo(
-    () =>
-      plotMilestones.filter((milestone) =>
-        discoveredSet.has(milestone.id.toLowerCase())
-      ).length,
-    [plotMilestones, discoveredSet],
-  );
 
   const encounteredSet = useMemo(
     () => new Set(encounteredCharacterIds.map((id) => id.toLowerCase())),
@@ -270,7 +242,7 @@ export default function GameBoard(props: GameBoardProps) {
 
   useEffect(() => {
     if (
-      activeCharacterId && characters.some((c) => c.id === activeCharacterId && c.state !== "locked" && c.state !== "hidden")
+      activeCharacterId && characters.some((c) => c.id === activeCharacterId)
     ) {
       return;
     }
@@ -311,13 +283,6 @@ export default function GameBoard(props: GameBoardProps) {
     };
   }, [characters.length]);
 
-  // Auto-dismiss unlock notification
-  useEffect(() => {
-    if (!unlockNotification) return;
-    const timer = setTimeout(() => setUnlockNotification(""), 4000);
-    return () => clearTimeout(timer);
-  }, [unlockNotification]);
-
   const onSubmit = async (event: Event) => {
     event.preventDefault();
     if (loading) return;
@@ -329,10 +294,6 @@ export default function GameBoard(props: GameBoardProps) {
     }
     if (!activeCharacter) {
       setError("Select a character first.");
-      return;
-    }
-    if (activeCharacter.state === "locked") {
-      setError("This character is not available yet.");
       return;
     }
 
@@ -401,49 +362,11 @@ export default function GameBoard(props: GameBoardProps) {
             throw new Error("Malformed stream final event");
           }
 
-          // Detect character unlock transitions
-          const prevCharMap = new Map(
-            characters.map((c) => [c.id, c]),
-          );
-          const newChars = payload.characters as CharacterRef[];
-
-          // Apply characterStates from server
-          if (payload.characterStates) {
-            for (const ch of newChars) {
-              const serverState = payload.characterStates[ch.id];
-              if (serverState) {
-                ch.state = serverState as CharacterRef["state"];
-              }
-            }
-          }
-
-          // Detect unlocks: was locked, now available/encountered
-          for (const newChar of newChars) {
-            const prev = prevCharMap.get(newChar.id);
-            if (
-              prev?.state === "locked" &&
-              newChar.state !== "locked" &&
-              newChar.state !== "hidden" &&
-              newChar.name !== "???"
-            ) {
-              setUnlockNotification(`${newChar.name} is now available to talk to!`);
-            }
-          }
-
           setEvents((prev) => [...prev, payload.characterEvent]);
-          setCharacters(newChars);
+          setCharacters(payload.characters as CharacterRef[]);
           setEncounteredCharacterIds(payload.encounteredCharacterIds);
           if (payload.progressState) {
             setProgressState(payload.progressState);
-          }
-          if (
-            Array.isArray(payload.discoveredMilestoneIds) &&
-            payload.progressState
-          ) {
-            setProgressState({
-              ...payload.progressState,
-              discoveredMilestoneIds: payload.discoveredMilestoneIds,
-            });
           }
           setStreamingText("");
           setStreamingCharacterName("");
@@ -479,16 +402,8 @@ export default function GameBoard(props: GameBoardProps) {
             <p>{props.introText}</p>
           </section>
           <p class="character-panel-title">Select character to talk to</p>
-          {unlockNotification
-            ? (
-              <div class="character-unlock-notification">
-                {unlockNotification}
-              </div>
-            )
-            : null}
           <div class="character-grid">
             {characters.map((character) => {
-              const isLocked = character.state === "locked";
               const encountered = encounteredSet.has(character.id.toLowerCase());
               const isActive = character.id === activeCharacterId;
               return (
@@ -497,34 +412,18 @@ export default function GameBoard(props: GameBoardProps) {
                   type="button"
                   class={`card character-summary ${
                     isActive ? "is-active" : "is-inactive"
-                  }${isLocked ? " is-locked" : ""}`}
+                  }`}
                   data-encountered={encountered ? "true" : "false"}
-                  disabled={loading || isLocked}
+                  disabled={loading}
                   onClick={() => {
-                    if (loading || isLocked) return;
+                    if (loading) return;
                     setActiveCharacterId(character.id);
                   }}
                 >
-                  {isLocked
-                    ? (
-                      <div class="locked-character-icon">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 16 16"
-                          fill="currentColor"
-                        >
-                          <path d="M8 1a4 4 0 0 0-4 4v2H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-1V5a4 4 0 0 0-4-4zm-2.5 4a2.5 2.5 0 0 1 5 0v2h-5V5z" />
-                        </svg>
-                      </div>
-                    )
-                    : null}
                   <h4>{character.name}</h4>
                   <p>
-                    {isLocked
-                      ? character.bio
-                      : summaryByCharacterId.get(character.id) ??
-                        "No conversation yet"}
+                    {summaryByCharacterId.get(character.id) ??
+                      "No conversation yet"}
                   </p>
                 </button>
               );
@@ -545,13 +444,11 @@ export default function GameBoard(props: GameBoardProps) {
           <div class="chat-header">
             <strong>
               {activeCharacter
-                ? activeCharacter.state === "locked"
-                  ? "Character locked"
-                  : `Talking to ${activeCharacter.name}`
+                ? `Talking to ${activeCharacter.name}`
                 : "Select a character"}
             </strong>
             <span class="inline-meta">
-              {`Milestones ${discoveredCount}/${plotMilestones.length}`}
+              {`Turn ${progressState.turn}`}
             </span>
           </div>
 
@@ -597,11 +494,9 @@ export default function GameBoard(props: GameBoardProps) {
               ref={textareaRef}
               value={draft}
               placeholder={activeCharacter
-                ? activeCharacter.state === "locked"
-                  ? "This character is not available yet..."
-                  : `Message ${activeCharacter.name}...`
+                ? `Message ${activeCharacter.name}...`
                 : "Select a character first..."}
-              disabled={!activeCharacter || activeCharacter.state === "locked"}
+              disabled={!activeCharacter}
               onInput={(event) => {
                 const value = (event.target as HTMLTextAreaElement).value;
                 setDraft(value);
@@ -612,7 +507,7 @@ export default function GameBoard(props: GameBoardProps) {
                 }
                 if (event.isComposing) return;
                 event.preventDefault();
-                if (loading || !activeCharacter || activeCharacter.state === "locked") return;
+                if (loading || !activeCharacter) return;
                 (event.currentTarget.form as HTMLFormElement | null)
                   ?.requestSubmit();
               }}
@@ -621,7 +516,7 @@ export default function GameBoard(props: GameBoardProps) {
             <button
               class="btn primary send-btn"
               type="submit"
-              disabled={loading || !activeCharacter || activeCharacter.state === "locked"}
+              disabled={loading || !activeCharacter}
             >
               {loading ? "Sending..." : "Send"}
             </button>
