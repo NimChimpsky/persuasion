@@ -7,6 +7,7 @@ import {
   upsertGameAndIndex,
 } from "./local_seed_game.ts";
 import {
+  getGameBySlug,
   getGlobalAssistantConfig,
   setGlobalAssistantConfig,
 } from "./store.ts";
@@ -118,7 +119,12 @@ async function seedOnly(
 ): Promise<string[]> {
   const games = await buildAllSeedGames(now);
   for (const game of games) {
-    await initializeAndPersist(kv, game);
+    const existing = await getGameBySlug(game.slug);
+    if (existing?.initialized) {
+      console.log(`[startup-reset] Skipping already-initialized game: ${game.title}`);
+    } else {
+      await initializeAndPersist(kv, game);
+    }
   }
   await ensureGlobalAssistantConfigExists();
   return games.map((g) => g.slug);
