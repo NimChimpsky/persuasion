@@ -11,7 +11,8 @@ import {
 } from "./store.ts";
 import type { AssistantConfig, GameConfig } from "../shared/types.ts";
 
-const RESET_VERSION = "olive_farm_seed_v1";
+// Bump this string to force a re-seed on the next startup even if the deployment ID hasn't changed.
+const RESET_VERSION = "seed_v1";
 const DELETE_BATCH_SIZE = 10;
 
 const WIPE_PREFIXES: Deno.KvKey[] = [
