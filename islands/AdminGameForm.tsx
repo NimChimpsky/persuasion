@@ -77,17 +77,6 @@ export default function AdminGameForm(props: AdminGameFormProps) {
         class="card create-game-form"
       >
         <div class="form-grid create-game-initial-grid">
-          <label class="checkbox-row create-game-span-2">
-            <input
-              type="checkbox"
-              name="isAdult"
-              checked={isAdult}
-              onChange={(event) =>
-                setIsAdult((event.target as HTMLInputElement).checked)}
-            />
-            Uncensored (anything goes)
-          </label>
-
           <label>
             Game title
             <input
@@ -100,12 +89,25 @@ export default function AdminGameForm(props: AdminGameFormProps) {
               placeholder="The Last Cipher"
             />
           </label>
-          <p class="inline-meta create-game-slug-preview">
-            URL preview: /game/{slugPreview}
-          </p>
+
+          <div class="create-game-title-meta">
+            <p class="inline-meta create-game-slug-preview">
+              /game/{slugPreview}
+            </p>
+            <label class="checkbox-row">
+              <input
+                type="checkbox"
+                name="isAdult"
+                checked={isAdult}
+                onChange={(event) =>
+                  setIsAdult((event.target as HTMLInputElement).checked)}
+              />
+              Uncensored
+            </label>
+          </div>
 
           <label class="create-game-span-2">
-            Intro text
+            Intro
             <textarea
               name="introText"
               required
@@ -119,84 +121,89 @@ export default function AdminGameForm(props: AdminGameFormProps) {
 
         <input type="hidden" name="characterCount" value={characterCount} />
 
-        <div class="stack create-game-section">
-          <h3>Characters</h3>
-          {characters.map((character, index) => (
-            <section
-              key={character.key}
-              class="character-row create-game-item create-game-character-item"
-            >
-              <div class="character-header">
-                <strong>Character {index + 1}</strong>
-                {characters.length > 1
-                  ? (
-                    <button
-                      class="btn ghost"
-                      type="button"
-                      onClick={() => removeCharacter(character.key)}
-                    >
-                      Remove
-                    </button>
-                  )
-                  : null}
-              </div>
-
-              <label>
-                Name
-                <input
-                  type="text"
-                  required
-                  name={`characterName_${index}`}
-                  value={character.name}
-                  onInput={(event) =>
-                    updateCharacter(character.key, {
-                      name: (event.target as HTMLInputElement).value,
-                    })}
-                  placeholder="Detective Morrow"
-                />
-              </label>
-
-              <label>
-                Secret key (optional)
-                <input
-                  type="text"
-                  name={`characterSecretKey_${index}`}
-                  value={character.secretKey}
-                  onInput={(event) =>
-                    updateCharacter(character.key, {
-                      secretKey: (event.target as HTMLInputElement).value,
-                    })}
-                  placeholder="MySecretKey123"
-                />
-                {secretKeyErrors.has(character.key)
-                  ? (
-                    <p class="notice bad" style="margin-top: 4px; font-size: 0.85rem;">
-                      {secretKeyErrors.get(character.key)}
-                    </p>
-                  )
-                  : null}
-              </label>
-
-              <label class="create-game-span-2">
-                Definition
-                <textarea
-                  name={`characterDefinition_${index}`}
-                  required
-                  value={character.definition}
-                  onInput={(event) =>
-                    updateCharacter(character.key, {
-                      definition: (event.target as HTMLTextAreaElement).value,
-                    })}
-                  placeholder="You are Detective Morrow. You know who committed the crime but you will only reveal clues gradually as the player earns your trust. You are sharp, composed, and test every claim."
-                />
-              </label>
-            </section>
-          ))}
-
-          <div class="action-row">
-            <button class="btn ghost" type="button" onClick={addCharacter}>
-              Add character
+        <div class="create-game-section">
+          <div class="create-game-characters-header">
+            <strong>Characters</strong>
+            <button class="btn ghost small" type="button" onClick={addCharacter}>
+              + Add
             </button>
+          </div>
+
+          <div class="stack">
+            {characters.map((character, index) => (
+              <section
+                key={character.key}
+                class="create-game-item create-game-character-item"
+              >
+                <div class="character-header">
+                  <span class="inline-meta">#{index + 1}</span>
+                  {characters.length > 1
+                    ? (
+                      <button
+                        class="btn ghost small"
+                        type="button"
+                        onClick={() => removeCharacter(character.key)}
+                      >
+                        Remove
+                      </button>
+                    )
+                    : null}
+                </div>
+
+                <label>
+                  Name
+                  <input
+                    type="text"
+                    required
+                    name={`characterName_${index}`}
+                    value={character.name}
+                    onInput={(event) =>
+                      updateCharacter(character.key, {
+                        name: (event.target as HTMLInputElement).value,
+                      })}
+                    placeholder="Detective Morrow"
+                  />
+                </label>
+
+                <label>
+                  Secret key <span class="inline-meta">(optional)</span>
+                  <input
+                    type="text"
+                    name={`characterSecretKey_${index}`}
+                    value={character.secretKey}
+                    onInput={(event) =>
+                      updateCharacter(character.key, {
+                        secretKey: (event.target as HTMLInputElement).value,
+                      })}
+                    placeholder="MySecretKey123"
+                  />
+                  {secretKeyErrors.has(character.key)
+                    ? (
+                      <p class="notice bad" style="margin-top: 3px; font-size: 0.82rem;">
+                        {secretKeyErrors.get(character.key)}
+                      </p>
+                    )
+                    : null}
+                </label>
+
+                <label class="create-game-span-2">
+                  Definition
+                  <textarea
+                    name={`characterDefinition_${index}`}
+                    required
+                    value={character.definition}
+                    onInput={(event) =>
+                      updateCharacter(character.key, {
+                        definition: (event.target as HTMLTextAreaElement).value,
+                      })}
+                    placeholder="You are Detective Morrow. You know who committed the crime but you will only reveal clues gradually as the player earns your trust. You are sharp, composed, and test every claim."
+                  />
+                </label>
+              </section>
+            ))}
+          </div>
+
+          <div class="action-row" style="margin-top: 8px;">
             <button class="btn primary" type="submit">Create game</button>
           </div>
         </div>
