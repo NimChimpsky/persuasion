@@ -98,22 +98,19 @@ async function hardenCharacter(
 export async function initializeGame(
   game: GameConfig,
 ): Promise<InitializeResult> {
+  const results = await Promise.all(
+    game.characters.map(async (character) => {
+      console.log(`[initializer] Hardening character: ${character.name}`);
+      const result = await hardenCharacter(character, game.title, game.introText);
+      return { character, result };
+    }),
+  );
+
   const errors: string[] = [];
-  const hardenedCharacters: Character[] = [];
-
-  for (const character of game.characters) {
-    console.log(`[initializer] Hardening character: ${character.name}`);
-    const result = await hardenCharacter(character, game.title, game.introText);
-
-    if (result.error) {
-      errors.push(result.error);
-    }
-
-    hardenedCharacters.push({
-      ...character,
-      systemPrompt: result.systemPrompt,
-    });
-  }
+  const hardenedCharacters: Character[] = results.map(({ character, result }) => {
+    if (result.error) errors.push(result.error);
+    return { ...character, systemPrompt: result.systemPrompt };
+  });
 
   return { characters: hardenedCharacters, errors };
 }

@@ -14,7 +14,10 @@ await getKv();
 // Controlled by RESET_GAME_STATE_ON_STARTUP in env.ts:
 // - true  => wipe game data + reseed
 // - false => seed-only upsert
-await resetAndSeedOliveFarmOnStartup();
+// Runs in the background so the server starts immediately.
+resetAndSeedOliveFarmOnStartup().catch((err) => {
+  console.error("[startup-reset] fatal:", err);
+});
 
 app.use(staticFiles());
 
