@@ -1,8 +1,4 @@
 import { streamCharacterReply } from "../../../../lib/llm.ts";
-import {
-  buildInitialProgressState,
-  incrementTurn,
-} from "../../../../lib/game_engine.ts";
 import { slugify } from "../../../../lib/slug.ts";
 import {
   getGameBySlug,
@@ -17,7 +13,6 @@ import {
 import type {
   Character,
   GameConfig,
-  ProgressState,
   TranscriptEvent,
   UserGameSnapshot,
 } from "../../../../shared/types.ts";
@@ -42,7 +37,6 @@ interface GameUpdateDirective {
 
 interface GameForUser extends GameConfig {
   encounteredCharacterIds: string[];
-  progressState: ProgressState;
 }
 
 function json(data: unknown, status = 200): Response {
@@ -70,11 +64,8 @@ function buildUserGameSnapshot(game: GameConfig): UserGameSnapshot {
   return {
     title: game.title,
     introText: game.introText,
-    characters: game.characters.map((character) => ({
-      ...character,
-    })),
+    characters: game.characters.map((character) => ({ ...character })),
     encounteredCharacterIds: [],
-    progressState: buildInitialProgressState(),
   };
 }
 
@@ -89,7 +80,6 @@ function getGameForUser(
       ? snapshot.characters
       : game.characters,
     encounteredCharacterIds: snapshot.encounteredCharacterIds ?? [],
-    progressState: snapshot.progressState ?? buildInitialProgressState(),
   };
 }
 
@@ -111,16 +101,11 @@ function parseGameUpdateDirective(replyText: string): GameUpdateDirective {
   );
 
   if (!match) {
-    return {
-      cleanText: replyText.trim(),
-      newCharacters: [],
-      unlockCharacterIds: [],
-    };
+    return { cleanText: replyText.trim(), newCharacters: [], unlockCharacterIds: [] };
   }
 
   const before = replyText.slice(0, match.index).trimEnd();
-  const after = replyText.slice((match.index ?? 0) + match[0].length)
-    .trimStart();
+  const after = replyText.slice((match.index ?? 0) + match[0].length).trimStart();
   const cleanText = `${before}${before && after ? "\n\n" : ""}${after}`.trim();
 
   try {
@@ -147,17 +132,9 @@ function parseGameUpdateDirective(replyText: string): GameUpdateDirective {
       .map((id) => slugify(String(id ?? "").trim()))
       .filter(Boolean);
 
-    return {
-      cleanText,
-      newCharacters,
-      unlockCharacterIds,
-    };
+    return { cleanText, newCharacters, unlockCharacterIds };
   } catch {
-    return {
-      cleanText,
-      newCharacters: [],
-      unlockCharacterIds: [],
-    };
+    return { cleanText, newCharacters: [], unlockCharacterIds: [] };
   }
 }
 
@@ -165,15 +142,12 @@ function mergeCharacters(
   existing: Character[],
   incoming: NewCharacterInput[],
 ): Character[] {
-  if (incoming.length === 0) {
-    return existing;
-  }
+  if (incoming.length === 0) return existing;
 
   const usedIds = new Set(existing.map((character) => character.id));
   const existingByName = new Set(
     existing.map((character) => character.name.trim().toLowerCase()),
   );
-
   const merged = [...existing];
 
   for (const item of incoming) {
@@ -200,28 +174,21 @@ function findCharacterById(
 ): Character | null {
   const target = characterId.trim().toLowerCase();
   if (!target) return null;
-  return characters.find((character) =>
-    character.id.toLowerCase() === target
-  ) ??
-    null;
+  return characters.find((c) => c.id.toLowerCase() === target) ?? null;
 }
 
 export const handler = define.handlers({
   async POST(ctx) {
     const userEmail = ctx.state.userEmail;
-    if (!userEmail) {
-      return json({ ok: false, error: "Unauthorized" }, 401);
-    }
+    if (!userEmail) return json({ ok: false, error: "Unauthorized" }, 401);
+
     const userProfile = ctx.state.userProfile;
-    if (!userProfile) {
-      return json({ ok: false, error: "Complete profile first" }, 409);
-    }
+    if (!userProfile) return json({ ok: false, error: "Complete profile first" }, 409);
 
     const slug = ctx.params.slug;
     const game = await getGameBySlug(slug);
-    if (!game || !game.active) {
-      return json({ ok: false, error: "Game not found" }, 404);
-    }
+    if (!game || !game.active) return json({ ok: false, error: "Game not found" }, 404);
+
     let payload: MessageRequest;
     try {
       payload = await ctx.req.json() as MessageRequest;
@@ -232,15 +199,9 @@ export const handler = define.handlers({
     const text = (payload.text ?? "").trim();
     const characterId = String(payload.characterId ?? "").trim().toLowerCase();
 
-    if (!text) {
-      return json({ ok: false, error: "Prompt cannot be empty" }, 400);
-    }
-    if (text.length > 2500) {
-      return json({ ok: false, error: "Prompt is too long" }, 400);
-    }
-    if (!characterId) {
-      return json({ ok: false, error: "Character is required" }, 400);
-    }
+    if (!text) return json({ ok: false, error: "Prompt cannot be empty" }, 400);
+    if (text.length > 2500) return json({ ok: false, error: "Prompt is too long" }, 400);
+    if (!characterId) return json({ ok: false, error: "Character is required" }, 400);
 
     const progress = await getUserProgress(userEmail, slug);
     const gameSnapshot = progress?.gameSnapshot ?? buildUserGameSnapshot(game);
@@ -249,15 +210,11 @@ export const handler = define.handlers({
     const assistantCharacter = await getAssistantCharacter();
     const runtimeCharacters = [
       assistantCharacter,
-      ...gameForUser.characters.filter((character) =>
-        character.id !== assistantCharacter.id
-      ),
+      ...gameForUser.characters.filter((c) => c.id !== assistantCharacter.id),
     ];
 
     const targetCharacter = findCharacterById(runtimeCharacters, characterId);
-    if (!targetCharacter) {
-      return json({ ok: false, error: "Unknown character" }, 400);
-    }
+    if (!targetCharacter) return json({ ok: false, error: "Unknown character" }, 400);
 
     const transcriptBase = progress?.transcript ?? "";
     const events = parseTranscript(transcriptBase);
@@ -275,19 +232,14 @@ export const handler = define.handlers({
       async start(controller) {
         const sendEvent = (event: string, data: unknown) => {
           controller.enqueue(
-            encoder.encode(
-              `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`,
-            ),
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
           );
         };
 
         try {
           sendEvent("ack", {
             userEvent,
-            character: {
-              id: targetCharacter.id,
-              name: targetCharacter.name,
-            },
+            character: { id: targetCharacter.id, name: targetCharacter.name },
           });
 
           const rawReplyText = await streamCharacterReply(
@@ -297,23 +249,16 @@ export const handler = define.handlers({
               assistantId: assistantCharacter.id,
               events: [...events, userEvent],
               userPrompt: text,
-              playerProfile: {
-                name: userProfile.name,
-                gender: userProfile.gender,
-              },
-              providerOverride: gameForUser.isAdult
-                ? "venice"
-                : undefined,
+              playerProfile: { name: userProfile.name, gender: userProfile.gender },
+              providerOverride: gameForUser.isAdult ? "venice" : undefined,
             },
             (delta) => {
-              if (!delta) return;
-              sendEvent("delta", { text: delta });
+              if (delta) sendEvent("delta", { text: delta });
             },
           );
 
           const parsedUpdate = parseGameUpdateDirective(rawReplyText);
-          const visibleReply = parsedUpdate.cleanText ||
-            `(${targetCharacter.name}) ...`;
+          const visibleReply = parsedUpdate.cleanText || `(${targetCharacter.name}) ...`;
 
           const characterEvent: TranscriptEvent = {
             role: "character",
@@ -323,11 +268,7 @@ export const handler = define.handlers({
             at: new Date().toISOString(),
           };
 
-          const appended = appendEvents(transcriptBase, [
-            userEvent,
-            characterEvent,
-          ]);
-
+          const appended = appendEvents(transcriptBase, [userEvent, characterEvent]);
           const updatedCharacters = mergeCharacters(
             gameForUser.characters,
             parsedUpdate.newCharacters,
@@ -337,9 +278,7 @@ export const handler = define.handlers({
             assistantCharacter.id,
             ...updatedCharacters.map((c) => c.id),
           ]);
-          const encounteredCharacterIds = new Set(
-            gameForUser.encounteredCharacterIds,
-          );
+          const encounteredCharacterIds = new Set(gameForUser.encounteredCharacterIds);
           if (validCharacterIds.has(targetCharacter.id)) {
             encounteredCharacterIds.add(targetCharacter.id);
           }
@@ -347,14 +286,11 @@ export const handler = define.handlers({
             if (validCharacterIds.has(id)) encounteredCharacterIds.add(id);
           }
 
-          const nextProgressState = incrementTurn(gameForUser.progressState);
-
           const nextSnapshot: UserGameSnapshot = {
             title: gameForUser.title,
             introText: gameForUser.introText,
             characters: updatedCharacters,
             encounteredCharacterIds: [...encounteredCharacterIds],
-            progressState: nextProgressState,
           };
 
           await saveUserProgress(userEmail, slug, {
@@ -364,31 +300,21 @@ export const handler = define.handlers({
           });
 
           const responseCharacters = [
-            {
-              id: assistantCharacter.id,
-              name: assistantCharacter.name,
-              bio: assistantCharacter.bio,
-            },
+            { id: assistantCharacter.id, name: assistantCharacter.name, bio: assistantCharacter.bio },
             ...updatedCharacters
-              .filter((character) => character.id !== assistantCharacter.id)
-              .map((character) => ({
-                id: character.id,
-                name: character.name,
-                bio: character.bio,
-              })),
+              .filter((c) => c.id !== assistantCharacter.id)
+              .map((c) => ({ id: c.id, name: c.name, bio: c.bio })),
           ];
 
           sendEvent("final", {
             characterEvent,
             characters: responseCharacters,
             encounteredCharacterIds: nextSnapshot.encounteredCharacterIds,
-            progressState: nextProgressState,
           });
         } catch (error) {
-          const message = error instanceof Error
-            ? error.message
-            : "Unable to complete message stream";
-          sendEvent("error", { error: message });
+          sendEvent("error", {
+            error: error instanceof Error ? error.message : "Unable to complete message stream",
+          });
         } finally {
           controller.close();
         }

@@ -14,10 +14,6 @@ export interface AssistantConfig {
   systemPrompt: string;
 }
 
-export interface ProgressState {
-  turn: number;
-}
-
 export type UserGender = "male" | "female" | "non-binary";
 
 export interface UserProfile {
@@ -64,7 +60,6 @@ export interface UserGameSnapshot {
   introText: string;
   characters: Character[];
   encounteredCharacterIds: string[];
-  progressState: ProgressState;
 }
 
 export interface UserProgress {

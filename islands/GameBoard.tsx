@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type {
-  ProgressState,
   TranscriptEvent,
 } from "../shared/types.ts";
 
@@ -16,7 +15,6 @@ interface GameBoardProps {
   characters: CharacterRef[];
   initialEvents: TranscriptEvent[];
   initialEncounteredCharacterIds: string[];
-  initialProgressState: ProgressState;
 }
 
 interface JsonErrorResponse {
@@ -37,7 +35,6 @@ interface StreamFinalPayload {
   characterEvent: TranscriptEvent;
   characters: CharacterRef[];
   encounteredCharacterIds: string[];
-  progressState?: ProgressState;
 }
 
 interface StreamErrorPayload {
@@ -177,9 +174,6 @@ export default function GameBoard(props: GameBoardProps) {
   const [streamingText, setStreamingText] = useState("");
   const [streamingCharacterName, setStreamingCharacterName] = useState("");
   const [streamingCharacterId, setStreamingCharacterId] = useState("");
-  const [progressState, setProgressState] = useState<ProgressState>(
-    props.initialProgressState,
-  );
   const [desktopBoardHeight, setDesktopBoardHeight] = useState<number | null>(
     null,
   );
@@ -363,9 +357,6 @@ export default function GameBoard(props: GameBoardProps) {
           setEvents((prev) => [...prev, payload.characterEvent]);
           setCharacters(payload.characters as CharacterRef[]);
           setEncounteredCharacterIds(payload.encounteredCharacterIds);
-          if (payload.progressState) {
-            setProgressState(payload.progressState);
-          }
           setStreamingText("");
           setStreamingCharacterName("");
           setStreamingCharacterId("");
@@ -445,9 +436,6 @@ export default function GameBoard(props: GameBoardProps) {
                 ? `Talking to ${activeCharacter.name}`
                 : "Select a character"}
             </strong>
-            <span class="inline-meta">
-              {`Turn ${progressState.turn}`}
-            </span>
           </div>
 
           <div class="messages" ref={messagesRef}>

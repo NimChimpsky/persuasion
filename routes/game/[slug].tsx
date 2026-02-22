@@ -1,6 +1,5 @@
 import { page } from "fresh";
 import GameBoard from "../../islands/GameBoard.tsx";
-import { buildInitialProgressState } from "../../lib/game_engine.ts";
 import {
   getGameBySlug,
   getGlobalAssistantConfig,
@@ -8,7 +7,6 @@ import {
 } from "../../lib/store.ts";
 import { parseTranscript } from "../../shared/transcript.ts";
 import type {
-  ProgressState,
   UserGameSnapshot,
 } from "../../shared/types.ts";
 import { define } from "../../utils.ts";
@@ -26,7 +24,6 @@ interface GamePageData {
   characters: CharacterForClient[];
   events: ReturnType<typeof parseTranscript>;
   encounteredCharacterIds: string[];
-  progressState: ProgressState;
 }
 
 interface GameForUser {
@@ -34,7 +31,6 @@ interface GameForUser {
   introText: string;
   characters: UserGameSnapshot["characters"];
   encounteredCharacterIds: string[];
-  progressState: ProgressState;
 }
 
 function detectEncounteredCharacterIds(
@@ -80,7 +76,6 @@ function buildDefaultGameForUser(
     introText: game.introText,
     characters: game.characters,
     encounteredCharacterIds: [],
-    progressState: buildInitialProgressState(),
   };
 }
 
@@ -114,7 +109,6 @@ export const handler = define.handlers<GamePageData>({
       ? {
         ...fallback,
         ...snapshot,
-        progressState: snapshot.progressState ?? fallback.progressState,
         characters: snapshot.characters?.length
           ? snapshot.characters
           : fallback.characters,
@@ -162,7 +156,6 @@ export const handler = define.handlers<GamePageData>({
       characters: displayCharacters,
       events,
       encounteredCharacterIds,
-      progressState: gameForUser.progressState,
     });
   },
 });
@@ -182,7 +175,6 @@ export default define.page<typeof handler>(function GamePage({ data, state }) {
           characters={data.characters}
           initialEvents={data.events}
           initialEncounteredCharacterIds={data.encounteredCharacterIds}
-          initialProgressState={data.progressState}
         />
       </div>
     </main>
