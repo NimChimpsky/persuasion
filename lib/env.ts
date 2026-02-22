@@ -31,6 +31,10 @@ export const env = {
     "https://api.mistral.ai/v1",
   mistralApiKey: Deno.env.get("MISTRAL_API_KEY") ?? "",
   mistralModel: Deno.env.get("MISTRAL_MODEL") ?? "mistral-small-latest",
+  veniceBaseUrl: Deno.env.get("VENICE_BASE_URL") ??
+    "https://api.venice.ai/api/v1",
+  veniceApiKey: Deno.env.get("VENICE_API_KEY") ?? "",
+  veniceModel: Deno.env.get("VENICE_MODEL") ?? "venice-uncensored",
   resendApiKey: Deno.env.get("RESEND_API_KEY") ?? "",
   emailFrom: Deno.env.get("EMAIL_FROM") ?? "gamesmaster@persuasion.technology",
   magicLinkSecret: Deno.env.get("MAGIC_LINK_SECRET") ??

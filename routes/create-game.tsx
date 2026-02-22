@@ -126,6 +126,7 @@ export const handler = define.handlers<PublishData>({
     const title = String(form.get("title") ?? "").trim();
     const introText = String(form.get("introText") ?? "").trim();
     const plotPointsText = String(form.get("plotPointsText") ?? "").trim();
+    const isAdult = String(form.get("isAdult") ?? "") === "on";
     const plotMilestones = parseMilestones(form);
     const characters = parseCharacters(form);
     const assistant = await getGlobalAssistantConfig();
@@ -159,6 +160,7 @@ export const handler = define.handlers<PublishData>({
       title,
       introText,
       plotPointsText,
+      isAdult,
       assistant,
       plotMilestones,
       characters,

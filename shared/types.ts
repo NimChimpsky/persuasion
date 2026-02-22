@@ -56,6 +56,7 @@ export interface GameConfig {
   title: string;
   introText: string;
   plotPointsText: string;
+  isAdult: boolean;
   assistant: AssistantConfig;
   plotMilestones: PlotMilestone[];
   characters: Character[];

@@ -38,6 +38,7 @@ export default function AdminGameForm(props: AdminGameFormProps) {
   const [title, setTitle] = useState("");
   const [introText, setIntroText] = useState("");
   const [plotPointsText, setPlotPointsText] = useState("");
+  const [isAdult, setIsAdult] = useState(false);
   const [characters, setCharacters] = useState<CharacterDraft[]>([
     createCharacterDraft(0),
   ]);
@@ -138,6 +139,17 @@ export default function AdminGameForm(props: AdminGameFormProps) {
                 setPlotPointsText((event.target as HTMLTextAreaElement).value)}
               placeholder="The city power grid is failing\nAn ally may be compromised\nA hidden archive key exists"
             />
+          </label>
+
+          <label class="checkbox-row">
+            <input
+              type="checkbox"
+              name="isAdult"
+              checked={isAdult}
+              onChange={(event) =>
+                setIsAdult((event.target as HTMLInputElement).checked)}
+            />
+            Adult (uses Venice provider for character replies)
           </label>
         </div>
 

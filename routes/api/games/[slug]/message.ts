@@ -338,6 +338,9 @@ export const handler = define.handlers({
               },
               progressState: gameForUser.progressState,
               prizeConditions: game.prizeConditions ?? [],
+              providerOverride: gameForUser.isAdult
+                ? "venice"
+                : undefined,
             },
             (delta) => {
               if (!delta) return;

@@ -286,6 +286,16 @@ label {
   gap: 4px;
 }
 
+.checkbox-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: auto;
+}
+
 input,
 textarea,
 select {

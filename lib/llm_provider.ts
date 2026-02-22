@@ -1,7 +1,7 @@
 import { env } from "./env.ts";
 import { getKv } from "./kv.ts";
 
-export type LlmProvider = "deepseek" | "openai" | "mistral";
+export type LlmProvider = "deepseek" | "openai" | "mistral" | "venice";
 
 interface LlmProviderRecord {
   provider: LlmProvider;
@@ -27,7 +27,8 @@ const LLM_PROVIDER_KEY = ["app_settings", "llm_provider"] as const;
 const DEFAULT_LLM_PROVIDER: LlmProvider = "mistral";
 
 export function isLlmProvider(value: string): value is LlmProvider {
-  return value === "deepseek" || value === "openai" || value === "mistral";
+  return value === "deepseek" || value === "openai" || value === "mistral" ||
+    value === "venice";
 }
 
 export function getLlmProviderConfig(provider: LlmProvider): LlmProviderConfig {
@@ -51,6 +52,16 @@ export function getLlmProviderConfig(provider: LlmProvider): LlmProviderConfig {
     };
   }
 
+  if (provider === "venice") {
+    return {
+      id: "venice",
+      label: "Venice",
+      baseUrl: env.veniceBaseUrl,
+      apiKey: env.veniceApiKey,
+      model: env.veniceModel,
+    };
+  }
+
   return {
     id: "deepseek",
     label: "DeepSeek",
@@ -61,7 +72,12 @@ export function getLlmProviderConfig(provider: LlmProvider): LlmProviderConfig {
 }
 
 export function listLlmProviderOptions(): LlmProviderOption[] {
-  const providers: LlmProvider[] = ["deepseek", "openai", "mistral"];
+  const providers: LlmProvider[] = [
+    "deepseek",
+    "openai",
+    "mistral",
+    "venice",
+  ];
   return providers.map((provider) => {
     const config = getLlmProviderConfig(provider);
     return {

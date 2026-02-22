@@ -336,6 +336,7 @@ export async function buildOliveFarmGameConfig(
     title: parsed.title,
     introText: parsed.introText,
     plotPointsText: parsed.plotPointsText,
+    isAdult: false,
     assistant: parsed.assistant,
     plotMilestones: parsed.plotMilestones,
     characters: parsed.characters,
@@ -360,6 +361,7 @@ export async function buildGameConfigFromFile(
     title: parsed.title,
     introText: parsed.introText,
     plotPointsText: parsed.plotPointsText,
+    isAdult: false,
     assistant: parsed.assistant,
     plotMilestones: parsed.plotMilestones,
     characters: parsed.characters,
@@ -374,7 +376,7 @@ export async function buildGameConfigFromFile(
 export async function buildChiantiGameConfig(
   now = new Date().toISOString(),
 ): Promise<GameConfig> {
-  return buildGameConfigFromFile(CHIANTI_OUTLINE_URL, now);
+  return await buildGameConfigFromFile(CHIANTI_OUTLINE_URL, now);
 }
 
 export async function upsertGameAndIndex(

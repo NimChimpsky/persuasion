@@ -1,4 +1,8 @@
-import { getActiveLlmProvider, getLlmProviderConfig } from "./llm_provider.ts";
+import {
+  getActiveLlmProvider,
+  getLlmProviderConfig,
+  type LlmProvider,
+} from "./llm_provider.ts";
 import { toModelContext } from "../shared/transcript.ts";
 import type {
   Character,
@@ -21,6 +25,7 @@ interface GenerateCharacterReplyArgs {
   };
   progressState: ProgressState;
   prizeConditions: PrizeCondition[];
+  providerOverride?: LlmProvider;
 }
 
 interface ChatCompletionResponse {
@@ -594,7 +599,7 @@ export async function streamCharacterReply(
   onDelta: (delta: string) => void,
 ): Promise<string> {
   const { game, character, events, userPrompt, progressState, prizeConditions } = args;
-  const provider = await getActiveLlmProvider();
+  const provider = args.providerOverride ?? await getActiveLlmProvider();
   const providerConfig = getLlmProviderConfig(provider);
 
   if (!providerConfig.apiKey) {
