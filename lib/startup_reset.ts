@@ -2,8 +2,7 @@ import { env } from "./env.ts";
 import { initializeGame } from "./game_initializer.ts";
 import { getKv } from "./kv.ts";
 import {
-  buildChiantiGameConfig,
-  buildOliveFarmGameConfig,
+  buildAllSeedGameConfigs,
   upsertGameAndIndex,
 } from "./local_seed_game.ts";
 import {
@@ -106,10 +105,7 @@ async function initializeAndPersist(
 }
 
 async function buildAllSeedGames(now: string) {
-  return [
-    await buildOliveFarmGameConfig(now),
-    await buildChiantiGameConfig(now),
-  ];
+  return await buildAllSeedGameConfigs(now);
 }
 
 async function seedOnly(

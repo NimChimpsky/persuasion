@@ -19,15 +19,7 @@ type SectionKey =
   | "characters"
   | "user";
 
-export const OLIVE_FARM_OUTLINE_URL = new URL(
-  "../seed-games/murder-at-the-olive-farm.v2.txt",
-  import.meta.url,
-);
-
-export const CHIANTI_OUTLINE_URL = new URL(
-  "../seed-games/a-nice-glass-of-chianti.txt",
-  import.meta.url,
-);
+const SEED_GAMES_DIR = new URL("../seed-games/", import.meta.url);
 
 function mapHeadingToSection(heading: string): SectionKey | null {
   const normalized = heading
@@ -180,16 +172,31 @@ export async function buildGameConfigFromFile(
   };
 }
 
-export async function buildOliveFarmGameConfig(
+export async function buildAllSeedGameConfigs(
   now = new Date().toISOString(),
-): Promise<GameConfig> {
-  return await buildGameConfigFromFile(OLIVE_FARM_OUTLINE_URL, now);
-}
+): Promise<GameConfig[]> {
+  const configs: GameConfig[] = [];
+  const errors: string[] = [];
 
-export async function buildChiantiGameConfig(
-  now = new Date().toISOString(),
-): Promise<GameConfig> {
-  return await buildGameConfigFromFile(CHIANTI_OUTLINE_URL, now);
+  for await (const entry of Deno.readDir(SEED_GAMES_DIR)) {
+    if (!entry.isFile || !entry.name.endsWith(".txt")) continue;
+    const fileUrl = new URL(entry.name, SEED_GAMES_DIR);
+    try {
+      const config = await buildGameConfigFromFile(fileUrl, now);
+      configs.push(config);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`${entry.name}: ${message}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    for (const err of errors) {
+      console.warn(`[seed-games] Skipping invalid file — ${err}`);
+    }
+  }
+
+  return configs;
 }
 
 export async function upsertGameAndIndex(
