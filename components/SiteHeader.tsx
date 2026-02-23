@@ -32,8 +32,11 @@ export default function SiteHeader(props: SiteHeaderProps) {
         <div class="header-spacer" />
         {props.creditBalance !== null
           ? (
-            <span class="header-credits" title="Credits remaining">
-              {props.creditBalance.toFixed(1)} cr
+            <span
+              class={`header-credits${props.creditBalance < 0 ? " header-credits--negative" : ""}`}
+              title="Credits remaining"
+            >
+              {props.creditBalance.toFixed(2)} credits
             </span>
           )
           : null}

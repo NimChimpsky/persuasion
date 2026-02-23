@@ -266,6 +266,9 @@ export const handler = define.handlers({
           // Deduct credits for this LLM call (fire-and-forget — don't block the response).
           const activeProvider = providerOverride ?? await getActiveLlmProvider();
           const creditsUsed = calculateCredits(activeProvider, replyResult.usage);
+          console.log(
+            `[credits] usage=${JSON.stringify(replyResult.usage)} creditsUsed=${creditsUsed} provider=${activeProvider}`,
+          );
           deductUserCredits(userEmail, creditsUsed).catch((err) => {
             console.error(`[credits] Failed to deduct for ${userEmail}: ${err}`);
           });
