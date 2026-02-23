@@ -361,6 +361,7 @@ export default function GameBoard(props: GameBoardProps) {
           setStreamingCharacterName("");
           setStreamingCharacterId("");
           sawFinal = true;
+          window.dispatchEvent(new CustomEvent("credits-updated"));
           return;
         }
 
