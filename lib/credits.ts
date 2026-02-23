@@ -3,23 +3,16 @@ export interface TokenUsage {
   outputTokens: number;
 }
 
-// Provider input/output pricing in USD per 1M tokens.
-// These are approximate current rates used to calculate credit charges.
-const PROVIDER_PRICING: Record<string, { input: number; output: number }> = {
-  openai: { input: 0.25, output: 2.00 }, // gpt-5-mini
-  deepseek: { input: 0.55, output: 2.19 }, // deepseek-reasoner (R1)
-  mistral: { input: 0.10, output: 0.30 }, // mistral-small-creative
-  venice: { input: 0.20, output: 0.90 }, // venice-uncensored
-};
+// Flat token pricing in USD per 1M tokens — provider-agnostic.
+// Adjust these two constants to change what users are charged.
+const INPUT_PRICE_PER_1M = 0.60;
+const OUTPUT_PRICE_PER_1M = 2.20;
 
-const FALLBACK_PRICING = { input: 0.50, output: 1.50 };
-
-// Credit system: $1 = 100 credits, 10× markup on actual provider cost.
+// Credit system: $1 = 100 credits, 10× markup on base token cost.
 // credits = actual_cost_usd × 10 × 100 = actual_cost_usd × 1000
-export function calculateCredits(provider: string, usage: TokenUsage): number {
-  const pricing = PROVIDER_PRICING[provider] ?? FALLBACK_PRICING;
-  const inputCost = (usage.inputTokens / 1_000_000) * pricing.input;
-  const outputCost = (usage.outputTokens / 1_000_000) * pricing.output;
+export function calculateCredits(_provider: string, usage: TokenUsage): number {
+  const inputCost = (usage.inputTokens / 1_000_000) * INPUT_PRICE_PER_1M;
+  const outputCost = (usage.outputTokens / 1_000_000) * OUTPUT_PRICE_PER_1M;
   const totalUsd = inputCost + outputCost;
   // Round up to 2 decimal places to avoid undercharging.
   return Math.ceil(totalUsd * 100_000) / 100;
