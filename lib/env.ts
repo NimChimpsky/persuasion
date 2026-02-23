@@ -22,7 +22,7 @@ export const env = {
   adminEmails: parseCsvSet(Deno.env.get("ADMIN_EMAILS")),
   openaiBaseUrl: Deno.env.get("OPENAI_BASE_URL") ?? "https://api.openai.com/v1",
   openaiApiKey: Deno.env.get("OPENAI_API_KEY") ?? "",
-  openaiModel: Deno.env.get("OPENAI_MODEL") ?? "gpt-4.1-mini",
+  openaiModel: Deno.env.get("OPENAI_MODEL") ?? "gpt-5-mini",
   deepseekBaseUrl: Deno.env.get("DEEPSEEK_BASE_URL") ??
     "https://api.deepseek.com/v1",
   deepseekApiKey: Deno.env.get("DEEPSEEK_API_KEY") ?? "",

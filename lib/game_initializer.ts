@@ -6,6 +6,7 @@ import {
   buildChatEndpoint,
   requestModelCompletion,
 } from "./llm_client.ts";
+import { addUsage, type TokenUsage, ZERO_USAGE } from "./credits.ts";
 import type { Character, GameConfig } from "../shared/types.ts";
 
 const HARDENING_PROMPT = `You are a game design assistant. Your job is to take a raw character definition and transform it into a hardened system prompt for an interactive narrative game.
@@ -31,13 +32,15 @@ Output ONLY the hardened system prompt text. Do not include explanations, header
 interface InitializeResult {
   characters: Character[];
   errors: string[];
+  provider: string;
+  usage: TokenUsage;
 }
 
 async function hardenCharacter(
   character: Character,
   gameTitle: string,
   gameIntro: string,
-): Promise<{ systemPrompt: string; error?: string }> {
+): Promise<{ systemPrompt: string; error?: string; usage: TokenUsage }> {
   const provider = await getActiveLlmProvider();
   const providerConfig = getLlmProviderConfig(provider);
 
@@ -45,6 +48,7 @@ async function hardenCharacter(
     return {
       systemPrompt: character.definition,
       error: `${providerConfig.label} not configured — using raw definition as fallback`,
+      usage: ZERO_USAGE,
     };
   }
 
@@ -68,6 +72,11 @@ async function hardenCharacter(
       userInput,
     );
 
+    const usage: TokenUsage = {
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+    };
+
     if (!result.ok) {
       console.error(
         `Initializer LLM error for ${character.name} (${result.status}): ${result.details}`,
@@ -75,6 +84,7 @@ async function hardenCharacter(
       return {
         systemPrompt: character.definition,
         error: `LLM error for ${character.name} — using raw definition`,
+        usage,
       };
     }
 
@@ -84,16 +94,18 @@ async function hardenCharacter(
       return {
         systemPrompt: character.definition,
         error: `Empty response for ${character.name} — using raw definition`,
+        usage,
       };
     }
 
-    return { systemPrompt: hardened };
+    return { systemPrompt: hardened, usage };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Initializer failed for ${character.name}: ${message}`);
     return {
       systemPrompt: character.definition,
       error: `Exception for ${character.name}: ${message}`,
+      usage: ZERO_USAGE,
     };
   }
 }
@@ -101,6 +113,8 @@ async function hardenCharacter(
 export async function initializeGame(
   game: GameConfig,
 ): Promise<InitializeResult> {
+  const provider = await getActiveLlmProvider();
+
   const results = await Promise.all(
     game.characters.map(async (character) => {
       console.log(`[initializer] Hardening character: ${character.name}`);
@@ -110,10 +124,12 @@ export async function initializeGame(
   );
 
   const errors: string[] = [];
+  let totalUsage: TokenUsage = ZERO_USAGE;
   const hardenedCharacters: Character[] = results.map(({ character, result }) => {
     if (result.error) errors.push(result.error);
+    totalUsage = addUsage(totalUsage, result.usage);
     return { ...character, systemPrompt: result.systemPrompt };
   });
 
-  return { characters: hardenedCharacters, errors };
+  return { characters: hardenedCharacters, errors, provider, usage: totalUsage };
 }

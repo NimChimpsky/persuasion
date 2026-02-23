@@ -8,6 +8,7 @@ import {
   extractFirstJsonObject,
   requestModelCompletion,
 } from "./llm_client.ts";
+import { addUsage, type TokenUsage, ZERO_USAGE } from "./credits.ts";
 import { toModelContext } from "../shared/transcript.ts";
 import type {
   Character,
@@ -298,7 +299,7 @@ async function guardResponseSafety(
   characterName: string,
   responseText: string,
   providerConfig: { baseUrl: string; apiKey: string; model: string },
-): Promise<{ safe: boolean; reason: string }> {
+): Promise<{ safe: boolean; reason: string; usage: TokenUsage }> {
   const endpoint = buildChatEndpoint(providerConfig.baseUrl);
 
   const systemPrompt = [
@@ -319,16 +320,22 @@ async function guardResponseSafety(
       userInput,
     );
 
-    if (!result.ok) return { safe: true, reason: "" };
+    const usage: TokenUsage = {
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+    };
+
+    if (!result.ok) return { safe: true, reason: "", usage };
 
     const rawJson = extractFirstJsonObject(result.text);
     const parsed = JSON.parse(rawJson) as { safe?: boolean; reason?: string };
     return {
       safe: parsed.safe !== false,
       reason: String(parsed.reason ?? ""),
+      usage,
     };
   } catch {
-    return { safe: true, reason: "" };
+    return { safe: true, reason: "", usage: ZERO_USAGE };
   }
 }
 
@@ -348,16 +355,23 @@ function detectSuspiciousInput(text: string): boolean {
   return patterns.some((p) => p.test(text));
 }
 
+export interface CharacterReplyResult {
+  text: string;
+  usage: TokenUsage;
+}
+
 export async function streamCharacterReply(
   args: GenerateCharacterReplyArgs,
   onDelta: (delta: string) => void,
-): Promise<string> {
+): Promise<CharacterReplyResult> {
   const { game, character, assistantId, events, userPrompt } = args;
   const provider = args.providerOverride ?? await getActiveLlmProvider();
   const providerConfig = getLlmProviderConfig(provider);
 
   if (!providerConfig.apiKey) {
-    return `(${character.name}) The game engine is unavailable because ${providerConfig.label} is not configured.`;
+    const text =
+      `(${character.name}) The game engine is unavailable because ${providerConfig.label} is not configured.`;
+    return { text, usage: ZERO_USAGE };
   }
 
   let baseSystemInstructions = buildSystemInstructions(
@@ -383,6 +397,7 @@ export async function streamCharacterReply(
   const endpoint = buildChatEndpoint(providerConfig.baseUrl);
   let correctionHint = "";
   let validatedText = "";
+  let totalUsage: TokenUsage = ZERO_USAGE;
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const systemInstructions = correctionHint
@@ -397,11 +412,18 @@ export async function streamCharacterReply(
       userInput,
     );
 
+    totalUsage = addUsage(totalUsage, {
+      inputTokens: completion.inputTokens,
+      outputTokens: completion.outputTokens,
+    });
+
     if (!completion.ok) {
       console.error(
         `LLM API error (${completion.status}) using ${provider} at ${endpoint}: ${completion.details}`,
       );
-      return `(${character.name}) The game engine is temporarily unavailable. Try again in a moment.`;
+      const text =
+        `(${character.name}) The game engine is temporarily unavailable. Try again in a moment.`;
+      return { text, usage: totalUsage };
     }
 
     const candidate = completion.text;
@@ -423,6 +445,8 @@ export async function streamCharacterReply(
         candidate,
         providerConfig,
       );
+
+      totalUsage = addUsage(totalUsage, guardResult.usage);
 
       if (guardResult.safe) {
         validatedText = candidate;
@@ -460,5 +484,5 @@ export async function streamCharacterReply(
     onDelta(chunk);
   }
 
-  return finalText;
+  return { text: finalText, usage: totalUsage };
 }

@@ -2,8 +2,10 @@ import { page } from "fresh";
 import AdminGameForm from "../islands/AdminGameForm.tsx";
 import { initializeGame } from "../lib/game_initializer.ts";
 import { ensureUniqueIds, slugify } from "../lib/slug.ts";
+import { calculateCredits } from "../lib/credits.ts";
 import {
   createGame,
+  deductUserCredits,
   getGameBySlug,
   listGames,
 } from "../lib/store.ts";
@@ -138,9 +140,7 @@ export const handler = define.handlers<PublishData>({
     };
 
     try {
-      await createGame(gameConfig);
-
-      // Initialize game with hardened prompts
+      // Harden character prompts first, then write to KV once.
       const result = await initializeGame(gameConfig);
       const initializedGame: GameConfig = {
         ...gameConfig,
@@ -148,6 +148,12 @@ export const handler = define.handlers<PublishData>({
         initialized: true,
       };
       await createGame(initializedGame);
+
+      // Deduct credits for initializer LLM calls (fire-and-forget).
+      const creditsUsed = calculateCredits(result.provider, result.usage);
+      deductUserCredits(ctx.state.userEmail, creditsUsed).catch((err) => {
+        console.error(`[credits] Failed to deduct for ${ctx.state.userEmail}: ${err}`);
+      });
     } catch {
       return Response.redirect(
         new URL("/create-game?error=Unable+to+create+game", ctx.req.url),

@@ -5,6 +5,7 @@ interface SiteHeaderProps {
   userEmail: string;
   isAdmin: boolean;
   userProfile: UserProfile | null;
+  creditBalance: number | null;
   activeGameHeader?: {
     slug: string;
     title: string;
@@ -29,6 +30,13 @@ export default function SiteHeader(props: SiteHeaderProps) {
           ? <a class="btn primary" href="/admin">admin</a>
           : null}
         <div class="header-spacer" />
+        {props.creditBalance !== null
+          ? (
+            <span class="header-credits" title="Credits remaining">
+              {props.creditBalance.toFixed(1)} cr
+            </span>
+          )
+          : null}
         <span class="header-email">{props.userEmail}</span>
         <a class="btn ghost" href="/profile">
           {props.userProfile ? "Profile" : "Complete profile"}

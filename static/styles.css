@@ -109,6 +109,16 @@ body.has-app-header .page-shell > .container {
   font-size: 0.92rem;
 }
 
+.header-credits {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 .header-subnav {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

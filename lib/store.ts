@@ -13,11 +13,13 @@ import type {
 const USER_PROGRESS_META_PREFIX = ["user_progress_meta"] as const;
 const USER_PROGRESS_CHUNK_PREFIX = ["user_progress_chunk"] as const;
 const USER_PROFILE_PREFIX = ["user_profile"] as const;
+const USER_CREDITS_PREFIX = ["user_credits"] as const;
 const GLOBAL_ASSISTANT_KEY = ["global_assistant_config"] as const;
 const PROGRESS_STORAGE_VERSION = "chunks_v1";
 const PROGRESS_CODEC = "gzip";
 const CHUNK_EVENT_SIZE = 80;
 const SAVE_RETRY_LIMIT = 3;
+const INITIAL_CREDITS = 100;
 const VALID_GENDERS: ReadonlySet<UserGender> = new Set([
   "male",
   "female",
@@ -470,4 +472,50 @@ export async function clearUserProgressForGame(
   }
 
   await op.commit();
+}
+
+function creditsKey(email: string): Deno.KvKey {
+  return [...USER_CREDITS_PREFIX, normalizeProfileEmail(email)];
+}
+
+export async function getUserCredits(email: string): Promise<number> {
+  const kv = await getKv();
+  const entry = await kv.get<number>(creditsKey(email));
+  return entry.value ?? INITIAL_CREDITS;
+}
+
+export async function deductUserCredits(
+  email: string,
+  amount: number,
+): Promise<void> {
+  if (amount <= 0) return;
+  const kv = await getKv();
+  const key = creditsKey(email);
+
+  for (let attempt = 0; attempt < SAVE_RETRY_LIMIT; attempt++) {
+    const entry = await kv.get<number>(key);
+    const current = entry.value ?? INITIAL_CREDITS;
+    const next = Math.round((current - amount) * 100) / 100;
+    const result = await kv.atomic().check(entry).set(key, next).commit();
+    if (result.ok) return;
+  }
+}
+
+export async function addUserCredits(
+  email: string,
+  amount: number,
+): Promise<number> {
+  if (amount <= 0) return await getUserCredits(email);
+  const kv = await getKv();
+  const key = creditsKey(email);
+
+  for (let attempt = 0; attempt < SAVE_RETRY_LIMIT; attempt++) {
+    const entry = await kv.get<number>(key);
+    const current = entry.value ?? INITIAL_CREDITS;
+    const next = Math.round((current + amount) * 100) / 100;
+    const result = await kv.atomic().check(entry).set(key, next).commit();
+    if (result.ok) return next;
+  }
+
+  return await getUserCredits(email);
 }

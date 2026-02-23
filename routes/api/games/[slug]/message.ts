@@ -1,11 +1,14 @@
 import { streamCharacterReply } from "../../../../lib/llm.ts";
 import { slugify } from "../../../../lib/slug.ts";
+import { calculateCredits } from "../../../../lib/credits.ts";
 import {
+  deductUserCredits,
   getGameBySlug,
   getGlobalAssistantConfig,
   getUserProgress,
   saveUserProgress,
 } from "../../../../lib/store.ts";
+import { getActiveLlmProvider } from "../../../../lib/llm_provider.ts";
 import {
   appendEvents,
   parseTranscript,
@@ -242,7 +245,8 @@ export const handler = define.handlers({
             character: { id: targetCharacter.id, name: targetCharacter.name },
           });
 
-          const rawReplyText = await streamCharacterReply(
+          const providerOverride = gameForUser.isAdult ? "venice" : undefined;
+          const replyResult = await streamCharacterReply(
             {
               game: gameForUser,
               character: targetCharacter,
@@ -250,12 +254,21 @@ export const handler = define.handlers({
               events: [...events, userEvent],
               userPrompt: text,
               playerProfile: { name: userProfile.name, gender: userProfile.gender },
-              providerOverride: gameForUser.isAdult ? "venice" : undefined,
+              providerOverride,
             },
             (delta) => {
               if (delta) sendEvent("delta", { text: delta });
             },
           );
+
+          const rawReplyText = replyResult.text;
+
+          // Deduct credits for this LLM call (fire-and-forget — don't block the response).
+          const activeProvider = providerOverride ?? await getActiveLlmProvider();
+          const creditsUsed = calculateCredits(activeProvider, replyResult.usage);
+          deductUserCredits(userEmail, creditsUsed).catch((err) => {
+            console.error(`[credits] Failed to deduct for ${userEmail}: ${err}`);
+          });
 
           const parsedUpdate = parseGameUpdateDirective(rawReplyText);
           const visibleReply = parsedUpdate.cleanText || `(${targetCharacter.name}) ...`;

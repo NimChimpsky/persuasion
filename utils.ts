@@ -6,6 +6,7 @@ export interface State {
   userEmail: string | null;
   isAdmin: boolean;
   userProfile: UserProfile | null;
+  creditBalance: number | null;
   activeGameHeader?: {
     slug: string;
     title: string;

@@ -2,7 +2,7 @@ import { App, staticFiles } from "fresh";
 import { getSessionEmail } from "./lib/auth.ts";
 import { isAdminEmail } from "./lib/env.ts";
 import { getKv } from "./lib/kv.ts";
-import { getUserProfile } from "./lib/store.ts";
+import { getUserCredits, getUserProfile } from "./lib/store.ts";
 import { startupSync } from "./lib/startup_reset.ts";
 import { define, type State } from "./utils.ts";
 
@@ -30,12 +30,15 @@ function isAllowedWithoutProfile(pathname: string): boolean {
 app.use(define.middleware(async (ctx) => {
   const url = new URL(ctx.req.url);
   const email = await getSessionEmail(ctx.req);
-  const userProfile = email ? await getUserProfile(email) : null;
+  const [userProfile, creditBalance] = email
+    ? await Promise.all([getUserProfile(email), getUserCredits(email)])
+    : [null, null];
 
   ctx.state.title = "Persuasion";
   ctx.state.userEmail = email;
   ctx.state.isAdmin = email ? isAdminEmail(email) : false;
   ctx.state.userProfile = userProfile;
+  ctx.state.creditBalance = creditBalance;
 
   if (email && !userProfile && !isAllowedWithoutProfile(url.pathname)) {
     if (url.pathname.startsWith("/api/")) {

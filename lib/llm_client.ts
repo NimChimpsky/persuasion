@@ -4,6 +4,10 @@ interface ChatCompletionResponse {
       content?: string | Array<{ type?: string; text?: string }>;
     };
   }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+  };
 }
 
 export function buildChatEndpoint(baseUrl: string): string {
@@ -35,13 +39,22 @@ export function extractFirstJsonObject(text: string): string {
   return text.trim();
 }
 
+export interface CompletionResult {
+  ok: boolean;
+  text: string;
+  status: number;
+  details: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export async function requestModelCompletion(
   endpoint: string,
   apiKey: string,
   model: string,
   systemInstructions: string,
   userInput: string,
-): Promise<{ ok: boolean; text: string; status: number; details: string }> {
+): Promise<CompletionResult> {
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -64,6 +77,8 @@ export async function requestModelCompletion(
       text: "",
       status: response.status,
       details,
+      inputTokens: 0,
+      outputTokens: 0,
     };
   }
 
@@ -73,5 +88,7 @@ export async function requestModelCompletion(
     text: extractMessageContent(body).trim(),
     status: response.status,
     details: "",
+    inputTokens: body.usage?.prompt_tokens ?? 0,
+    outputTokens: body.usage?.completion_tokens ?? 0,
   };
 }
