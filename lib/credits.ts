@@ -7,7 +7,7 @@ export interface TokenUsage {
 // These are approximate current rates used to calculate credit charges.
 const PROVIDER_PRICING: Record<string, { input: number; output: number }> = {
   openai: { input: 0.25, output: 2.00 }, // gpt-5-mini
-  deepseek: { input: 0.28, output: 0.42 }, // deepseek-reasoner (V3.2)
+  deepseek: { input: 0.55, output: 2.19 }, // deepseek-reasoner (R1)
   mistral: { input: 0.10, output: 0.30 }, // mistral-small-creative
   venice: { input: 0.20, output: 0.90 }, // venice-uncensored
 };
