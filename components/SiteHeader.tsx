@@ -25,10 +25,10 @@ export default function SiteHeader(props: SiteHeaderProps) {
           />
           <span>PERSUASION</span>
         </a>
-        <div class="header-spacer" />
         {props.isAdmin
           ? <a class="btn primary" href="/admin">admin</a>
           : null}
+        <div class="header-spacer" />
         <span class="header-email">{props.userEmail}</span>
         <a class="btn ghost" href="/profile">
           {props.userProfile ? "Profile" : "Complete profile"}
