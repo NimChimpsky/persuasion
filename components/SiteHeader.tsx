@@ -1,4 +1,4 @@
-import CreditBalance from "../islands/CreditBalance.tsx";
+import CreditBattery from "../islands/CreditBattery.tsx";
 import ResetGameButton from "../islands/ResetGameButton.tsx";
 import type { UserProfile } from "../shared/types.ts";
 
@@ -7,6 +7,7 @@ interface SiteHeaderProps {
   isAdmin: boolean;
   userProfile: UserProfile | null;
   creditBalance: number | null;
+  creditLastTopup: number | null;
   activeGameHeader?: {
     slug: string;
     title: string;
@@ -32,7 +33,12 @@ export default function SiteHeader(props: SiteHeaderProps) {
           : null}
         <div class="header-spacer" />
         {props.creditBalance !== null
-          ? <CreditBalance initial={props.creditBalance} />
+          ? (
+            <CreditBattery
+              initialBalance={props.creditBalance}
+              initialLastTopup={props.creditLastTopup ?? 100}
+            />
+          )
           : null}
         <span class="header-email">{props.userEmail}</span>
         <a class="btn ghost" href="/profile">

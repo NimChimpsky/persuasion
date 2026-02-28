@@ -908,6 +908,83 @@ select:focus {
   }
 }
 
+/* Battery credit icon */
+.battery-svg {
+  cursor: pointer;
+  width: 36px;
+  height: 18px;
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: var(--fg);
+  flex: 0 0 auto;
+}
+
+.battery-svg svg {
+  display: block;
+}
+
+/* Credit purchase modal */
+.credit-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.credit-modal {
+  min-width: 280px;
+  padding: 24px;
+  position: relative;
+}
+
+/* Collapsible intro band */
+.intro-band {
+  width: 100%;
+  background: var(--surface-raised, #f3f3f3);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  margin-bottom: 8px;
+}
+
+.intro-band__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.intro-band__inner p {
+  flex: 1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.intro-band__toggle {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.intro-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--surface-raised, #f3f3f3);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  font: inherit;
+}
+
 @media (min-width: 981px) {
   .game-page-shell {
     min-height: 0;

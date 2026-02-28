@@ -1,4 +1,4 @@
-import { getUserCredits } from "../../lib/store.ts";
+import { getUserCredits, getUserLastTopup } from "../../lib/store.ts";
 import { define } from "../../utils.ts";
 
 export const handler = define.handlers({
@@ -10,8 +10,11 @@ export const handler = define.handlers({
         headers: { "content-type": "application/json" },
       });
     }
-    const balance = await getUserCredits(email);
-    return new Response(JSON.stringify({ balance }), {
+    const [balance, lastTopup] = await Promise.all([
+      getUserCredits(email),
+      getUserLastTopup(email),
+    ]);
+    return new Response(JSON.stringify({ balance, lastTopup }), {
       headers: { "content-type": "application/json" },
     });
   },

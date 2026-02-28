@@ -14,6 +14,7 @@ const USER_PROGRESS_META_PREFIX = ["user_progress_meta"] as const;
 const USER_PROGRESS_CHUNK_PREFIX = ["user_progress_chunk"] as const;
 const USER_PROFILE_PREFIX = ["user_profile"] as const;
 const USER_CREDITS_PREFIX = ["user_credits"] as const;
+const USER_CREDITS_TOPUP_PREFIX = ["user_credits_topup"] as const;
 const GLOBAL_ASSISTANT_KEY = ["global_assistant_config"] as const;
 const PROGRESS_STORAGE_VERSION = "chunks_v1";
 const PROGRESS_CODEC = "gzip";
@@ -478,9 +479,19 @@ function creditsKey(email: string): Deno.KvKey {
   return [...USER_CREDITS_PREFIX, normalizeProfileEmail(email)];
 }
 
+function creditsTopupKey(email: string): Deno.KvKey {
+  return [...USER_CREDITS_TOPUP_PREFIX, normalizeProfileEmail(email)];
+}
+
 export async function getUserCredits(email: string): Promise<number> {
   const kv = await getKv();
   const entry = await kv.get<number>(creditsKey(email));
+  return entry.value ?? INITIAL_CREDITS;
+}
+
+export async function getUserLastTopup(email: string): Promise<number> {
+  const kv = await getKv();
+  const entry = await kv.get<number>(creditsTopupKey(email));
   return entry.value ?? INITIAL_CREDITS;
 }
 
@@ -504,6 +515,7 @@ export async function deductUserCredits(
 export async function addUserCredits(
   email: string,
   amount: number,
+  isTopup = false,
 ): Promise<number> {
   if (amount <= 0) return await getUserCredits(email);
   const kv = await getKv();
@@ -514,7 +526,12 @@ export async function addUserCredits(
     const current = entry.value ?? INITIAL_CREDITS;
     const next = Math.round((current + amount) * 100) / 100;
     const result = await kv.atomic().check(entry).set(key, next).commit();
-    if (result.ok) return next;
+    if (result.ok) {
+      if (isTopup) {
+        await kv.set(creditsTopupKey(email), amount);
+      }
+      return next;
+    }
   }
 
   return await getUserCredits(email);

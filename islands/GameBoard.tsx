@@ -174,6 +174,7 @@ export default function GameBoard(props: GameBoardProps) {
   const [streamingText, setStreamingText] = useState("");
   const [streamingCharacterName, setStreamingCharacterName] = useState("");
   const [streamingCharacterId, setStreamingCharacterId] = useState("");
+  const [introCollapsed, setIntroCollapsed] = useState(false);
   const [desktopBoardHeight, setDesktopBoardHeight] = useState<number | null>(
     null,
   );
@@ -385,14 +386,36 @@ export default function GameBoard(props: GameBoardProps) {
   };
 
   return (
-    <section class="game-layout" ref={layoutRef} style={layoutStyle}>
-      <aside class="game-characters">
-        <div class="character-panel">
-          <section class="card character-intro">
-            <p>{props.introText}</p>
-          </section>
-          <p class="character-panel-title">Select character to talk to</p>
-          <div class="character-grid">
+    <>
+      {introCollapsed
+        ? (
+          <button
+            type="button"
+            class="intro-pill"
+            onClick={() => setIntroCollapsed(false)}
+          >
+            📖 Story
+          </button>
+        )
+        : (
+          <div class="intro-band">
+            <div class="intro-band__inner">
+              <p>{props.introText}</p>
+              <button
+                type="button"
+                class="intro-band__toggle btn ghost"
+                onClick={() => setIntroCollapsed(true)}
+              >
+                ▲ Hide
+              </button>
+            </div>
+          </div>
+        )}
+      <section class="game-layout" ref={layoutRef} style={layoutStyle}>
+        <aside class="game-characters">
+          <div class="character-panel">
+            <p class="character-panel-title">Select character to talk to</p>
+            <div class="character-grid">
             {characters.map((character) => {
               const encountered = encounteredSet.has(character.id.toLowerCase());
               const isActive = character.id === activeCharacterId;
@@ -418,18 +441,19 @@ export default function GameBoard(props: GameBoardProps) {
                 </button>
               );
             })}
-            {hasPlaceholderSlot
-              ? (
-                <div class="card character-placeholder">
-                  Select a character to chat
-                </div>
-              )
-              : null}
+              {hasPlaceholderSlot
+                ? (
+                  <div class="card character-placeholder">
+                    Select a character to chat
+                  </div>
+                )
+                : null}
+            </div>
           </div>
-        </div>
-      </aside>
+        </aside>
 
-      <article class="card chat-panel">
+
+        <article class="card chat-panel">
         <div class="chat-shell">
           <div class="chat-header">
             <strong>
@@ -510,7 +534,8 @@ export default function GameBoard(props: GameBoardProps) {
           </form>
         </div>
         {error ? <p class="notice bad" style="margin: 8px;">{error}</p> : null}
-      </article>
-    </section>
+        </article>
+      </section>
+    </>
   );
 }

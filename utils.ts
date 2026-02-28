@@ -7,6 +7,7 @@ export interface State {
   isAdmin: boolean;
   userProfile: UserProfile | null;
   creditBalance: number | null;
+  creditLastTopup: number | null;
   activeGameHeader?: {
     slug: string;
     title: string;

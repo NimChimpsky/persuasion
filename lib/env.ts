@@ -35,6 +35,8 @@ export const env = {
     "https://api.venice.ai/api/v1",
   veniceApiKey: Deno.env.get("VENICE_API_KEY") ?? "",
   veniceModel: Deno.env.get("VENICE_MODEL") ?? "venice-uncensored",
+  stripeSecretKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
+  stripeWebhookSecret: Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "",
   resendApiKey: Deno.env.get("RESEND_API_KEY") ?? "",
   emailFrom: Deno.env.get("EMAIL_FROM") ?? "gamesmaster@persuasion.technology",
   magicLinkSecret: Deno.env.get("MAGIC_LINK_SECRET") ??

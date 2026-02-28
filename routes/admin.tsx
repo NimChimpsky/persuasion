@@ -9,6 +9,7 @@ import {
   setActiveLlmProvider,
 } from "../lib/llm_provider.ts";
 import {
+  addUserCredits,
   deleteGameBySlug,
   getGlobalAssistantConfig,
   listGames,
@@ -96,6 +97,26 @@ export const handler = define.handlers<AdminData>({
 
     const form = await ctx.req.formData();
     const intent = String(form.get("intent") ?? "");
+
+    if (intent === "topup_credits") {
+      const topupEmail = String(form.get("topupEmail") ?? "").trim();
+      const topupAmount = parseInt(
+        String(form.get("topupAmount") ?? "0"),
+        10,
+      );
+
+      if (!topupEmail) {
+        return adminRedirect(ctx, { error: "Enter a user email for top-up." });
+      }
+      if (topupAmount !== 100 && topupAmount !== 1000) {
+        return adminRedirect(ctx, { error: "Invalid top-up amount." });
+      }
+
+      await addUserCredits(topupEmail, topupAmount, true);
+      return adminRedirect(ctx, {
+        message: `Added ${topupAmount} credits to ${topupEmail}.`,
+      });
+    }
 
     if (intent === "delete_game") {
       const slug = String(form.get("gameSlug") ?? "").trim();
@@ -190,6 +211,49 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
 
         {globalMessage ? <p class="notice good">{globalMessage}</p> : null}
         {globalError ? <p class="notice bad">{globalError}</p> : null}
+
+        {!data.forbidden
+          ? (
+            <section class="stack">
+              <h2 class="display">Credit Top-Up</h2>
+              <form
+                method="POST"
+                action="/admin"
+                class="form-grid card"
+                style="padding: 16px;"
+              >
+                <input type="hidden" name="intent" value="topup_credits" />
+                <label>
+                  User email
+                  <input
+                    type="email"
+                    name="topupEmail"
+                    placeholder="user@example.com"
+                    required
+                  />
+                </label>
+                <div class="action-row">
+                  <button
+                    class="btn primary"
+                    type="submit"
+                    name="topupAmount"
+                    value="100"
+                  >
+                    +100 credits
+                  </button>
+                  <button
+                    class="btn ghost"
+                    type="submit"
+                    name="topupAmount"
+                    value="1000"
+                  >
+                    +1000 credits
+                  </button>
+                </div>
+              </form>
+            </section>
+          )
+          : null}
 
         {!data.forbidden
           ? (

@@ -24,7 +24,7 @@ const WIPE_PREFIXES: Deno.KvKey[] = [
 const DEFAULT_ASSISTANT_CONFIG: AssistantConfig = {
   id: "assistant",
   name: "Assistant",
-  bio: "Your investigation assistant who helps you decide practical next steps.",
+  bio: "AI Assistant who can provide tips and guide you through your journey to find the secret, if stuck just ask!",
   systemPrompt:
     "You are the player's investigation assistant. Stay supportive, practical, and grounded in observable evidence. Ask useful follow-up questions, suggest sensible next steps, and avoid spoilers.",
 };
