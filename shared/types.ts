@@ -43,6 +43,7 @@ export interface GameIndexEntry {
   active: boolean;
   characterCount: number;
   updatedAt: string;
+  createdBy?: string;
 }
 
 export type TranscriptRole = "user" | "character";

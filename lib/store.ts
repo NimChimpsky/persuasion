@@ -1,5 +1,6 @@
 import { getKv } from "./kv.ts";
 import { parseTranscript } from "../shared/transcript.ts";
+import { DEFAULT_PRICING, type PricingConfig } from "./credits.ts";
 import type {
   AssistantConfig,
   GameConfig,
@@ -14,6 +15,8 @@ const USER_PROGRESS_META_PREFIX = ["user_progress_meta"] as const;
 const USER_PROGRESS_CHUNK_PREFIX = ["user_progress_chunk"] as const;
 const USER_PROFILE_PREFIX = ["user_profile"] as const;
 const USER_CREDITS_PREFIX = ["user_credits"] as const;
+const GAME_CREDITS_PREFIX = ["game_credits"] as const;
+const PRICING_KEY = ["app_settings", "pricing"] as const;
 const GLOBAL_ASSISTANT_KEY = ["global_assistant_config"] as const;
 const PROGRESS_STORAGE_VERSION = "chunks_v1";
 const PROGRESS_CODEC = "gzip";
@@ -296,6 +299,7 @@ export async function createGame(game: GameConfig): Promise<void> {
     active: game.active,
     characterCount: game.characters.length,
     updatedAt: game.updatedAt,
+    createdBy: game.createdBy,
   };
 
   const result = await kv.atomic()
@@ -518,4 +522,71 @@ export async function addUserCredits(
   }
 
   return await getUserCredits(email);
+}
+
+export async function getPricingConfig(): Promise<PricingConfig> {
+  const kv = await getKv();
+  const entry = await kv.get<PricingConfig>(PRICING_KEY);
+  return entry.value ?? DEFAULT_PRICING;
+}
+
+export async function setPricingConfig(config: PricingConfig): Promise<void> {
+  const kv = await getKv();
+  await kv.set(PRICING_KEY, config);
+}
+
+function gameCreditsKey(slug: string): Deno.KvKey {
+  return [...GAME_CREDITS_PREFIX, slug];
+}
+
+export async function addGameCredits(slug: string, amount: number): Promise<void> {
+  if (amount <= 0) return;
+  const kv = await getKv();
+  const key = gameCreditsKey(slug);
+
+  for (let attempt = 0; attempt < SAVE_RETRY_LIMIT; attempt++) {
+    const entry = await kv.get<number>(key);
+    const current = entry.value ?? 0;
+    const next = Math.round((current + amount) * 100) / 100;
+    const result = await kv.atomic().check(entry).set(key, next).commit();
+    if (result.ok) return;
+  }
+}
+
+export async function getGameCredits(slug: string): Promise<number> {
+  const kv = await getKv();
+  const entry = await kv.get<number>(gameCreditsKey(slug));
+  return entry.value ?? 0;
+}
+
+export async function getMultipleGameCredits(
+  slugs: string[],
+): Promise<Map<string, number>> {
+  if (slugs.length === 0) return new Map();
+  const kv = await getKv();
+  const keys = slugs.map((slug) => gameCreditsKey(slug));
+  const entries = await kv.getMany<number[]>(keys);
+  const map = new Map<string, number>();
+  slugs.forEach((slug, i) => {
+    map.set(slug, entries[i].value ?? 0);
+  });
+  return map;
+}
+
+export async function listGamesByCreator(
+  email: string,
+): Promise<GameIndexEntry[]> {
+  const kv = await getKv();
+  const games: GameIndexEntry[] = [];
+  const normalized = email.trim().toLowerCase();
+
+  for await (
+    const entry of kv.list<GameIndexEntry>({ prefix: ["games_index"] })
+  ) {
+    if (entry.value.active && entry.value.createdBy === normalized) {
+      games.push(entry.value);
+    }
+  }
+
+  return games.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }

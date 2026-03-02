@@ -4,9 +4,12 @@ import { initializeGame } from "../lib/game_initializer.ts";
 import { ensureUniqueIds, slugify } from "../lib/slug.ts";
 import { calculateCredits } from "../lib/credits.ts";
 import {
+  addGameCredits,
   createGame,
   deductUserCredits,
   getGameBySlug,
+  getPricingConfig,
+  getUserCredits,
   listGames,
 } from "../lib/store.ts";
 import type {
@@ -122,6 +125,14 @@ export const handler = define.handlers<PublishData>({
       );
     }
 
+    const currentBalance = await getUserCredits(ctx.state.userEmail);
+    if (currentBalance < -0.5) {
+      return Response.redirect(
+        new URL("/create-game?error=Insufficient+credits", ctx.req.url),
+        303,
+      );
+    }
+
     const baseSlug = slugify(title);
     const slug = await findAvailableSlug(baseSlug);
 
@@ -141,7 +152,10 @@ export const handler = define.handlers<PublishData>({
 
     try {
       // Harden character prompts first, then write to KV once.
-      const result = await initializeGame(gameConfig);
+      const [result, pricing] = await Promise.all([
+        initializeGame(gameConfig),
+        getPricingConfig(),
+      ]);
       const initializedGame: GameConfig = {
         ...gameConfig,
         characters: result.characters,
@@ -150,10 +164,11 @@ export const handler = define.handlers<PublishData>({
       await createGame(initializedGame);
 
       // Deduct credits for initializer LLM calls (fire-and-forget).
-      const creditsUsed = calculateCredits(result.provider, result.usage);
+      const creditsUsed = calculateCredits(result.provider, result.usage, pricing);
       deductUserCredits(ctx.state.userEmail, creditsUsed).catch((err) => {
         console.error(`[credits] Failed to deduct for ${ctx.state.userEmail}: ${err}`);
       });
+      addGameCredits(slug, creditsUsed).catch(() => {});
     } catch {
       return Response.redirect(
         new URL("/create-game?error=Unable+to+create+game", ctx.req.url),

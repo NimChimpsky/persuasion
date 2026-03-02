@@ -11,9 +11,12 @@ import {
 import {
   deleteGameBySlug,
   getGlobalAssistantConfig,
+  getPricingConfig,
   listGames,
   setGlobalAssistantConfig,
+  setPricingConfig,
 } from "../lib/store.ts";
+import { DEFAULT_PRICING, type PricingConfig } from "../lib/credits.ts";
 import { slugify } from "../lib/slug.ts";
 import type { AssistantConfig } from "../shared/types.ts";
 import { define } from "../utils.ts";
@@ -25,6 +28,7 @@ interface AdminData {
   currentLlmProvider: LlmProvider;
   llmProviderOptions: LlmProviderOption[];
   assistantConfig: AssistantConfig | null;
+  pricing: PricingConfig;
   message: string;
   error: string;
   forbidden: boolean;
@@ -51,6 +55,7 @@ export const handler = define.handlers<AdminData>({
           currentLlmProvider: "mistral",
           llmProviderOptions: listLlmProviderOptions(),
           assistantConfig: null,
+          pricing: DEFAULT_PRICING,
           message: "",
           error: "",
           forbidden: true,
@@ -63,14 +68,18 @@ export const handler = define.handlers<AdminData>({
     const url = new URL(ctx.req.url);
     const message = url.searchParams.get("message") ?? "";
     const error = url.searchParams.get("error") ?? "";
-    const currentLlmProvider = await getActiveLlmProvider();
-    const assistantConfig = await getGlobalAssistantConfig();
-    const games = await listGames();
+    const [currentLlmProvider, assistantConfig, games, pricing] = await Promise.all([
+      getActiveLlmProvider(),
+      getGlobalAssistantConfig(),
+      listGames(),
+      getPricingConfig(),
+    ]);
 
     return page({
       currentLlmProvider,
       llmProviderOptions: listLlmProviderOptions(),
       assistantConfig,
+      pricing,
       message,
       error,
       forbidden: false,
@@ -122,6 +131,20 @@ export const handler = define.handlers<AdminData>({
       return adminRedirect(ctx, {
         message: `LLM provider switched to ${providerLabel}.`,
       });
+    }
+
+    if (intent === "set_pricing") {
+      const inputRaw = String(form.get("inputPricePer1M") ?? "").trim();
+      const outputRaw = String(form.get("outputPricePer1M") ?? "").trim();
+      const inputPrice = parseFloat(inputRaw);
+      const outputPrice = parseFloat(outputRaw);
+
+      if (!isFinite(inputPrice) || inputPrice < 0 || !isFinite(outputPrice) || outputPrice < 0) {
+        return adminRedirect(ctx, { error: "Enter valid non-negative prices." });
+      }
+
+      await setPricingConfig({ inputPricePer1M: inputPrice, outputPricePer1M: outputPrice });
+      return adminRedirect(ctx, { message: "Pricing updated." });
     }
 
     if (intent === "set_assistant_config") {
@@ -244,6 +267,51 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
                   ).join(" · ")}
                 </p>
               </div>
+            </section>
+          )
+          : null}
+
+        {!data.forbidden
+          ? (
+            <section class="stack">
+              <h2 class="display">Credit Pricing</h2>
+              <form
+                method="POST"
+                action="/admin"
+                class="form-grid card"
+                style="padding: 16px;"
+              >
+                <input type="hidden" name="intent" value="set_pricing" />
+                <label>
+                  Input price (USD per 1M tokens)
+                  <input
+                    type="number"
+                    name="inputPricePer1M"
+                    value={data.pricing.inputPricePer1M}
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </label>
+                <label>
+                  Output price (USD per 1M tokens)
+                  <input
+                    type="number"
+                    name="outputPricePer1M"
+                    value={data.pricing.outputPricePer1M}
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                </label>
+                <p class="muted">
+                  Credit system: $1 = 100 credits, 10× markup applied automatically.
+                  Current: ${data.pricing.inputPricePer1M.toFixed(2)} input / ${data.pricing.outputPricePer1M.toFixed(2)} output per 1M tokens.
+                </p>
+                <div class="action-row">
+                  <button class="btn primary" type="submit">Save pricing</button>
+                </div>
+              </form>
             </section>
           )
           : null}

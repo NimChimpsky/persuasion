@@ -2,9 +2,12 @@ import { streamCharacterReply } from "../../../../lib/llm.ts";
 import { slugify } from "../../../../lib/slug.ts";
 import { calculateCredits } from "../../../../lib/credits.ts";
 import {
+  addGameCredits,
   deductUserCredits,
   getGameBySlug,
   getGlobalAssistantConfig,
+  getPricingConfig,
+  getUserCredits,
   getUserProgress,
   saveUserProgress,
 } from "../../../../lib/store.ts";
@@ -206,6 +209,11 @@ export const handler = define.handlers({
     if (text.length > 2500) return json({ ok: false, error: "Prompt is too long" }, 400);
     if (!characterId) return json({ ok: false, error: "Character is required" }, 400);
 
+    const currentBalance = await getUserCredits(userEmail);
+    if (currentBalance < -0.5) {
+      return json({ ok: false, error: "Insufficient credits" }, 402);
+    }
+
     const progress = await getUserProgress(userEmail, slug);
     const gameSnapshot = progress?.gameSnapshot ?? buildUserGameSnapshot(game);
     const gameForUser = getGameForUser(game, gameSnapshot);
@@ -264,14 +272,15 @@ export const handler = define.handlers({
           const rawReplyText = replyResult.text;
 
           // Deduct credits for this LLM call (fire-and-forget — don't block the response).
-          const activeProvider = providerOverride ?? await getActiveLlmProvider();
-          const creditsUsed = calculateCredits(activeProvider, replyResult.usage);
-          console.log(
-            `[credits] usage=${JSON.stringify(replyResult.usage)} creditsUsed=${creditsUsed} provider=${activeProvider}`,
-          );
+          const [activeProvider, pricing] = await Promise.all([
+            providerOverride ?? getActiveLlmProvider(),
+            getPricingConfig(),
+          ]);
+          const creditsUsed = calculateCredits(activeProvider, replyResult.usage, pricing);
           deductUserCredits(userEmail, creditsUsed).catch((err) => {
             console.error(`[credits] Failed to deduct for ${userEmail}: ${err}`);
           });
+          addGameCredits(slug, creditsUsed).catch(() => {});
 
           const parsedUpdate = parseGameUpdateDirective(rawReplyText);
           const visibleReply = parsedUpdate.cleanText || `(${targetCharacter.name}) ...`;

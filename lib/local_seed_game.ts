@@ -166,7 +166,7 @@ export async function buildGameConfigFromFile(
     initialized: false,
     characters: parsed.characters,
     active: true,
-    createdBy: "startup-reset@persuasion.system",
+    createdBy: "sbatty@gmail.com",
     createdAt: now,
     updatedAt: now,
   };
@@ -219,6 +219,7 @@ export async function upsertGameAndIndex(
     active: persistedGame.active,
     characterCount: persistedGame.characters.length,
     updatedAt: persistedGame.updatedAt,
+    createdBy: persistedGame.createdBy,
   };
 
   await kv.atomic()

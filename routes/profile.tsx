@@ -1,13 +1,24 @@
 import { page } from "fresh";
-import { upsertUserProfile } from "../lib/store.ts";
+import {
+  getMultipleGameCredits,
+  listGamesByCreator,
+  upsertUserProfile,
+} from "../lib/store.ts";
 import type { UserGender } from "../shared/types.ts";
 import { define } from "../utils.ts";
+
+interface CreatedGameSummary {
+  slug: string;
+  title: string;
+  creditsUsed: number;
+}
 
 interface ProfileData {
   name: string;
   gender: UserGender;
   next: string;
   error: string;
+  createdGames: CreatedGameSummary[];
 }
 
 function sanitizeNextPath(input: string | null): string {
@@ -35,22 +46,36 @@ function normalizeGender(input: string): UserGender {
   return "male";
 }
 
+async function loadCreatedGames(email: string): Promise<CreatedGameSummary[]> {
+  const games = await listGamesByCreator(email);
+  if (games.length === 0) return [];
+  const slugs = games.map((g) => g.slug);
+  const creditsMap = await getMultipleGameCredits(slugs);
+  return games.map((g) => ({
+    slug: g.slug,
+    title: g.title,
+    creditsUsed: creditsMap.get(g.slug) ?? 0,
+  }));
+}
+
 function createData(
   name: string,
   gender: string,
   next: string,
   error: string,
+  createdGames: CreatedGameSummary[],
 ): ProfileData {
   return {
     name,
     gender: normalizeGender(gender),
     next: sanitizeNextPath(next),
     error,
+    createdGames,
   };
 }
 
 export const handler = define.handlers<ProfileData>({
-  GET(ctx) {
+  async GET(ctx) {
     const email = ctx.state.userEmail;
     if (!email) {
       return Response.redirect(new URL("/", ctx.req.url), 302);
@@ -59,6 +84,7 @@ export const handler = define.handlers<ProfileData>({
     const url = new URL(ctx.req.url);
     const next = sanitizeNextPath(url.searchParams.get("next"));
     const profile = ctx.state.userProfile;
+    const createdGames = await loadCreatedGames(email);
 
     return page(
       createData(
@@ -66,6 +92,7 @@ export const handler = define.handlers<ProfileData>({
         profile?.gender ?? "male",
         next,
         "",
+        createdGames,
       ),
     );
   },
@@ -93,7 +120,8 @@ export const handler = define.handlers<ProfileData>({
         : error instanceof Error && error.message === "invalid_profile_gender"
         ? "Select a valid gender."
         : "Unable to save profile.";
-      return page(createData(name, gender, next, message), { status: 400 });
+      const createdGames = await loadCreatedGames(email);
+      return page(createData(name, gender, next, message, createdGames), { status: 400 });
     }
 
     return Response.redirect(new URL(next, ctx.req.url), 303);
@@ -149,6 +177,31 @@ export default define.page<typeof handler>(
               <button class="btn primary" type="submit">Save profile</button>
             </div>
           </form>
+
+          {data.createdGames.length > 0
+            ? (
+              <section class="stack">
+                <h2 class="display">Your Stories</h2>
+                <p class="muted">
+                  Games you've created and how many credits players have spent on them.
+                </p>
+                <div class="cards-grid">
+                  {data.createdGames.map((game) => (
+                    <article class="card game-card" key={game.slug}>
+                      <h3>{game.title}</h3>
+                      <p class="muted">/game/{game.slug}</p>
+                      <p class="inline-meta">
+                        {game.creditsUsed.toFixed(2)} credits used by players
+                      </p>
+                      <a class="btn ghost" href={`/game/${game.slug}`}>
+                        Open game
+                      </a>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )
+            : null}
         </div>
       </main>
     );
