@@ -77,6 +77,12 @@ export default define.page<typeof handler>(
               </p>
             )
             : null}
+          <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+            <p class="muted">Also check out</p>
+            <a href="https://vibez.persuasion.technology" class="vibez-link">
+              vibez — AI-enhanced Kanban boards
+            </a>
+          </div>
         </div>
       </main>
     );
