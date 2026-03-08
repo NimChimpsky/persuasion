@@ -38,7 +38,7 @@ export const env = {
   stripeSecretKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
   stripeWebhookSecret: Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "",
   resendApiKey: Deno.env.get("RESEND_API_KEY") ?? "",
-  emailFrom: Deno.env.get("EMAIL_FROM") ?? "gamesmaster@persuasion.technology",
+  emailFrom: Deno.env.get("EMAIL_FROM") ?? "magiclink@persuasion.technology",
   magicLinkSecret: Deno.env.get("MAGIC_LINK_SECRET") ??
     "2Qv9hJr6Kx1mNp4Tz8bCd3Fw7Ls5Ye0Au2Hi9Mn6Rx4VqPk1",
   localDevAuthEmail: Deno.env.get("LOCAL_DEV_AUTH_EMAIL") ?? "dev@local.test",
