@@ -10,6 +10,11 @@ interface ProfileData {
   error: string;
 }
 
+interface ProfileJsonResponse {
+  ok: boolean;
+  error?: string;
+}
+
 function sanitizeNextPath(input: string | null): string {
   const value = String(input ?? "").trim();
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
@@ -47,6 +52,10 @@ function createData(
     next: sanitizeNextPath(next),
     error,
   };
+}
+
+function wantsJson(req: Request): boolean {
+  return req.headers.get("accept")?.includes("application/json") ?? false;
 }
 
 export const handler = define.handlers<ProfileData>({
@@ -93,7 +102,17 @@ export const handler = define.handlers<ProfileData>({
         : error instanceof Error && error.message === "invalid_profile_gender"
         ? "Select a valid gender."
         : "Unable to save profile.";
+      if (wantsJson(ctx.req)) {
+        return Response.json(
+          { ok: false, error: message } satisfies ProfileJsonResponse,
+          { status: 400 },
+        );
+      }
       return page(createData(name, gender, next, message), { status: 400 });
+    }
+
+    if (wantsJson(ctx.req)) {
+      return Response.json({ ok: true } satisfies ProfileJsonResponse);
     }
 
     return Response.redirect(new URL(next, ctx.req.url), 303);

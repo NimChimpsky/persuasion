@@ -29,7 +29,7 @@ export const handler = define.handlers<LandingData>({
 
 export default define.page<typeof handler>(
   function LandingPage({ data, state }) {
-    state.title = "PERSUASION | Sign in";
+    state.title = "Persuasion | Sign in";
 
     return (
       <main class="hero page-shell">
@@ -42,7 +42,7 @@ export default define.page<typeof handler>(
               height="44"
               alt="Persuasion logo"
             />
-            <h1>PERSUASION</h1>
+            <h1>Persuasion</h1>
           </div>
           <p class="muted">
             An interactive character driven experience of secrets and lies ...
@@ -77,13 +77,12 @@ export default define.page<typeof handler>(
               </p>
             )
             : null}
-          <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
-            <p class="muted" style="margin-bottom: 0.75rem;">Also check out</p>
+          <div class="landing-vibez-link">
             <a
               href="https://vibez.persuasion.technology"
-              style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #FFE600, #FF6EC7); color: #0D0D1A; font-weight: bold; font-size: 1.1rem; text-decoration: none; border-radius: 8px; letter-spacing: 0.5px; box-shadow: 0 0 16px rgba(255,230,0,0.3), 0 0 32px rgba(255,110,199,0.15);"
+              class="landing-vibez-anchor"
             >
-              vibez — AI-enhanced Kanban boards
+              vibez
             </a>
           </div>
         </div>

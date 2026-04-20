@@ -41,6 +41,7 @@ export default define.page(function App({ Component, state }) {
                     userEmail={state.userEmail}
                     isAdmin={state.isAdmin}
                     userProfile={state.userProfile}
+                    requiresProfileCompletion={state.requiresProfileCompletion}
                     creditBalance={state.creditBalance}
                     creditLastTopup={state.creditLastTopup}
                     activeGameHeader={state.activeGameHeader}

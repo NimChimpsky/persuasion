@@ -109,6 +109,24 @@ body.has-app-header .page-shell > .container {
   font-size: 0.92rem;
 }
 
+.header-profile-trigger {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.92rem;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--muted) 55%, transparent);
+  text-underline-offset: 0.18em;
+}
+
+.header-profile-trigger:hover,
+.header-profile-trigger:focus-visible {
+  color: var(--fg);
+}
+
 .header-credits {
   font-size: 0.85rem;
   font-weight: 600;
@@ -238,6 +256,26 @@ body.has-app-header .page-shell > .container {
 .landing-login-form {
   width: min(280px, 100%);
   margin-top: 16px;
+}
+
+.landing-vibez-link {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.landing-vibez-anchor {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+.landing-vibez-anchor:hover,
+.landing-vibez-anchor:focus-visible {
+  color: var(--fg);
+  text-decoration: underline;
 }
 
 .landing-login-form input,
@@ -570,6 +608,93 @@ select:focus {
   flex-wrap: wrap;
 }
 
+.profile-modal-dialog {
+  border: 0;
+  padding: 0;
+  margin: auto;
+  width: min(480px, calc(100vw - 24px));
+  background: transparent;
+  overflow: visible;
+}
+
+.profile-modal-dialog[open] {
+  position: fixed;
+  inset: 0;
+  max-height: fit-content;
+}
+
+.profile-modal-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(2px);
+}
+
+.profile-modal-card {
+  width: 100%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-modal-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-modal-copy h3,
+.profile-modal-copy p,
+.profile-modal-account,
+.profile-modal-links {
+  margin: 0;
+}
+
+.profile-modal-account {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.profile-modal-actions,
+.profile-modal-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.profile-modal-actions {
+  justify-content: flex-end;
+}
+
+.profile-modal-links {
+  justify-content: space-between;
+}
+
+.profile-modal-links .action-row {
+  justify-content: flex-end;
+}
+
+.profile-modal-close-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 680px) {
+  .profile-modal-links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-modal-links .action-row {
+    justify-content: stretch;
+  }
+
+  .profile-modal-links .action-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .game-layout {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
@@ -668,7 +793,6 @@ select:focus {
   filter: blur(3px);
   opacity: 0.65;
 }
-
 
 .character-id {
   font-size: 0.82rem;
@@ -908,22 +1032,42 @@ select:focus {
   }
 }
 
-/* Battery credit icon */
-.battery-svg {
+/* Credit trigger */
+.credit-trigger {
   cursor: pointer;
-  width: 36px;
-  height: 18px;
   background: none;
-  border: none;
-  padding: 0;
-  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  display: inline-flex;
   align-items: center;
+  gap: 6px;
   color: var(--fg);
   flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.battery-svg svg {
+.credit-trigger:hover,
+.credit-trigger:focus-visible {
+  background: var(--surface-raised, #f3f3f3);
+}
+
+.credit-trigger.is-negative {
+  color: #c0392b;
+  border-color: #c0392b44;
+  background: #c0392b11;
+}
+
+.credit-trigger-icon {
+  width: 18px;
+  height: 18px;
   display: block;
+}
+
+.credit-trigger-value {
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
 /* Credit purchase modal */

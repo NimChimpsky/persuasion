@@ -1,4 +1,5 @@
 import CreditBattery from "../islands/CreditBattery.tsx";
+import HeaderProfileButton from "../islands/HeaderProfileButton.tsx";
 import ResetGameButton from "../islands/ResetGameButton.tsx";
 import type { UserProfile } from "../shared/types.ts";
 
@@ -6,6 +7,7 @@ interface SiteHeaderProps {
   userEmail: string;
   isAdmin: boolean;
   userProfile: UserProfile | null;
+  requiresProfileCompletion: boolean;
   creditBalance: number | null;
   creditLastTopup: number | null;
   activeGameHeader?: {
@@ -26,11 +28,9 @@ export default function SiteHeader(props: SiteHeaderProps) {
             height="28"
             alt="Persuasion logo"
           />
-          <span>PERSUASION</span>
+          <span>Persuasion</span>
         </a>
-        {props.isAdmin
-          ? <a class="btn primary" href="/admin">admin</a>
-          : null}
+        {props.isAdmin ? <a class="btn primary" href="/admin">admin</a> : null}
         <div class="header-spacer" />
         {props.creditBalance !== null
           ? (
@@ -40,12 +40,11 @@ export default function SiteHeader(props: SiteHeaderProps) {
             />
           )
           : null}
-        <span class="header-email">{props.userEmail}</span>
-        <a class="btn ghost" href="/profile">
-          {props.userProfile ? "Profile" : "Complete profile"}
-        </a>
-        <a class="btn ghost" href="/auth/logout-all">Log out all devices</a>
-        <a class="btn ghost" href="/auth/logout">Log out</a>
+        <HeaderProfileButton
+          userEmail={props.userEmail}
+          initialProfile={props.userProfile}
+          requiresProfileCompletion={props.requiresProfileCompletion}
+        />
       </div>
       <div class="header-subnav">
         <div class="header-subnav-section header-subnav-section-nav">
@@ -56,7 +55,11 @@ export default function SiteHeader(props: SiteHeaderProps) {
         </div>
         <div class="header-subnav-section header-subnav-section-center">
           {props.activeGameHeader
-            ? <span class="header-game-title">{props.activeGameHeader.title}</span>
+            ? (
+              <span class="header-game-title">
+                {props.activeGameHeader.title}
+              </span>
+            )
             : null}
         </div>
         <div class="header-subnav-section header-subnav-section-end">
