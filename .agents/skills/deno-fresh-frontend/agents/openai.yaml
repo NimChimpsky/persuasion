@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deno Fresh Frontend"
+  short_description: "Build Fresh 2.x web apps in Deno"
+  default_prompt: "Use $deno-fresh-frontend to build or update a Fresh 2.x frontend in Deno."
