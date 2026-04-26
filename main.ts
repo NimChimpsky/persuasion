@@ -37,6 +37,7 @@ app.use(define.middleware(async (ctx) => {
   ctx.state.requiresProfileCompletion = Boolean(email && !userProfile);
   ctx.state.creditBalance = creditBalance;
   ctx.state.creditLastTopup = creditLastTopup;
+  ctx.state.currentPath = new URL(ctx.req.url).pathname;
 
   return await ctx.next();
 }));

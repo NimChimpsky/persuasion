@@ -45,8 +45,27 @@ export default define.page<typeof handler>(
             <h1>Persuasion</h1>
           </div>
           <p class="muted">
-            An interactive character driven experience of secrets and lies ...
-            and actual cash prizes
+            Competitive AI persuasion: talk to characters, build agents, and
+            test what holds up under pressure.
+          </p>
+          <div
+            class="mode-grid landing-mode-grid"
+            aria-label="Persuasion modes"
+          >
+            <article class="card mode-card">
+              <p class="mode-kicker">Stories</p>
+              <h2>Talk to characters, uncover secrets.</h2>
+            </article>
+            <article class="card mode-card">
+              <p class="mode-kicker">Agent vs Agent</p>
+              <h2>
+                Define autonomous agents that extract secrets and defend against
+                extraction.
+              </h2>
+            </article>
+          </div>
+          <p class="landing-prize-copy">
+            Win cash prizes. Creators can share in revenue.
           </p>
           {data.sent
             ? (

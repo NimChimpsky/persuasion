@@ -1,36 +1,18 @@
 import { page } from "fresh";
-import { listGames } from "../lib/store.ts";
 import { define } from "../utils.ts";
 
-interface HomeData {
-  games: Array<{
-    slug: string;
-    title: string;
-    characterCount: number;
-    updatedAt: string;
-  }>;
-}
-
-export const handler = define.handlers<HomeData>({
-  async GET(ctx) {
+export const handler = define.handlers({
+  GET(ctx) {
     const userEmail = ctx.state.userEmail;
     if (!userEmail) {
       return Response.redirect(new URL("/", ctx.req.url), 302);
     }
 
-    const games = await listGames();
-    return page({
-      games: games.map((game) => ({
-        slug: game.slug,
-        title: game.title,
-        characterCount: game.characterCount,
-        updatedAt: game.updatedAt,
-      })),
-    });
+    return page({});
   },
 });
 
-export default define.page<typeof handler>(function HomePage({ data, state }) {
+export default define.page<typeof handler>(function HomePage({ state }) {
   const userEmail = state.userEmail;
   if (!userEmail) {
     return null;
@@ -41,29 +23,26 @@ export default define.page<typeof handler>(function HomePage({ data, state }) {
   return (
     <main class="page-shell">
       <div class="container stack">
-        <section class="stack">
-          <h2 class="display">Play</h2>
-          {data.games.length === 0
-            ? <p class="notice">No games published yet.</p>
-            : (
-              <div class="cards-grid">
-                {data.games.map((game) => (
-                  <article key={game.slug} class="card game-card">
-                    <h3>{game.title}</h3>
-                    <p class="muted">/game/{game.slug}</p>
-                    <p class="inline-meta">
-                      {game.characterCount} character(s) · updated{" "}
-                      {new Date(game.updatedAt).toLocaleString()}
-                    </p>
-                    <div class="action-row">
-                      <a class="btn primary" href={`/game/${game.slug}`}>
-                        Open
-                      </a>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
+        <section class="mode-choice stack">
+          <div class="mode-choice-copy">
+            <h1 class="display">Choose your mode</h1>
+            <p class="muted">
+              Talk your way through story secrets, or build agents for prompt
+              security battles.
+            </p>
+          </div>
+          <div class="mode-grid">
+            <a class="card mode-card mode-card-link" href="/stories">
+              <p class="mode-kicker">Stories</p>
+              <h2>I want to talk to AI characters</h2>
+              <span class="btn primary">Open Stories</span>
+            </a>
+            <a class="card mode-card mode-card-link" href="/agents">
+              <p class="mode-kicker">Agent vs Agent</p>
+              <h2>I want to build competing agents</h2>
+              <span class="btn primary">Open Arena</span>
+            </a>
+          </div>
         </section>
       </div>
     </main>

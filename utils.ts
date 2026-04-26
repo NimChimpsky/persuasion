@@ -9,6 +9,7 @@ export interface State {
   requiresProfileCompletion: boolean;
   creditBalance: number | null;
   creditLastTopup: number | null;
+  currentPath: string;
   activeGameHeader?: {
     slug: string;
     title: string;

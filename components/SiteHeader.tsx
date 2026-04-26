@@ -10,13 +10,22 @@ interface SiteHeaderProps {
   requiresProfileCompletion: boolean;
   creditBalance: number | null;
   creditLastTopup: number | null;
+  currentPath: string;
   activeGameHeader?: {
     slug: string;
     title: string;
   };
 }
 
+function isStoriesPath(path: string): boolean {
+  return path === "/stories" || path === "/create-game" ||
+    path.startsWith("/game/");
+}
+
 export default function SiteHeader(props: SiteHeaderProps) {
+  const storiesActive = isStoriesPath(props.currentPath);
+  const agentsActive = props.currentPath === "/agents";
+
   return (
     <header class="site-header">
       <div class="header-top-row">
@@ -49,8 +58,23 @@ export default function SiteHeader(props: SiteHeaderProps) {
       <div class="header-subnav">
         <div class="header-subnav-section header-subnav-section-nav">
           <nav class="header-subnav-links">
-            <a class="btn ghost" href="/create-game">Create</a>
-            <a class="btn ghost" href="/home">Play</a>
+            <a
+              class={`btn ghost mode-switch-btn ${
+                storiesActive ? "is-active" : ""
+              }`}
+              href="/stories"
+            >
+              Stories
+            </a>
+            <a
+              class={`btn ghost mode-switch-btn ${
+                agentsActive ? "is-active" : ""
+              }`}
+              href="/agents"
+            >
+              Agent vs Agent
+            </a>
+            <a class="btn ghost" href="/create-game">Create Story</a>
           </nav>
         </div>
         <div class="header-subnav-section header-subnav-section-center">

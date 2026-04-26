@@ -44,6 +44,7 @@ export default define.page(function App({ Component, state }) {
                     requiresProfileCompletion={state.requiresProfileCompletion}
                     creditBalance={state.creditBalance}
                     creditLastTopup={state.creditLastTopup}
+                    currentPath={state.currentPath}
                     activeGameHeader={state.activeGameHeader}
                   />
                 </div>
