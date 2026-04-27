@@ -1,24 +1,25 @@
 import { page } from "fresh";
+import GameCards from "../components/GameCards.tsx";
 import AdminGameForm from "../islands/AdminGameForm.tsx";
 import { initializeGame } from "../lib/game_initializer.ts";
 import { ensureUniqueIds, slugify } from "../lib/slug.ts";
 import { calculateCredits } from "../lib/credits.ts";
+import {
+  deriveBioFromDefinition,
+  type GameSummary,
+  toGameSummary,
+} from "../shared/game.ts";
 import {
   createGame,
   deductUserCredits,
   getGameBySlug,
   listGames,
 } from "../lib/store.ts";
-import type {
-  Character,
-  GameConfig,
-} from "../shared/types.ts";
+import type { Character, GameConfig } from "../shared/types.ts";
 import { define } from "../utils.ts";
 
 interface PublishData {
-  games: Array<
-    { slug: string; title: string; updatedAt: string; characterCount: number }
-  >;
+  games: GameSummary[];
   createdSlug: string;
   error: string;
 }
@@ -35,13 +36,6 @@ async function findAvailableSlug(baseSlug: string): Promise<string> {
   return attempt;
 }
 
-function deriveBioFromDefinition(definition: string): string {
-  const firstSentence = definition.split(/[.!?]/)[0]?.trim() ?? "";
-  const source = firstSentence || definition.trim();
-  const maxLen = 140;
-  return source.length <= maxLen ? source : `${source.slice(0, maxLen - 3)}...`;
-}
-
 function parseCharacters(form: FormData): Character[] {
   const rawCount = Number(form.get("characterCount") ?? 0);
   const count = Number.isFinite(rawCount)
@@ -54,7 +48,8 @@ function parseCharacters(form: FormData): Character[] {
 
   for (let i = 0; i < count; i++) {
     const name = String(form.get(`characterName_${i}`) ?? "").trim();
-    const definition = String(form.get(`characterDefinition_${i}`) ?? "").trim();
+    const definition = String(form.get(`characterDefinition_${i}`) ?? "")
+      .trim();
     const secretKey = String(form.get(`characterSecretKey_${i}`) ?? "").trim();
     if (!name || !definition) continue;
 
@@ -92,12 +87,7 @@ export const handler = define.handlers<PublishData>({
     return page({
       createdSlug,
       error,
-      games: games.map((game) => ({
-        slug: game.slug,
-        title: game.title,
-        updatedAt: game.updatedAt,
-        characterCount: game.characterCount,
-      })),
+      games: games.map(toGameSummary),
     });
   },
 
@@ -152,7 +142,9 @@ export const handler = define.handlers<PublishData>({
       // Deduct credits for initializer LLM calls (fire-and-forget).
       const creditsUsed = calculateCredits(result.provider, result.usage);
       deductUserCredits(ctx.state.userEmail, creditsUsed).catch((err) => {
-        console.error(`[credits] Failed to deduct for ${ctx.state.userEmail}: ${err}`);
+        console.error(
+          `[credits] Failed to deduct for ${ctx.state.userEmail}: ${err}`,
+        );
       });
     } catch {
       return Response.redirect(
@@ -194,25 +186,11 @@ export default define.page<typeof handler>(
 
           <section class="stack">
             <h2 class="display">Published Games</h2>
-            {data.games.length === 0
-              ? <p class="notice">No games yet.</p>
-              : (
-                <div class="cards-grid">
-                  {data.games.map((game) => (
-                    <article class="card game-card" key={game.slug}>
-                      <h3>{game.title}</h3>
-                      <p class="muted">/game/{game.slug}</p>
-                      <p class="inline-meta">
-                        {game.characterCount} character(s) · updated{" "}
-                        {new Date(game.updatedAt).toLocaleString()}
-                      </p>
-                      <a class="btn ghost" href={`/game/${game.slug}`}>
-                        Open game
-                      </a>
-                    </article>
-                  ))}
-                </div>
-              )}
+            <GameCards
+              games={data.games}
+              emptyText="No games yet."
+              actionLabel="Open game"
+            />
           </section>
         </div>
       </main>

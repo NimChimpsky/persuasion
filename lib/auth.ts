@@ -5,6 +5,12 @@ import {
 } from "jsr:@std/http@1.0.20/cookie";
 import { env } from "./env.ts";
 import { getKv } from "./kv.ts";
+import {
+  consumeStoredMagicToken,
+  MAGIC_TOKEN_TTL_MS,
+  type MagicTokenRecord,
+} from "./magic_token.ts";
+import { normalizeEmail } from "../shared/validation.ts";
 
 export const SESSION_COOKIE = "game_session";
 export const USER_BLOCKED_ERROR = "user_blocked";
@@ -14,14 +20,7 @@ interface SessionRecord {
   createdAt: string;
 }
 
-interface MagicTokenRecord {
-  email: string;
-  createdAt: string;
-}
-
-export function normalizeEmail(input: string): string {
-  return input.trim().toLowerCase();
-}
+export { normalizeEmail };
 
 function randomToken(): string {
   return crypto.randomUUID().replaceAll("-", "") +
@@ -111,9 +110,9 @@ export async function createMagicToken(email: string): Promise<string> {
   const token = `${nonce}.${signature}`;
 
   await kv.set(["magic_tokens", nonce], {
-    email,
+    email: normalizeEmail(email),
     createdAt: new Date().toISOString(),
-  } as MagicTokenRecord);
+  } as MagicTokenRecord, { expireIn: MAGIC_TOKEN_TTL_MS });
 
   return token;
 }
@@ -129,12 +128,7 @@ export async function consumeMagicToken(token: string): Promise<string | null> {
   const kv = await getKv();
   const key = ["magic_tokens", nonce] as const;
   const entry = await kv.get<MagicTokenRecord>(key);
-  if (!entry.value) return null;
-
-  const result = await kv.atomic().check(entry).delete(key).commit();
-  if (!result.ok) return null;
-
-  return entry.value.email;
+  return await consumeStoredMagicToken(kv, key, entry);
 }
 
 export async function createSession(email: string): Promise<string> {

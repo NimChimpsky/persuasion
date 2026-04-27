@@ -1,25 +1,15 @@
 import { useEffect, useState } from "preact/hooks";
-
-const CREDIT_PACKAGES = [
-  { credits: 100, priceUsdCents: 100, label: "100 credits — $1.00" },
-  { credits: 1000, priceUsdCents: 900, label: "1000 credits — $9.00" },
-] as const;
+import { formatCredits } from "../shared/format.ts";
+import type { CreditPackage } from "../shared/credit_packages.ts";
 
 interface CreditBatteryProps {
   initialBalance: number;
   initialLastTopup: number;
-}
-
-function formatCredits(value: number): string {
-  if (Number.isInteger(value)) {
-    return String(value);
-  }
-
-  return value.toFixed(2).replace(/\.?0+$/, "");
+  packages: CreditPackage[];
 }
 
 export default function CreditBattery(
-  { initialBalance, initialLastTopup }: CreditBatteryProps,
+  { initialBalance, initialLastTopup, packages }: CreditBatteryProps,
 ) {
   void initialLastTopup;
   const [balance, setBalance] = useState(initialBalance);
@@ -110,7 +100,7 @@ export default function CreditBattery(
             }}
           >
             <div class="credit-modal card">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <div class="credit-modal-header">
                 <strong>Buy Credits</strong>
                 <button
                   type="button"
@@ -121,11 +111,11 @@ export default function CreditBattery(
                   ×
                 </button>
               </div>
-              <p class="muted" style="margin-bottom:16px; font-size:0.9rem;">
+              <p class="muted credit-modal-balance">
                 Current balance: {formattedBalance} credits
               </p>
               <div class="stack">
-                {CREDIT_PACKAGES.map((pkg) => (
+                {packages.map((pkg) => (
                   <button
                     key={pkg.credits}
                     type="button"

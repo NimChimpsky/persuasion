@@ -1,9 +1,6 @@
 import { ensureUniqueIds, slugify } from "./slug.ts";
-import type {
-  Character,
-  GameConfig,
-  GameIndexEntry,
-} from "../shared/types.ts";
+import { deriveBioFromDefinition } from "../shared/game.ts";
+import type { Character, GameConfig, GameIndexEntry } from "../shared/types.ts";
 
 interface ParsedOutline {
   title: string;
@@ -37,16 +34,13 @@ function mapHeadingToSection(heading: string): SectionKey | null {
   return null;
 }
 
-function deriveBioFromPrompt(prompt: string): string {
-  const firstSentence = prompt.split(/[.!?]/)[0]?.trim() ?? "";
-  const source = firstSentence || prompt.trim();
-  const maxLen = 140;
-  return source.length <= maxLen ? source : `${source.slice(0, maxLen - 3)}...`;
-}
-
 function parseCharacterBlocks(rawLines: string[]): Character[] {
-  const blocks: Array<{ name: string; definition: string; secretKey?: string }> = [];
-  let currentBlock: { name: string; definition: string; secretKey?: string } | null = null;
+  const blocks: Array<
+    { name: string; definition: string; secretKey?: string }
+  > = [];
+  let currentBlock:
+    | { name: string; definition: string; secretKey?: string }
+    | null = null;
 
   for (const rawLine of rawLines) {
     const line = rawLine.trim();
@@ -81,7 +75,7 @@ function parseCharacterBlocks(rawLines: string[]): Character[] {
   return blocks.map((block, index) => ({
     id: ids[index],
     name: block.name,
-    bio: deriveBioFromPrompt(block.definition),
+    bio: deriveBioFromDefinition(block.definition),
     definition: block.definition,
     systemPrompt: "",
     secretKey: block.secretKey,
@@ -144,7 +138,9 @@ function parseGameOutline(input: string): ParsedOutline {
   }
 
   if (!title || !introText || characters.length === 0) {
-    throw new Error(`Game outline is incomplete or invalid: "${title || "(no title)"}"`);
+    throw new Error(
+      `Game outline is incomplete or invalid: "${title || "(no title)"}"`,
+    );
   }
 
   return { title, introText, isAdult, characters };

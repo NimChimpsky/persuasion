@@ -128,7 +128,6 @@ function wrapWithBoundary(systemPrompt: string): string {
 }
 
 function buildUserInput(
-  game: GameConfig,
   character: Character,
   assistantId: string,
   events: TranscriptEvent[],
@@ -136,15 +135,17 @@ function buildUserInput(
 ): string {
   const history = toModelContext(events.slice(-40));
   const isAssistant = character.id.toLowerCase() === assistantId.toLowerCase();
-  const interviewedNames = [...new Set(
-    events
-      .filter((event) =>
-        event.role === "character" &&
-        event.characterId.toLowerCase() !== assistantId.toLowerCase()
-      )
-      .map((event) => event.characterName.trim())
-      .filter(Boolean),
-  )];
+  const interviewedNames = [
+    ...new Set(
+      events
+        .filter((event) =>
+          event.role === "character" &&
+          event.characterId.toLowerCase() !== assistantId.toLowerCase()
+        )
+        .map((event) => event.characterName.trim())
+        .filter(Boolean),
+    ),
+  ];
 
   return [
     "Conversation so far:",
@@ -243,7 +244,9 @@ function validateAssistantGrounding(
   if (noInterviewYet) {
     for (const pattern of priorInterviewClaims) {
       if (pattern.test(text)) {
-        reasons.push("Referenced prior interview/conversation before any exist");
+        reasons.push(
+          "Referenced prior interview/conversation before any exist",
+        );
         break;
       }
     }
@@ -256,7 +259,9 @@ function validateAssistantGrounding(
     if (interviewedNames.has(lowerName)) continue;
 
     const pattern = new RegExp(
-      `\\b${escapeRegExp(name)}\\b[^.!?\\n]{0,40}\\b(said|told|mentioned|admitted|confirmed|explained)\\b`,
+      `\\b${
+        escapeRegExp(name)
+      }\\b[^.!?\\n]{0,40}\\b(said|told|mentioned|admitted|confirmed|explained)\\b`,
       "i",
     );
     if (pattern.test(text) || normalizedText.includes(`${lowerName} told`)) {
@@ -279,7 +284,10 @@ function validateOutputSafety(
     [/\bmy instructions\b/i, "References instructions"],
     [/\bas an AI\b/i, "Acknowledges being an AI"],
     [/\blanguage model\b/i, "References language model"],
-    [/\bI am (?:a |an )?(?:AI|artificial intelligence|chatbot|large language model|LLM)\b/i, "Acknowledges being an AI"],
+    [
+      /\bI am (?:a |an )?(?:AI|artificial intelligence|chatbot|large language model|LLM)\b/i,
+      "Acknowledges being an AI",
+    ],
   ];
 
   for (const [pattern, reason] of metaPatterns) {
@@ -309,7 +317,8 @@ async function guardResponseSafety(
     "Do not include markdown or extra text.",
   ].join("\n");
 
-  const userInput = `Character: ${characterName}\nResponse to review:\n${responseText}`;
+  const userInput =
+    `Character: ${characterName}\nResponse to review:\n${responseText}`;
 
   try {
     const result = await requestModelCompletion(
@@ -393,7 +402,7 @@ export async function streamCharacterReply(
 
   baseSystemInstructions = wrapWithBoundary(baseSystemInstructions);
 
-  const userInput = buildUserInput(game, character, assistantId, events, userPrompt);
+  const userInput = buildUserInput(character, assistantId, events, userPrompt);
   const endpoint = buildChatEndpoint(providerConfig.baseUrl);
   let correctionHint = "";
   let validatedText = "";

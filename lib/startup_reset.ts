@@ -5,10 +5,7 @@ import {
   buildAllSeedGameConfigs,
   upsertGameAndIndex,
 } from "./local_seed_game.ts";
-import {
-  getGlobalAssistantConfig,
-  setGlobalAssistantConfig,
-} from "./store.ts";
+import { getGlobalAssistantConfig, setGlobalAssistantConfig } from "./store.ts";
 import type { AssistantConfig, GameConfig } from "../shared/types.ts";
 
 const DELETE_BATCH_SIZE = 10;
@@ -24,7 +21,8 @@ const WIPE_PREFIXES: Deno.KvKey[] = [
 const DEFAULT_ASSISTANT_CONFIG: AssistantConfig = {
   id: "assistant",
   name: "Assistant",
-  bio: "AI Assistant who can provide tips and guide you through your journey to find the secret, if stuck just ask!",
+  bio:
+    "AI Assistant who can provide tips and guide you through your journey to find the secret, if stuck just ask!",
   systemPrompt:
     "You are the player's investigation assistant. Stay supportive, practical, and grounded in observable evidence. Ask useful follow-up questions, suggest sensible next steps, and avoid spoilers.",
 };
@@ -108,7 +106,10 @@ async function wipeAndBasicSeed(
 
 // Phase 2 (async): run LLM hardening on all seed games and update KV.
 // Runs in the background after the server is already accepting requests.
-async function hardenSeedGames(kv: Deno.Kv, games: GameConfig[]): Promise<void> {
+async function hardenSeedGames(
+  kv: Deno.Kv,
+  games: GameConfig[],
+): Promise<void> {
   for (const game of games) {
     console.log(`[startup-harden] Hardening: ${game.title}`);
     const result = await initializeGame(game);
@@ -177,7 +178,9 @@ export async function startupSync(): Promise<void> {
   }
 
   console.log(
-    `[startup-reset] wiped (${wipeSummary}); seeded ${games.map((g) => `/game/${g.slug}`).join(", ")}`,
+    `[startup-reset] wiped (${wipeSummary}); seeded ${
+      games.map((g) => `/game/${g.slug}`).join(", ")
+    }`,
   );
 
   // Kick off background hardening

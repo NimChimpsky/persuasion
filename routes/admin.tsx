@@ -1,4 +1,5 @@
 import { page } from "fresh";
+import GameCards from "../components/GameCards.tsx";
 import {
   getActiveLlmProvider,
   getLlmProviderConfig,
@@ -16,13 +17,12 @@ import {
   setGlobalAssistantConfig,
 } from "../lib/store.ts";
 import { slugify } from "../lib/slug.ts";
+import { type GameSummary, toGameSummary } from "../shared/game.ts";
 import type { AssistantConfig } from "../shared/types.ts";
 import { define } from "../utils.ts";
 
 interface AdminData {
-  games: Array<
-    { slug: string; title: string; updatedAt: string; characterCount: number }
-  >;
+  games: GameSummary[];
   currentLlmProvider: LlmProvider;
   llmProviderOptions: LlmProviderOption[];
   assistantConfig: AssistantConfig | null;
@@ -75,12 +75,7 @@ export const handler = define.handlers<AdminData>({
       message,
       error,
       forbidden: false,
-      games: games.map((game) => ({
-        slug: game.slug,
-        title: game.title,
-        updatedAt: game.updatedAt,
-        characterCount: game.characterCount,
-      })),
+      games: games.map(toGameSummary),
     });
   },
 
@@ -219,8 +214,7 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
               <form
                 method="POST"
                 action="/admin"
-                class="form-grid card"
-                style="padding: 16px;"
+                class="form-grid card admin-card"
               >
                 <input type="hidden" name="intent" value="topup_credits" />
                 <label>
@@ -259,7 +253,7 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
           ? (
             <section class="stack">
               <h2 class="display">LLM Provider</h2>
-              <div class="form-grid card" style="padding: 16px;">
+              <div class="form-grid card admin-card">
                 <div class="provider-toolbar">
                   <div class="action-row provider-buttons">
                     {data.llmProviderOptions.map((option) => (
@@ -267,7 +261,7 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
                         key={option.id}
                         method="POST"
                         action="/admin"
-                        style="display: inline;"
+                        class="provider-option-form"
                       >
                         <input
                           type="hidden"
@@ -319,10 +313,13 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
               <form
                 method="POST"
                 action="/admin"
-                class="form-grid card"
-                style="padding: 16px;"
+                class="form-grid card admin-card"
               >
-                <input type="hidden" name="intent" value="set_assistant_config" />
+                <input
+                  type="hidden"
+                  name="intent"
+                  value="set_assistant_config"
+                />
                 <label>
                   Assistant name
                   <input
@@ -351,7 +348,7 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
                       "You are the player's investigation assistant. Stay supportive, practical, and grounded in observable evidence. Ask useful follow-up questions, suggest sensible next steps, and avoid spoilers."}
                     placeholder="System prompt for the assistant."
                     required
-                    style="min-height: 120px;"
+                    class="assistant-prompt-field"
                   />
                 </label>
                 <p class="muted">
@@ -374,8 +371,7 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
               <form
                 method="POST"
                 action="/admin"
-                class="form-grid card"
-                style="padding: 16px;"
+                class="form-grid card admin-card"
               >
                 <input type="hidden" name="intent" value="delete_game" />
                 <label>
@@ -399,22 +395,12 @@ export default define.page<typeof handler>(function AdminPage({ data, state }) {
           ? (
             <section class="stack">
               <h2 class="display">Published Games</h2>
-              {data.games.length === 0
-                ? <p class="notice">No games yet.</p>
-                : (
-                  <div class="cards-grid">
-                    {data.games.map((game) => (
-                      <article class="card game-card" key={game.slug}>
-                        <h3>{game.title}</h3>
-                        <p class="muted">Slug: {game.slug}</p>
-                        <p class="inline-meta">
-                          {game.characterCount} character(s) · updated{" "}
-                          {new Date(game.updatedAt).toLocaleString()}
-                        </p>
-                      </article>
-                    ))}
-                  </div>
-                )}
+              <GameCards
+                games={data.games}
+                emptyText="No games yet."
+                actionLabel=""
+                slugLabel="Slug"
+              />
             </section>
           )
           : null}

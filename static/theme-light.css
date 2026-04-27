@@ -14,13 +14,21 @@ html, body {
   font-family: var(--font-sans);
   color: var(--text);
   background:
-    radial-gradient(ellipse 800px 400px at 15% 0%, rgba(99, 102, 241, 0.04), transparent 70%),
-    radial-gradient(ellipse 600px 350px at 85% 0%, rgba(245, 158, 11, 0.03), transparent 70%),
     radial-gradient(
-      circle at 1px 1px,
-      rgba(2, 6, 23, 0.05) 1px,
-      transparent 1.6px
-    ) 0 0/12px 12px,
+      ellipse 800px 400px at 15% 0%,
+      rgba(99, 102, 241, 0.04),
+      transparent 70%
+    ),
+    radial-gradient(
+    ellipse 600px 350px at 85% 0%,
+    rgba(245, 158, 11, 0.03),
+    transparent 70%
+  ),
+    radial-gradient(
+    circle at 1px 1px,
+    rgba(2, 6, 23, 0.05) 1px,
+    transparent 1.6px
+  ) 0 0/12px 12px,
     linear-gradient(180deg, #f8f9fe 0%, var(--bg-1) 50%, #f4f5fa 100%);
 }
 
@@ -128,23 +136,12 @@ button {
   color: var(--text);
 }
 
-.header .meta {
-  color: var(--muted);
-}
-.header .avatar {
-  border: 1px solid var(--border);
-}
-
 .message {
   background: #fff;
 }
 .message.user {
   background: #fff7ed;
   border: 1px solid #fdba74;
-}
-.message.assistant {
-  background: #f5f3ff;
-  border: 1px solid #c4b5fd;
 }
 
 .composer {
@@ -159,80 +156,6 @@ button {
 
 .hero p {
   color: var(--muted);
-}
-
-/* Light theme username row */
-.username-row {
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-}
-
-.username-avatar {
-  border-color: var(--border);
-  background: #fff;
-}
-
-.username-avatar.placeholder {
-  background: #f8fafc;
-}
-
-.username-chip {
-  border-color: var(--border);
-  background: #fff;
-}
-
-.username-chip.filled {
-  background: #f1f5f9;
-}
-
-.username-chip.empty {
-  background: #fff;
-  border-style: dashed;
-}
-
-.username-chip.active {
-  border-color: var(--accent);
-  box-shadow: none;
-}
-
-.username-handle {
-  color: var(--text);
-}
-
-.reload-btn {
-  color: #667085;
-}
-
-.reload-btn:hover:not(:disabled) {
-  background: #eceff3;
-  color: var(--text);
-}
-
-.reload-btn:disabled {
-  color: #98a2b3;
-  background: transparent;
-}
-
-.username-slot .btn.icon,
-.reload-btn {
-  border-color: var(--border);
-}
-
-.username-slot .btn.icon:hover,
-.reload-btn:hover:not(:disabled) {
-  border-color: #d0d5dd;
-}
-
-.username-input {
-  background: #fff;
-  border-color: var(--border);
-  color: var(--text);
-}
-
-.username-input:focus {
-  background: #fffbeb;
-  border-color: #d6d3d1;
 }
 
 .chat-panel {

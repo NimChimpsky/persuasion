@@ -9,7 +9,10 @@ function parseCsvSet(input: string | undefined): Set<string> {
   );
 }
 
-function parseBoolean(input: string | undefined, defaultValue: boolean): boolean {
+function parseBoolean(
+  input: string | undefined,
+  defaultValue: boolean,
+): boolean {
   if (input == null) return defaultValue;
   const normalized = input.trim().toLowerCase();
   if (["true", "1", "yes", "on"].includes(normalized)) return true;

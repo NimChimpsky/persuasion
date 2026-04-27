@@ -2,14 +2,8 @@ import {
   clearUserProgressForGame,
   getGameBySlug,
 } from "../../../../lib/store.ts";
+import { json } from "../../../../lib/http.ts";
 import { define } from "../../../../utils.ts";
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
 
 export const handler = define.handlers({
   async POST(ctx) {

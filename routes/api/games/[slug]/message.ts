@@ -2,6 +2,11 @@ import { streamCharacterReply } from "../../../../lib/llm.ts";
 import { slugify } from "../../../../lib/slug.ts";
 import { calculateCredits } from "../../../../lib/credits.ts";
 import {
+  type NewCharacterInput,
+  parseGameUpdateDirective,
+} from "../../../../lib/game_update.ts";
+import { json } from "../../../../lib/http.ts";
+import {
   deductUserCredits,
   getGameBySlug,
   getGlobalAssistantConfig,
@@ -26,27 +31,8 @@ interface MessageRequest {
   characterId: string;
 }
 
-interface NewCharacterInput {
-  name: string;
-  bio: string;
-  definition: string;
-}
-
-interface GameUpdateDirective {
-  cleanText: string;
-  newCharacters: NewCharacterInput[];
-  unlockCharacterIds: string[];
-}
-
 interface GameForUser extends GameConfig {
   encounteredCharacterIds: string[];
-}
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
 }
 
 async function getAssistantCharacter(): Promise<Character> {
@@ -98,49 +84,6 @@ function uniqueCharacterId(baseName: string, used: Set<string>): string {
   return candidate;
 }
 
-function parseGameUpdateDirective(replyText: string): GameUpdateDirective {
-  const match = replyText.match(
-    /<game_update>\s*([\s\S]*?)\s*<\/game_update>/i,
-  );
-
-  if (!match) {
-    return { cleanText: replyText.trim(), newCharacters: [], unlockCharacterIds: [] };
-  }
-
-  const before = replyText.slice(0, match.index).trimEnd();
-  const after = replyText.slice((match.index ?? 0) + match[0].length).trimStart();
-  const cleanText = `${before}${before && after ? "\n\n" : ""}${after}`.trim();
-
-  try {
-    const parsed = JSON.parse(match[1]) as {
-      new_characters?: Array<{
-        name?: string;
-        bio?: string;
-        definition?: string;
-        systemPrompt?: string;
-      }>;
-      unlock_character_ids?: string[];
-    };
-
-    const newCharacters = (parsed.new_characters ?? [])
-      .map((item) => ({
-        name: String(item.name ?? "").trim(),
-        bio: String(item.bio ?? "").trim(),
-        definition: String(item.definition ?? item.systemPrompt ?? "").trim(),
-      }))
-      .filter((item) => item.name && item.bio && item.definition)
-      .slice(0, 3);
-
-    const unlockCharacterIds = (parsed.unlock_character_ids ?? [])
-      .map((id) => slugify(String(id ?? "").trim()))
-      .filter(Boolean);
-
-    return { cleanText, newCharacters, unlockCharacterIds };
-  } catch {
-    return { cleanText, newCharacters: [], unlockCharacterIds: [] };
-  }
-}
-
 function mergeCharacters(
   existing: Character[],
   incoming: NewCharacterInput[],
@@ -186,11 +129,15 @@ export const handler = define.handlers({
     if (!userEmail) return json({ ok: false, error: "Unauthorized" }, 401);
 
     const userProfile = ctx.state.userProfile;
-    if (!userProfile) return json({ ok: false, error: "Complete profile first" }, 409);
+    if (!userProfile) {
+      return json({ ok: false, error: "Complete profile first" }, 409);
+    }
 
     const slug = ctx.params.slug;
     const game = await getGameBySlug(slug);
-    if (!game || !game.active) return json({ ok: false, error: "Game not found" }, 404);
+    if (!game || !game.active) {
+      return json({ ok: false, error: "Game not found" }, 404);
+    }
 
     let payload: MessageRequest;
     try {
@@ -203,8 +150,12 @@ export const handler = define.handlers({
     const characterId = String(payload.characterId ?? "").trim().toLowerCase();
 
     if (!text) return json({ ok: false, error: "Prompt cannot be empty" }, 400);
-    if (text.length > 2500) return json({ ok: false, error: "Prompt is too long" }, 400);
-    if (!characterId) return json({ ok: false, error: "Character is required" }, 400);
+    if (text.length > 2500) {
+      return json({ ok: false, error: "Prompt is too long" }, 400);
+    }
+    if (!characterId) {
+      return json({ ok: false, error: "Character is required" }, 400);
+    }
 
     const progress = await getUserProgress(userEmail, slug);
     const gameSnapshot = progress?.gameSnapshot ?? buildUserGameSnapshot(game);
@@ -217,7 +168,9 @@ export const handler = define.handlers({
     ];
 
     const targetCharacter = findCharacterById(runtimeCharacters, characterId);
-    if (!targetCharacter) return json({ ok: false, error: "Unknown character" }, 400);
+    if (!targetCharacter) {
+      return json({ ok: false, error: "Unknown character" }, 400);
+    }
 
     const transcriptBase = progress?.transcript ?? "";
     const events = parseTranscript(transcriptBase);
@@ -235,7 +188,9 @@ export const handler = define.handlers({
       async start(controller) {
         const sendEvent = (event: string, data: unknown) => {
           controller.enqueue(
-            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+            encoder.encode(
+              `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`,
+            ),
           );
         };
 
@@ -253,7 +208,10 @@ export const handler = define.handlers({
               assistantId: assistantCharacter.id,
               events: [...events, userEvent],
               userPrompt: text,
-              playerProfile: { name: userProfile.name, gender: userProfile.gender },
+              playerProfile: {
+                name: userProfile.name,
+                gender: userProfile.gender,
+              },
               providerOverride,
             },
             (delta) => {
@@ -264,17 +222,26 @@ export const handler = define.handlers({
           const rawReplyText = replyResult.text;
 
           // Deduct credits for this LLM call (fire-and-forget — don't block the response).
-          const activeProvider = providerOverride ?? await getActiveLlmProvider();
-          const creditsUsed = calculateCredits(activeProvider, replyResult.usage);
+          const activeProvider = providerOverride ??
+            await getActiveLlmProvider();
+          const creditsUsed = calculateCredits(
+            activeProvider,
+            replyResult.usage,
+          );
           console.log(
-            `[credits] usage=${JSON.stringify(replyResult.usage)} creditsUsed=${creditsUsed} provider=${activeProvider}`,
+            `[credits] usage=${
+              JSON.stringify(replyResult.usage)
+            } creditsUsed=${creditsUsed} provider=${activeProvider}`,
           );
           deductUserCredits(userEmail, creditsUsed).catch((err) => {
-            console.error(`[credits] Failed to deduct for ${userEmail}: ${err}`);
+            console.error(
+              `[credits] Failed to deduct for ${userEmail}: ${err}`,
+            );
           });
 
           const parsedUpdate = parseGameUpdateDirective(rawReplyText);
-          const visibleReply = parsedUpdate.cleanText || `(${targetCharacter.name}) ...`;
+          const visibleReply = parsedUpdate.cleanText ||
+            `(${targetCharacter.name}) ...`;
 
           const characterEvent: TranscriptEvent = {
             role: "character",
@@ -284,7 +251,10 @@ export const handler = define.handlers({
             at: new Date().toISOString(),
           };
 
-          const appended = appendEvents(transcriptBase, [userEvent, characterEvent]);
+          const appended = appendEvents(transcriptBase, [
+            userEvent,
+            characterEvent,
+          ]);
           const updatedCharacters = mergeCharacters(
             gameForUser.characters,
             parsedUpdate.newCharacters,
@@ -294,7 +264,9 @@ export const handler = define.handlers({
             assistantCharacter.id,
             ...updatedCharacters.map((c) => c.id),
           ]);
-          const encounteredCharacterIds = new Set(gameForUser.encounteredCharacterIds);
+          const encounteredCharacterIds = new Set(
+            gameForUser.encounteredCharacterIds,
+          );
           if (validCharacterIds.has(targetCharacter.id)) {
             encounteredCharacterIds.add(targetCharacter.id);
           }
@@ -316,7 +288,11 @@ export const handler = define.handlers({
           });
 
           const responseCharacters = [
-            { id: assistantCharacter.id, name: assistantCharacter.name, bio: assistantCharacter.bio },
+            {
+              id: assistantCharacter.id,
+              name: assistantCharacter.name,
+              bio: assistantCharacter.bio,
+            },
             ...updatedCharacters
               .filter((c) => c.id !== assistantCharacter.id)
               .map((c) => ({ id: c.id, name: c.name, bio: c.bio })),
@@ -329,7 +305,9 @@ export const handler = define.handlers({
           });
         } catch (error) {
           sendEvent("error", {
-            error: error instanceof Error ? error.message : "Unable to complete message stream",
+            error: error instanceof Error
+              ? error.message
+              : "Unable to complete message stream",
           });
         } finally {
           controller.close();

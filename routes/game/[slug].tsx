@@ -6,9 +6,7 @@ import {
   getUserProgress,
 } from "../../lib/store.ts";
 import { parseTranscript } from "../../shared/transcript.ts";
-import type {
-  UserGameSnapshot,
-} from "../../shared/types.ts";
+import type { UserGameSnapshot } from "../../shared/types.ts";
 import { define } from "../../utils.ts";
 
 interface CharacterForClient {

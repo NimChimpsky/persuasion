@@ -1,46 +1,33 @@
 import { env } from "../../../lib/env.ts";
-import { addUserCredits } from "../../../lib/store.ts";
-import {
-  CREDIT_PACKAGES,
-  createCheckoutSession,
-  isStripeConfigured,
-} from "../../../lib/stripe.ts";
+import { json, readJsonBody } from "../../../lib/http.ts";
+import { createCreditCheckout } from "../../../lib/payments.ts";
+import { getCreditPackage } from "../../../shared/credit_packages.ts";
 import { define } from "../../../utils.ts";
 
 export const handler = define.handlers({
   async POST(ctx) {
     const email = ctx.state.userEmail;
     if (!email) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "content-type": "application/json" },
-      });
+      return json({ error: "Unauthorized" }, 401);
     }
 
-    const body = await ctx.req.json() as { credits?: number };
-    const pkg = CREDIT_PACKAGES.find((p) => p.credits === body.credits);
+    const body = await readJsonBody<{ credits?: number }>(ctx.req);
+    if (!body.ok) {
+      return json({ error: "Invalid JSON payload" }, 400);
+    }
+
+    const pkg = getCreditPackage(Number(body.value.credits ?? 0));
 
     if (!pkg) {
-      return new Response(JSON.stringify({ error: "Invalid package" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      });
+      return json({ error: "Invalid package" }, 400);
     }
 
-    if (!isStripeConfigured()) {
-      await addUserCredits(email, pkg.credits, true);
-    }
-
-    const baseUrl = env.appBaseUrl;
-    const { url } = await createCheckoutSession(
-      pkg.credits,
-      pkg.priceUsdCents,
-      email,
-      baseUrl,
-    );
-
-    return new Response(JSON.stringify({ url }), {
-      headers: { "content-type": "application/json" },
+    const { url } = await createCreditCheckout({
+      package: pkg,
+      userEmail: email,
+      baseUrl: env.appBaseUrl,
     });
+
+    return json({ url });
   },
 });

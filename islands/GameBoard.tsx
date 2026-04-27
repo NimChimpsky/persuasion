@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import CharacterList from "./game_board/CharacterList.tsx";
+import ChatPanel from "./game_board/ChatPanel.tsx";
+import { toSummaryText } from "./game_board/message_text.tsx";
+import { consumeSseStream } from "./game_board/sse.ts";
 import type {
-  TranscriptEvent,
-} from "../shared/types.ts";
-
-interface CharacterRef {
-  id: string;
-  name: string;
-  bio: string;
-}
+  CharacterRef,
+  JsonErrorResponse,
+  StreamAckPayload,
+  StreamDeltaPayload,
+  StreamErrorPayload,
+  StreamFinalPayload,
+} from "./game_board/types.ts";
+import { useDesktopBoardHeight } from "./game_board/useDesktopBoardHeight.ts";
+import type { TranscriptEvent } from "../shared/types.ts";
 
 interface GameBoardProps {
   slug: string;
@@ -15,78 +20,6 @@ interface GameBoardProps {
   characters: CharacterRef[];
   initialEvents: TranscriptEvent[];
   initialEncounteredCharacterIds: string[];
-}
-
-interface JsonErrorResponse {
-  ok?: boolean;
-  error?: string;
-}
-
-interface StreamAckPayload {
-  userEvent: TranscriptEvent;
-  character: { id: string; name: string };
-}
-
-interface StreamDeltaPayload {
-  text: string;
-}
-
-interface StreamFinalPayload {
-  characterEvent: TranscriptEvent;
-  characters: CharacterRef[];
-  encounteredCharacterIds: string[];
-}
-
-interface StreamErrorPayload {
-  error?: string;
-}
-
-function renderInlineAsterisk(text: string) {
-  const parts = [];
-  const tokenRegex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  let tokenIndex = 0;
-
-  while ((match = tokenRegex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
-
-    const token = match[0];
-    if (token.startsWith("**") && token.endsWith("**")) {
-      parts.push(
-        <strong key={`strong-${tokenIndex}`}>{token.slice(2, -2)}</strong>,
-      );
-    } else {
-      parts.push(<em key={`em-${tokenIndex}`}>{token.slice(1, -1)}</em>);
-    }
-    tokenIndex++;
-    lastIndex = tokenRegex.lastIndex;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts;
-}
-
-function renderMessageText(text: string) {
-  const lines = text.split("\n");
-  return lines.flatMap((line, index) => {
-    const renderedLine = renderInlineAsterisk(line);
-    if (index === lines.length - 1) return [renderedLine];
-    return [renderedLine, <br key={`br-${index}`} />];
-  });
-}
-
-function toSummaryText(text: string): string {
-  const cleaned = text.replace(/\s+/g, " ").trim();
-  if (!cleaned) return "";
-  const max = 96;
-  if (cleaned.length <= max) return cleaned;
-  return `${cleaned.slice(0, max - 1)}…`;
 }
 
 function pickInitialCharacterId(
@@ -101,60 +34,6 @@ function pickInitialCharacterId(
     encountered.has(character.id.toLowerCase())
   );
   return firstEncountered?.id ?? characters[0]?.id ?? "";
-}
-
-async function consumeSseStream(
-  response: Response,
-  onEvent: (eventName: string, data: string) => void,
-): Promise<void> {
-  if (!response.body) {
-    throw new Error("No stream body");
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let currentEvent = "message";
-  let dataLines: string[] = [];
-
-  const dispatch = () => {
-    if (!dataLines.length) {
-      currentEvent = "message";
-      return;
-    }
-    onEvent(currentEvent, dataLines.join("\n"));
-    currentEvent = "message";
-    dataLines = [];
-  };
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    let newlineIndex = buffer.indexOf("\n");
-    while (newlineIndex !== -1) {
-      const rawLine = buffer.slice(0, newlineIndex);
-      buffer = buffer.slice(newlineIndex + 1);
-      const line = rawLine.replace(/\r$/, "");
-
-      if (line === "") {
-        dispatch();
-      } else if (line.startsWith("event:")) {
-        currentEvent = line.slice(6).trim() || "message";
-      } else if (line.startsWith("data:")) {
-        dataLines.push(line.slice(5).trimStart());
-      }
-
-      newlineIndex = buffer.indexOf("\n");
-    }
-  }
-
-  const trailing = buffer.trim();
-  if (trailing.startsWith("data:")) {
-    dataLines.push(trailing.slice(5).trimStart());
-  }
-  dispatch();
 }
 
 export default function GameBoard(props: GameBoardProps) {
@@ -175,10 +54,6 @@ export default function GameBoard(props: GameBoardProps) {
   const [streamingCharacterName, setStreamingCharacterName] = useState("");
   const [streamingCharacterId, setStreamingCharacterId] = useState("");
   const [introCollapsed, setIntroCollapsed] = useState(false);
-  const [desktopBoardHeight, setDesktopBoardHeight] = useState<number | null>(
-    null,
-  );
-  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -186,6 +61,10 @@ export default function GameBoard(props: GameBoardProps) {
   const layoutRef = useRef<HTMLElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { desktopBoardHeight, isDesktopLayout } = useDesktopBoardHeight(
+    layoutRef,
+    characters.length,
+  );
 
   const encounteredSet = useMemo(
     () => new Set(encounteredCharacterIds.map((id) => id.toLowerCase())),
@@ -243,38 +122,6 @@ export default function GameBoard(props: GameBoardProps) {
       pickInitialCharacterId(characters, encounteredCharacterIds),
     );
   }, [characters, encounteredCharacterIds, activeCharacterId]);
-
-  useEffect(() => {
-    const host = globalThis;
-    const recalc = () => {
-      const desktop = host.matchMedia("(min-width: 981px)").matches;
-      setIsDesktopLayout(desktop);
-
-      if (!desktop) {
-        setDesktopBoardHeight(null);
-        return;
-      }
-
-      const layout = layoutRef.current;
-      if (!layout) return;
-
-      const rect = layout.getBoundingClientRect();
-      const bottomPadding = 8;
-      const next = Math.max(
-        360,
-        Math.floor(host.innerHeight - rect.top - bottomPadding),
-      );
-      setDesktopBoardHeight(next);
-    };
-
-    const run = () => host.requestAnimationFrame(recalc);
-    run();
-    host.addEventListener("resize", run);
-
-    return () => {
-      host.removeEventListener("resize", run);
-    };
-  }, [characters.length]);
 
   const onSubmit = async (event: Event) => {
     event.preventDefault();
@@ -362,7 +209,7 @@ export default function GameBoard(props: GameBoardProps) {
           setStreamingCharacterName("");
           setStreamingCharacterId("");
           sawFinal = true;
-          window.dispatchEvent(new CustomEvent("credits-updated"));
+          globalThis.dispatchEvent(new CustomEvent("credits-updated"));
           return;
         }
 
@@ -412,129 +259,30 @@ export default function GameBoard(props: GameBoardProps) {
           </div>
         )}
       <section class="game-layout" ref={layoutRef} style={layoutStyle}>
-        <aside class="game-characters">
-          <div class="character-panel">
-            <p class="character-panel-title">Select character to talk to</p>
-            <div class="character-grid">
-            {characters.map((character) => {
-              const encountered = encounteredSet.has(character.id.toLowerCase());
-              const isActive = character.id === activeCharacterId;
-              return (
-                <button
-                  key={character.id}
-                  type="button"
-                  class={`card character-summary ${
-                    isActive ? "is-active" : "is-inactive"
-                  }`}
-                  data-encountered={encountered ? "true" : "false"}
-                  disabled={loading}
-                  onClick={() => {
-                    if (loading) return;
-                    setActiveCharacterId(character.id);
-                  }}
-                >
-                  <h4>{character.name}</h4>
-                  <p>
-                    {summaryByCharacterId.get(character.id) ??
-                      "No conversation yet"}
-                  </p>
-                </button>
-              );
-            })}
-              {hasPlaceholderSlot
-                ? (
-                  <div class="card character-placeholder">
-                    Select a character to chat
-                  </div>
-                )
-                : null}
-            </div>
-          </div>
-        </aside>
-
-
-        <article class="card chat-panel">
-        <div class="chat-shell">
-          <div class="chat-header">
-            <strong>
-              {activeCharacter
-                ? `Talking to ${activeCharacter.name}`
-                : "Select a character"}
-            </strong>
-          </div>
-
-          <div class="messages" ref={messagesRef}>
-            {visibleEvents.length === 0 &&
-                !(loading && streamingCharacterId === activeCharacterId)
-              ? (
-                <p class="notice">
-                  Select a character on the left and send your first message.
-                </p>
-              )
-              : null}
-
-            {visibleEvents.map((item, itemIndex) => (
-              <div
-                class={`message ${item.role === "user" ? "user" : "character"}`}
-                key={`${item.at}-${itemIndex}`}
-              >
-                <p class="message-meta">
-                  {item.role === "user"
-                    ? `You -> ${item.characterName}`
-                    : item.characterName}
-                </p>
-                <p class="message-body">{renderMessageText(item.text)}</p>
-              </div>
-            ))}
-
-            {loading && streamingCharacterName &&
-                streamingCharacterId === activeCharacterId
-              ? (
-                <div class="message character is-streaming">
-                  <p class="message-meta">{streamingCharacterName}</p>
-                  <p class="message-body">
-                    {streamingText ? renderMessageText(streamingText) : "..."}
-                  </p>
-                </div>
-              )
-              : null}
-          </div>
-
-          <form class="composer" onSubmit={onSubmit}>
-            <textarea
-              ref={textareaRef}
-              value={draft}
-              placeholder={activeCharacter
-                ? `Message ${activeCharacter.name}...`
-                : "Select a character first..."}
-              disabled={!activeCharacter}
-              onInput={(event) => {
-                const value = (event.target as HTMLTextAreaElement).value;
-                setDraft(value);
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" || event.shiftKey || event.ctrlKey) {
-                  return;
-                }
-                if (event.isComposing) return;
-                event.preventDefault();
-                if (loading || !activeCharacter) return;
-                (event.currentTarget.form as HTMLFormElement | null)
-                  ?.requestSubmit();
-              }}
-            />
-
-            <button
-              class="btn primary send-btn"
-              type="submit"
-              disabled={loading || !activeCharacter}
-            >
-              {loading ? "Sending..." : "Send"}
-            </button>
-          </form>
-        </div>
-        {error ? <p class="notice bad" style="margin: 8px;">{error}</p> : null}
-        </article>
+        <CharacterList
+          characters={characters}
+          activeCharacterId={activeCharacterId}
+          encounteredSet={encounteredSet}
+          summaryByCharacterId={summaryByCharacterId}
+          loading={loading}
+          hasPlaceholderSlot={hasPlaceholderSlot}
+          onSelect={setActiveCharacterId}
+        />
+        <ChatPanel
+          activeCharacter={activeCharacter}
+          visibleEvents={visibleEvents}
+          loading={loading}
+          streamingCharacterId={streamingCharacterId}
+          streamingCharacterName={streamingCharacterName}
+          streamingText={streamingText}
+          activeCharacterId={activeCharacterId}
+          messagesRef={messagesRef}
+          textareaRef={textareaRef}
+          draft={draft}
+          setDraft={setDraft}
+          error={error}
+          onSubmit={onSubmit}
+        />
       </section>
     </>
   );

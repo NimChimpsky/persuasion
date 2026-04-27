@@ -1,4 +1,5 @@
 import { useState } from "preact/hooks";
+import { isValidEmail, normalizeEmail } from "../shared/validation.ts";
 
 interface LandingLoginFormProps {
   action: string;
@@ -9,8 +10,6 @@ interface RequestLinkResponse {
   message?: string;
   error?: string;
 }
-
-const BASIC_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LandingLoginForm(props: LandingLoginFormProps) {
   const [email, setEmail] = useState("");
@@ -24,9 +23,9 @@ export default function LandingLoginForm(props: LandingLoginFormProps) {
 
     if (status === "sending") return;
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!BASIC_EMAIL_REGEX.test(normalizedEmail)) {
+    if (!isValidEmail(normalizedEmail)) {
       setStatus("error");
       setMessage("Please enter a valid email address.");
       return;

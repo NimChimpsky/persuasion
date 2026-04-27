@@ -1,15 +1,10 @@
-import {
-  getActiveLlmProvider,
-  getLlmProviderConfig,
-} from "./llm_provider.ts";
-import {
-  buildChatEndpoint,
-  requestModelCompletion,
-} from "./llm_client.ts";
+import { getActiveLlmProvider, getLlmProviderConfig } from "./llm_provider.ts";
+import { buildChatEndpoint, requestModelCompletion } from "./llm_client.ts";
 import { addUsage, type TokenUsage, ZERO_USAGE } from "./credits.ts";
 import type { Character, GameConfig } from "../shared/types.ts";
 
-const HARDENING_PROMPT = `You are a game design assistant. Your job is to take a raw character definition and transform it into a hardened system prompt for an interactive narrative game.
+const HARDENING_PROMPT =
+  `You are a game design assistant. Your job is to take a raw character definition and transform it into a hardened system prompt for an interactive narrative game.
 
 The character will be controlled by an LLM during gameplay. The system prompt you produce must:
 
@@ -47,7 +42,8 @@ async function hardenCharacter(
   if (!providerConfig.apiKey) {
     return {
       systemPrompt: character.definition,
-      error: `${providerConfig.label} not configured — using raw definition as fallback`,
+      error:
+        `${providerConfig.label} not configured — using raw definition as fallback`,
       usage: ZERO_USAGE,
     };
   }
@@ -118,18 +114,29 @@ export async function initializeGame(
   const results = await Promise.all(
     game.characters.map(async (character) => {
       console.log(`[initializer] Hardening character: ${character.name}`);
-      const result = await hardenCharacter(character, game.title, game.introText);
+      const result = await hardenCharacter(
+        character,
+        game.title,
+        game.introText,
+      );
       return { character, result };
     }),
   );
 
   const errors: string[] = [];
   let totalUsage: TokenUsage = ZERO_USAGE;
-  const hardenedCharacters: Character[] = results.map(({ character, result }) => {
-    if (result.error) errors.push(result.error);
-    totalUsage = addUsage(totalUsage, result.usage);
-    return { ...character, systemPrompt: result.systemPrompt };
-  });
+  const hardenedCharacters: Character[] = results.map(
+    ({ character, result }) => {
+      if (result.error) errors.push(result.error);
+      totalUsage = addUsage(totalUsage, result.usage);
+      return { ...character, systemPrompt: result.systemPrompt };
+    },
+  );
 
-  return { characters: hardenedCharacters, errors, provider, usage: totalUsage };
+  return {
+    characters: hardenedCharacters,
+    errors,
+    provider,
+    usage: totalUsage,
+  };
 }

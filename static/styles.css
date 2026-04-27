@@ -104,11 +104,6 @@ body.has-app-header .page-shell > .container {
   flex: 1;
 }
 
-.header-email {
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
 .header-profile-trigger {
   appearance: none;
   border: 0;
@@ -125,25 +120,6 @@ body.has-app-header .page-shell > .container {
 .header-profile-trigger:hover,
 .header-profile-trigger:focus-visible {
   color: var(--fg);
-}
-
-.header-credits {
-  font-size: 0.85rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--fg);
-  padding: 3px 10px;
-  background: var(--surface-raised, #f3f3f3);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  white-space: nowrap;
-  letter-spacing: 0.01em;
-}
-
-.header-credits--negative {
-  color: #c0392b;
-  border-color: #c0392b44;
-  background: #c0392b11;
 }
 
 .header-subnav {
@@ -216,13 +192,6 @@ body.has-app-header .page-shell > .container {
   color: var(--muted);
 }
 
-.nav-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .stack {
   display: flex;
   flex-direction: column;
@@ -240,6 +209,10 @@ body.has-app-header .page-shell > .container {
   align-items: center;
   justify-content: center;
   min-height: calc(100vh - 100px);
+}
+
+.landing-container {
+  max-width: 760px;
 }
 
 .landing-title {
@@ -425,6 +398,15 @@ select:focus {
   gap: 6px;
 }
 
+.create-game-field-error {
+  margin-top: 3px;
+  font-size: 0.82rem;
+}
+
+.create-game-submit-row {
+  margin-top: 8px;
+}
+
 .create-game-initial-grid {
   gap: 6px;
 }
@@ -483,6 +465,10 @@ select:focus {
   flex: 1;
 }
 
+.provider-option-form {
+  display: inline;
+}
+
 .provider-feedback-slot {
   width: min(420px, 48%);
   min-height: 38px;
@@ -522,6 +508,14 @@ select:focus {
 .notice.bad {
   border-color: #fca5a5;
   background: #fef2f2;
+}
+
+.admin-card {
+  padding: 16px;
+}
+
+.assistant-prompt-field {
+  min-height: 120px;
 }
 
 .cards-grid {
@@ -602,38 +596,6 @@ select:focus {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.game-intro {
-  padding: 10px 12px;
-}
-
-.game-intro-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.game-intro-copy {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex: 1 1 420px;
-  min-width: 0;
-  flex-wrap: wrap;
-}
-
-.game-intro h2 {
-  font-size: 1.35rem;
-  margin: 0;
-}
-
-.game-intro p {
-  color: var(--muted);
-  margin: 0;
-  flex: 1 1 320px;
 }
 
 .game-intro-actions {
@@ -802,16 +764,6 @@ select:focus {
   gap: 6px;
 }
 
-.character-intro {
-  padding: 8px 10px;
-}
-
-.character-intro p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
 .character-panel-title {
   font-size: 0.9rem;
   font-weight: 600;
@@ -876,11 +828,6 @@ select:focus {
 .character-summary.is-blurred {
   filter: blur(3px);
   opacity: 0.65;
-}
-
-.character-id {
-  font-size: 0.82rem;
-  color: var(--muted);
 }
 
 .character-placeholder {
@@ -959,6 +906,10 @@ select:focus {
   margin-bottom: 3px;
 }
 
+.chat-error {
+  margin: 8px;
+}
+
 .composer {
   border-top: 1px solid var(--border);
   padding: 8px;
@@ -976,16 +927,6 @@ select:focus {
 
 .composer .btn {
   align-self: end;
-}
-
-.character-row {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .character-header {
@@ -1043,11 +984,6 @@ select:focus {
 
   .header-top-row {
     width: 100%;
-  }
-
-  .header-email {
-    width: 100%;
-    order: 3;
   }
 
   .header-spacer {
@@ -1169,6 +1105,24 @@ select:focus {
   min-width: 280px;
   padding: 24px;
   position: relative;
+}
+
+.credit-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.credit-modal-balance {
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.credits-success-card {
+  max-width: 480px;
+  margin: 48px auto;
+  text-align: center;
 }
 
 /* Collapsible intro band */

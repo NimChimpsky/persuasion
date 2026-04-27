@@ -1,5 +1,6 @@
 import { getKv } from "./kv.ts";
 import { parseTranscript } from "../shared/transcript.ts";
+import { isUserGender, normalizeEmail } from "../shared/validation.ts";
 import type {
   AssistantConfig,
   GameConfig,
@@ -21,12 +22,6 @@ const PROGRESS_CODEC = "gzip";
 const CHUNK_EVENT_SIZE = 80;
 const SAVE_RETRY_LIMIT = 3;
 const INITIAL_CREDITS = 100;
-const VALID_GENDERS: ReadonlySet<UserGender> = new Set([
-  "male",
-  "female",
-  "non-binary",
-]);
-
 interface UserProgressMeta {
   version: typeof PROGRESS_STORAGE_VERSION;
   codec: typeof PROGRESS_CODEC;
@@ -56,7 +51,7 @@ function chunkKey(email: string, slug: string, index: number): Deno.KvKey {
 }
 
 function normalizeProfileEmail(email: string): string {
-  return email.trim().toLowerCase();
+  return normalizeEmail(email);
 }
 
 function profileKey(email: string): Deno.KvKey {
@@ -65,7 +60,7 @@ function profileKey(email: string): Deno.KvKey {
 
 function parseUserGender(value: string): UserGender | null {
   const gender = value.trim().toLowerCase();
-  return VALID_GENDERS.has(gender as UserGender) ? gender as UserGender : null;
+  return isUserGender(gender) ? gender : null;
 }
 
 function serializeEventsToJsonl(events: TranscriptEvent[]): string {
@@ -324,13 +319,17 @@ export async function deleteGameBySlug(slug: string): Promise<boolean> {
   return result.ok;
 }
 
-export async function getGlobalAssistantConfig(): Promise<AssistantConfig | null> {
+export async function getGlobalAssistantConfig(): Promise<
+  AssistantConfig | null
+> {
   const kv = await getKv();
   const entry = await kv.get<AssistantConfig>(GLOBAL_ASSISTANT_KEY);
   return entry.value;
 }
 
-export async function setGlobalAssistantConfig(config: AssistantConfig): Promise<void> {
+export async function setGlobalAssistantConfig(
+  config: AssistantConfig,
+): Promise<void> {
   const kv = await getKv();
   await kv.set(GLOBAL_ASSISTANT_KEY, config);
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { normalizeGender } from "../shared/validation.ts";
 import type { UserGender, UserProfile } from "../shared/types.ts";
 
 interface HeaderProfileButtonProps {
@@ -10,13 +11,6 @@ interface HeaderProfileButtonProps {
 interface ProfileResponse {
   ok: boolean;
   error?: string;
-}
-
-function normalizeGender(input: string): UserGender {
-  if (input === "male" || input === "female" || input === "non-binary") {
-    return input;
-  }
-  return "male";
 }
 
 export default function HeaderProfileButton(

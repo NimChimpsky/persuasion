@@ -1,5 +1,6 @@
 import { page } from "fresh";
 import { upsertUserProfile } from "../lib/store.ts";
+import { normalizeGender } from "../shared/validation.ts";
 import type { UserGender } from "../shared/types.ts";
 import { define } from "../utils.ts";
 
@@ -30,14 +31,6 @@ function sanitizeNextPath(input: string | null): string {
   } catch {
     return "/home";
   }
-}
-
-function normalizeGender(input: string): UserGender {
-  const value = input.trim().toLowerCase();
-  if (value === "male" || value === "female" || value === "non-binary") {
-    return value;
-  }
-  return "male";
 }
 
 function createData(

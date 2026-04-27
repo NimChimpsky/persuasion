@@ -33,7 +33,7 @@ export default define.page<typeof handler>(
 
     return (
       <main class="hero page-shell">
-        <div class="container landing-hero stack" style="max-width: 760px;">
+        <div class="container landing-hero landing-container stack">
           <div class="landing-title">
             <img
               class="landing-title-logo"

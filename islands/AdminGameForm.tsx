@@ -61,8 +61,14 @@ export default function AdminGameForm(props: AdminGameFormProps) {
   const secretKeyErrors = useMemo(() => {
     const errors = new Map<string, string>();
     for (const character of characters) {
-      if (character.secretKey && !character.definition.includes(character.secretKey)) {
-        errors.set(character.key, "Secret key must appear in the definition text");
+      if (
+        character.secretKey &&
+        !character.definition.includes(character.secretKey)
+      ) {
+        errors.set(
+          character.key,
+          "Secret key must appear in the definition text",
+        );
       }
     }
     return errors;
@@ -124,7 +130,11 @@ export default function AdminGameForm(props: AdminGameFormProps) {
         <div class="create-game-section">
           <div class="create-game-characters-header">
             <strong>Characters</strong>
-            <button class="btn ghost small" type="button" onClick={addCharacter}>
+            <button
+              class="btn ghost small"
+              type="button"
+              onClick={addCharacter}
+            >
               + Add
             </button>
           </div>
@@ -179,7 +189,7 @@ export default function AdminGameForm(props: AdminGameFormProps) {
                   />
                   {secretKeyErrors.has(character.key)
                     ? (
-                      <p class="notice bad" style="margin-top: 3px; font-size: 0.82rem;">
+                      <p class="notice bad create-game-field-error">
                         {secretKeyErrors.get(character.key)}
                       </p>
                     )
@@ -203,7 +213,7 @@ export default function AdminGameForm(props: AdminGameFormProps) {
             ))}
           </div>
 
-          <div class="action-row" style="margin-top: 8px;">
+          <div class="action-row create-game-submit-row">
             <button class="btn primary" type="submit">Create game</button>
           </div>
         </div>

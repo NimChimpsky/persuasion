@@ -18,10 +18,7 @@ export default define.page<typeof handler>(function CreditsSuccessPage(
 ) {
   return (
     <main class="page-shell">
-      <div
-        class="container stack"
-        style="max-width: 480px; margin: 48px auto; text-align: center;"
-      >
+      <div class="container stack credits-success-card">
         <h1 class="display">Payment Successful</h1>
         <p>{data.credits} credits have been added to your account.</p>
         <a class="btn primary" href="/home">Play</a>

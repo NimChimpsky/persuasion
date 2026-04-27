@@ -1,23 +1,9 @@
 import { createMagicToken, normalizeEmail } from "../../lib/auth.ts";
 import { sendMagicLinkEmail } from "../../lib/email.ts";
 import { env } from "../../lib/env.ts";
+import { isJsonRequest, json, readJsonBody } from "../../lib/http.ts";
+import { isValidEmail } from "../../shared/validation.ts";
 import { define } from "../../utils.ts";
-
-const BASIC_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function isJsonRequest(req: Request): boolean {
-  const accept = req.headers.get("accept") ?? "";
-  const contentType = req.headers.get("content-type") ?? "";
-  return accept.includes("application/json") ||
-    contentType.includes("application/json");
-}
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
 
 export const handler = define.handlers({
   async POST(ctx) {
@@ -48,8 +34,11 @@ export const handler = define.handlers({
           "application/json",
         )
       ) {
-        const payload = await ctx.req.json() as { email?: string };
-        emailRaw = String(payload.email ?? "");
+        const payload = await readJsonBody<{ email?: string }>(ctx.req);
+        if (!payload.ok) {
+          return json({ ok: false, error: "Invalid JSON payload." }, 400);
+        }
+        emailRaw = String(payload.value.email ?? "");
       } else {
         const form = await ctx.req.formData();
         emailRaw = String(form.get("email") ?? "");
@@ -57,7 +46,7 @@ export const handler = define.handlers({
 
       const email = normalizeEmail(emailRaw);
 
-      if (!BASIC_EMAIL_REGEX.test(email)) {
+      if (!isValidEmail(email)) {
         if (expectsJson) {
           return json(
             { ok: false, error: "Please enter a valid email address." },

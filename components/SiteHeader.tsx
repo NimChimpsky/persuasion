@@ -1,6 +1,7 @@
 import CreditBattery from "../islands/CreditBattery.tsx";
 import HeaderProfileButton from "../islands/HeaderProfileButton.tsx";
 import ResetGameButton from "../islands/ResetGameButton.tsx";
+import { CREDIT_PACKAGES } from "../shared/credit_packages.ts";
 import type { UserProfile } from "../shared/types.ts";
 
 interface SiteHeaderProps {
@@ -46,6 +47,7 @@ export default function SiteHeader(props: SiteHeaderProps) {
             <CreditBattery
               initialBalance={props.creditBalance}
               initialLastTopup={props.creditLastTopup ?? 100}
+              packages={[...CREDIT_PACKAGES]}
             />
           )
           : null}
